@@ -1,0 +1,46 @@
+.ant-table-wrapper .ant-table-thead > tr > th {
+  background: rgba(236, 242, 250);
+}
+
+.ant-table-wrapper .ant-table-tbody > tr:nth-child(2n) {
+  background: rgba(251, 252, 252);
+}
+
+/* .ant-table-wrapper .ant-table-tbody > tr > td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+} */
+
+.ant-table-wrapper .ant-table-cell-scrollbar:not([rowspan]) {
+  box-shadow: 0 1px 0 1px rgba(236, 242, 250);
+}
+
+.ant-table-wrapper .ant-table-thead > tr > td {
+  background: rgba(236, 242, 250);
+}
+
+.ant-table-wrapper .ant-table-pagination.ant-pagination {
+  margin: 13px 0;
+}
+
+.ant-menu-light .ant-menu-item-selected {
+  background-color: rgba(64, 150, 255, 0.1);
+  box-shadow: 0 20px 27px rgba(64, 150, 255, 0.05);
+}
+
+.ant-input-affix-wrapper,
+.ant-select-selector,
+.ant-btn:not(.ant-btn-link),
+.ant-form-item-control-input-content .ant-input {
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ant-input-affix-wrapper >input.ant-input {
+  box-shadow: none;
+}
+
+.ant-table-wrapper .ant-table-cell-fix-left,
+.ant-table-wrapper .ant-table-cell-fix-right {
+  z-index: 1;
+}

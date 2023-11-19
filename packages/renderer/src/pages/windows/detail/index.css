@@ -1,0 +1,29 @@
+.window-detail-card {
+  height: calc(100% - 86px);
+}
+
+.window-detail-card .ant-card-body {
+  padding: 12px 0px;
+  height: 100%;
+}
+
+.window-detail-card .ant-tabs {
+  height: 100%;
+}
+
+.window-detail-card .ant-tabs-top > .ant-tabs-nav {
+  margin-bottom: 16px;
+  padding: 0 24px;
+}
+
+.window-detail-card .ant-tabs-content-holder {
+  height: calc(100% - 68px);
+  overflow: auto;
+  padding: 0 24px;
+}
+
+.window-detail-card form {
+  flex: 0 0 450px;
+  margin-right: 48px;
+}
+

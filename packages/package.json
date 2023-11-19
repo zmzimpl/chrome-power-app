@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "puppeteer-extra-plugin": "^3.2.3"
+  }
+}

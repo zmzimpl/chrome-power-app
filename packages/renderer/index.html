@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html
+  lang="en"
+  class="overflow-hidden h-full"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' %VITE_SUPABASE_URL%;"
+    /> -->
+
+    <meta
+      content="script-src 'self' blob:;"
+      http-equiv="Content-Security-Policy"
+    />
+    <meta
+      content="width=device-width, initial-scale=1.0"
+      name="viewport"
+    />
+    <title>Chromes Power</title>
+  </head>
+  <body class="h-full">
+    <div
+      id="app"
+      class="h-full overflow-hidden"
+    ></div>
+    <script
+      src="./src/index.tsx"
+      type="module"
+    ></script>
+  </body>
+</html>

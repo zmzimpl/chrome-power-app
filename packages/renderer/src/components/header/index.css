@@ -1,0 +1,49 @@
+.header {
+  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
+  display: flex;
+  align-items: center;
+  -webkit-transition: all 0.3s;
+  transition: all 0.3s;
+  padding-left: 24px;
+  padding-right: 12px;
+}
+
+.header-left {
+  display: flex;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  transform: scale(1.4) translateY(2px);
+}
+.logo-img {
+  border-radius: 8px;
+}
+
+.title {
+  line-height: 48px !important;
+  margin-bottom: 0px !important;
+  margin-left: 4px;
+  margin-top: 2px;
+}
+
+.draggable-bar {
+    flex: 1;
+    height: 48px;
+}
+
+.header-right {
+  display: flex;
+  margin-inline-start: auto;
+}
+
+.avatar {
+  /* background-color: #69b1ff; */
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+
+.control-btn {
+    margin-left: 24px;
+}

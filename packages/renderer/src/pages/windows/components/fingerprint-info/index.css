@@ -1,0 +1,18 @@
+.fingerprint-wrapper {
+  height: 100%;
+  min-width: 300px;
+  max-width: 400px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  flex: 1 1 auto;
+  position: sticky;
+  top: 0;
+  background-color: rgba(64, 150, 255, 0.1);
+}
+
+.fingerprint-value {
+  max-width: 150px;
+  margin-inline-start: auto;
+  word-break: break-word;
+  text-align: end;
+}

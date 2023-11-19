@@ -1,0 +1,4 @@
+.proxy-detail-card {
+  height: calc(100% - 86px);
+  /* padding: 24px; */
+}

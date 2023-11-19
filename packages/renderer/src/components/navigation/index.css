@@ -1,0 +1,12 @@
+
+.membership {
+  position: absolute;
+  bottom: 8px;
+  height: 70px;
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background-color: rgba(64, 150, 255, 0.1);
+}

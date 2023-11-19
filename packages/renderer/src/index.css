@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  /* padding: 8px; */
+  background-color: transparent;
+  border-radius: 12px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background: transparent;
+  border-radius: 12px;
+}
+
+.fade-in {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.fade-in.visible {
+  opacity: 1;
+}
+
+#app {
+  background-image: url("../assets/bg2.png");
+  -webkit-backdrop-filter: blur(50px);
+  backdrop-filter: blur(50px);
+  box-shadow: 0 2px 10px 2px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+.content {
+  position: relative;
+  padding: 15px 24px;
+  box-shadow: inset 10px 0 10px -10px rgba(0, 0, 0, 0.05);
+}
+
+.content-card {
+  height: calc(100% - 132px);
+}
+
+.content-card .ant-card-body {
+  padding: 0;
+  height: 100%;
+}
+
+.content-toolbar {
+  display: flex;
+  height: 44px;
+  align-items: center;
+}
+
+.content-toolbar * {
+  border: none !important;
+  border-radius: 4px !important;
+}
+
+.content-toolbar-search {
+  max-width: 240px;
+}
+
+.content-toolbar-btns {
+  margin-right: 12px;
+  display: flex;
+  margin-inline-start: auto;
+}
+
+.content-table {
+  border-radius: 24px;
+  height: 100%;
+}
+
+.content-table .ant-spin-nested-loading {
+  height: 100%;
+}
+.content-table .ant-spin-nested-loading .ant-spin-container {
+  height: 100%;
+}
+
+.content-table .ant-table {
+  height: 100%;
+}
+.content-table .ant-table-container {
+  height: 100%;
+}
+
+.content-table .ant-table-body {
+  height: calc(100% - 55px);
+}
+
+.sider .ant-layout-sider-children {
+  position: relative;
+}
+
+.content-footer {
+  position: absolute;
+  bottom: 0px;
+  height: 40px;
+  background: white;
+  width: 100%;
+  left: 2px;
+  padding: 4px 24px;
+}
+
+.pagination-wrapper {
+  position: absolute;
+  right: 8px;
+  z-index: 1;
+}
+
+/* 在CSS中 */
+.draggable {
+  -webkit-app-region: drag;
+}
+
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d6dee1;
+  border-radius: 20px;
+  border: 4px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a8bbbf;
+}

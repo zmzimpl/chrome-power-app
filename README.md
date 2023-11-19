@@ -16,7 +16,7 @@ As we are currently in the testing phase, please make sure you know exactly how 
 
 Follow the steps below to start using this software:
 
-- Download the installation package [Download the latest version here](https://github.com/yourusername/yourrepository/releases/latest)
+- Download the installation package (Windows supported only) [Download the latest version here](https://drive.google.com/file/d/1McuGozR4TP_GZisTubZG4K6unY1gRr5b/view?usp=drive_link)
 - Run the installer to complete the installation
 - Register your account and log in
 - It is highly recommended to go to the Settings page to set your cache directory.

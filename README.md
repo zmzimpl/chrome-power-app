@@ -42,4 +42,5 @@ Hey😁, If my open-source work has been helpful to you, please consider buying 
 🙌You can support me by purchasing a membership to the software or by donating to the wallet below
 
 Bitcoin Address: `bc1p0uex9rn8nd9uyguulp6r3d3t9kylrk42dg6sq22f3h5rktlk22ks6mlv6t`
+
 Ethereum Address: `0x5D544C2329d812B1eA1D3F520C882d69811c7a06`

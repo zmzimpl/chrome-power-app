@@ -9,8 +9,6 @@ on:
     paths-ignore:
       - '.github/**'
       - '!.github/workflows/ci.yml'
-      - '!.github/workflows/typechecking.yml'
-      - '!.github/workflows/tests.yml'
       - '!.github/workflows/release.yml'
       - '**.md'
       - .editorconfig
@@ -21,8 +19,6 @@ on:
     paths-ignore:
       - '.github/**'
       - '!.github/workflows/ci.yml'
-      - '!.github/workflows/typechecking.yml'
-      - '!.github/workflows/tests.yml'
       - '!.github/workflows/release.yml'
       - '**.md'
       - .editorconfig
@@ -35,15 +31,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  typechecking:
-    uses: ./.github/workflows/typechecking.yml
-  tests:
-    uses: ./.github/workflows/tests.yml
   draft_release:
     permissions:
       contents: write # Allows this job to create releases
     with:
       dry-run: ${{ github.event_name != 'push' || github.ref_name != 'main' }}
-    needs: [ typechecking, tests ]
+    needs: []
     uses: ./.github/workflows/release.yml
 

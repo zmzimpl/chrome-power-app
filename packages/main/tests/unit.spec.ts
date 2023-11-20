@@ -28,7 +28,13 @@ vi.mock('electron', () => {
     },
   };
 
-  return {BrowserWindow: bw, app};
+  // 模拟 ipcMain
+  const ipcMain = {
+    handle: vi.fn(),
+    // 根据需要模拟其他 ipcMain 方法
+  };
+
+  return { BrowserWindow: bw, app, ipcMain };
 });
 
 beforeEach(() => {

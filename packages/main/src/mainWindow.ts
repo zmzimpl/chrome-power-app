@@ -37,8 +37,7 @@ async function createWindow() {
     }
   });
 
-
-  browserWindow.webContents.on('will-navigate', (event, url) => {
+  browserWindow.webContents?.on('will-navigate', (event, url) => {
     if (url !== browserWindow.webContents.getURL()) {
       event.preventDefault();
       shell.openExternal(url);
@@ -48,20 +47,20 @@ async function createWindow() {
   /**
    * icpMain
    */
-  ipcMain.handle('close', () => {
+  ipcMain?.handle('close', () => {
     browserWindow?.close();
   });
-  ipcMain.handle('minimize', () => {
+  ipcMain?.handle('minimize', () => {
     browserWindow.minimize();
   });
-  ipcMain.handle('maximize', () => {
+  ipcMain?.handle('maximize', () => {
     if (browserWindow.isMaximized()) {
       browserWindow.unmaximize();
     } else {
       browserWindow.maximize();
     }
   });
-  ipcMain.handle('isMaximized', () => {
+  ipcMain?.handle('isMaximized', () => {
     return browserWindow.isMaximized();
   });
 
@@ -93,7 +92,6 @@ async function createWindow() {
  * Restore an existing BrowserWindow or Create a new BrowserWindow.
  */
 export async function restoreOrCreateWindow() {
-
   let window = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
 
   if (window === undefined) {

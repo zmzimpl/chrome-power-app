@@ -11,7 +11,10 @@ on:
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
-
+env:
+  VITE_APP_API: https://api.chromepower.xyz/api
+  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
 defaults:
   run:

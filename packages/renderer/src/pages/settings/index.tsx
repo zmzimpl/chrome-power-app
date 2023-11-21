@@ -22,7 +22,6 @@ const Settings = () => {
   const handleChoosePath = async () => {
     const path = await CommonBridge.choosePath();
     handleFormValueChange({profileCachePath: path});
-    console.log(path);
   };
 
   const handleFormValueChange = (changed: SettingOptions) => {

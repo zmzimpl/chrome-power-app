@@ -2,9 +2,6 @@ import type {SafeAny} from '../../../shared/types/db';
 
 let windowAddon: unknown;
 import * as path from 'path';
-import {createLogger} from '../../../shared/utils/logger';
-const logger = createLogger('Tile');
-logger.warn(`process.env.MODE${process.env.MODE}`);
 if (process.env.MODE === 'development') {
   windowAddon = require(path.join(
     __dirname,

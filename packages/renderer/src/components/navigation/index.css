@@ -1,7 +1,7 @@
 
 .membership {
   position: absolute;
-  bottom: 8px;
+  bottom: 0px;
   height: 70px;
   width: calc(100% - 16px);
   margin: 8px;

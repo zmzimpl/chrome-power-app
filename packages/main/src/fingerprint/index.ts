@@ -36,7 +36,16 @@ const getPublicIP = async () => {
 };
 
 const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP, fingerprint: SafeAny) => {
+  logger.info('set fingerprint');
   const {userAgent, userAgentData} = fingerprint?.fingerprint?.navigator || {};
+  if (userAgent) {
+    await page.setUserAgent(userAgent, userAgentData);
+    const client = await page.target().createCDPSession();
+    await client.send('Network.setUserAgentOverride', {
+      userAgent: userAgent,
+      userAgentMetadata: userAgentData,
+    });
+  }
   page.on('framenavigated', async _msg => {
     const title = await page.title();
     if (!title.includes('By ChromePower')) {
@@ -44,71 +53,18 @@ const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP, fingerprint:
         document.title = title + ' By ChromePower';
       }, title);
     }
-    if (userAgent) {
-      await page.setUserAgent(userAgent, userAgentData);
-      const client = await page.target().createCDPSession();
-      await client.send('Network.setUserAgentOverride', {
-        userAgent: userAgent,
-      });
-    }
+
     await page.setGeolocation({latitude: ipInfo.ll[0], longitude: ipInfo.ll[1]});
     await page.emulateTimezone(ipInfo.timeZone);
   });
   await page.evaluateOnNewDocument(
     'navigator.mediaDevices.getUserMedia = navigator.webkitGetUserMedia = navigator.mozGetUserMedia = navigator.getUserMedia = webkitRTCPeerConnection = RTCPeerConnection = MediaStreamTrack = undefined;',
   );
-  await page.evaluateOnNewDocument(
-    (userAgent, userAgentData) => {
-      // 将 userAgentData 对象转换为字符串
-      const userAgentDataString = JSON.stringify(userAgentData);
-      const modifyWorker = (originalWorker: SafeAny) => {
-        return function (scriptURL: SafeAny, options: SafeAny) {
-          const modifiedCode = `
-          // 修改 navigator 对象的代码
-          const originalNavigator = navigator;
-          navigator = new Proxy(originalNavigator, {
-            get(target, prop) {
-              if (prop === 'userAgent') {
-                return '${userAgent}';
-              }
-              if (prop === 'platform') {
-                return '${userAgentData.platform}';
-              }
-              if (prop === 'userAgentData') {
-                // 将 userAgentDataString 转换回对象
-                return JSON.parse('${userAgentDataString}');
-              }
-              // 可以继续添加其他属性的处理
-              return target[prop];
-            }
-          });
-        `;
-
-          const blob = new Blob([modifiedCode + `importScripts('${scriptURL}');`], {
-            type: 'application/javascript',
-          });
-          const blobURL = URL.createObjectURL(blob);
-          return new originalWorker(blobURL, options);
-        };
-      };
-
-      (window.Worker as SafeAny) = modifyWorker(window.Worker);
-      (window.SharedWorker as SafeAny) = modifyWorker(window.SharedWorker);
-
-      const originalRegister = navigator.serviceWorker.register;
-      navigator.serviceWorker.register = function (scriptURL, options) {
-        return originalRegister.call(this, scriptURL, options);
-      };
-    },
-    userAgent,
-    userAgentData,
-  );
 };
 
 async function connectBrowser(port: number, ipInfo: IP, fingerprint: SafeAny) {
   const browserURL = `http://${HOST}:${port}`;
   const browser = await puppeteer.connect({browserURL, defaultViewport: null});
-  // const injector = new FingerprintInjector();
 
   browser.on('targetcreated', async target => {
     const newPage = await target.page();
@@ -117,22 +73,31 @@ async function connectBrowser(port: number, ipInfo: IP, fingerprint: SafeAny) {
     }
   });
   const pages = await browser.pages();
+  console.log(pages[0].url());
   const page =
-    pages.length && pages[0].url() === 'about:blank' ? pages[0] : await browser.newPage();
+    pages.length &&
+    (pages[0].url() === 'about:blank' ||
+      !pages[0].url() ||
+      pages[0].url() === 'chrome://new-tab-page/')
+      ? pages[0]
+      : await browser.newPage();
   try {
-    await page.goto('https://ip.me');
+    await attachFingerprintToPuppeteer(page, ipInfo, fingerprint);
+    await page.goto('https://abrahamjuliot.github.io/creepjs/');
   } catch (error) {
     logger.error(error);
   }
 }
 
-const fetchWindowFingerprint = async (id: number) => {
+const fetchWindowFingerprint = async (id: number, profileId: string) => {
   try {
     const {data: fingerprint} = await api.get('/power-api/fingerprints/window', {
       params: {
         windowId: id,
+        profileId: profileId,
       },
     });
+    console.log(fingerprint);
     return fingerprint;
   } catch (error) {
     logger.error(error);
@@ -164,7 +129,8 @@ export async function openFingerprintWindow(id: number) {
     const localIp = await getPublicIP();
     ipInfo = await getProxyInfo(localIp, 'ip2location');
   }
-  const fingerprint = await fetchWindowFingerprint(id);
+  const fingerprint = await fetchWindowFingerprint(id, windowData.profile_id);
+  console.log(fingerprint?.fingerprint?.navigator?.userAgent);
   if (chromePath) {
     const chromePort = await portscanner.findAPortNotInUse(9222, 10222);
     let finalProxy;
@@ -182,6 +148,7 @@ export async function openFingerprintWindow(id: number) {
     const launchParamter = [
       `--remote-debugging-port=${chromePort}`,
       `--user-data-dir=${windowDataDir}`,
+      `--user-agent=${fingerprint?.fingerprint?.navigator?.userAgent}`,
     ];
 
     if (finalProxy) {

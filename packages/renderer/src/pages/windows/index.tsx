@@ -182,7 +182,7 @@ const Windows = () => {
         title: 'Action',
         key: 'operation',
         fixed: 'right',
-        width: 100,
+        width: 110,
         align: 'center',
         render: (_, recorder) => (
           <Button

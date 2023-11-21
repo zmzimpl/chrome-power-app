@@ -15,9 +15,8 @@
     "build:main": "cd ./packages/main && vite build",
     "build:preload": "cd ./packages/preload && vite build",
     "build:renderer": "cd ./packages/renderer && vite build",
-    "rebuild": "electron-rebuild -f -w ./node_modules/.bin/electron-rebuild.cmd",
     "compile": "cross-env MODE=production npm run build && electron-builder build --config .electron-builder.config.js --dir --config.asar=false",
-    "publish": "cross-env MODE=production npm run build && electron-builder build --config .electron-builder.config.js --config.asar=false",
+    "publish": "cross-env MODE=production npm run build && node_modules\\.bin\\electron-builder --config .electron-builder.config.js --publish never",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/main --passWithNoTests",
@@ -29,11 +28,10 @@
     "typecheck:preload": "tsc --noEmit -p packages/preload/tsconfig.json",
     "typecheck:renderer": "tsc --noEmit -p packages/renderer/tsconfig.json",
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
-    "postinstall": "electron-builder install-app-deps && cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs",
+    "postinstall": "node_modules\\.bin\\electron-builder install-app-deps && cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs",
     "format": "npx prettier --write \"**/*.{js,mjs,cjs,ts,mts,cts,vue,json}\""
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.3.0",
     "@iconify/react": "^4.1.1",
     "@types/lodash": "^4.14.199",
     "@types/node": "18.17.19",

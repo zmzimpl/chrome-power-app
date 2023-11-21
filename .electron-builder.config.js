@@ -10,7 +10,7 @@
  */
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
-
+  console.log(process.env.MODE);
   return {
     productName: 'chrome-power-beta',
     directories: {
@@ -18,17 +18,15 @@ module.exports = async function () {
       buildResources: 'buildResources',
     },
     files: ['packages/**/dist/**', 'packages/**/assets/**', 'migrations'],
-    extraResources:     {
-      "from": "packages/main/src/native-addon/build/Release/",
-      "to": "app/packages/main/native-addon/build/Release/",
-      "filter": [
-        "*.node"
-      ]
+    extraResources: {
+      from: 'packages/main/src/native-addon/build/Release/',
+      to: 'app.asar.unpacked/node_modules/window-addon/',
+      filter: ['*.node'],
     },
     extraMetadata: {
       version: getVersion(),
     },
-
+    asarUnpack: ['**/*.node'],
     nsis: {
       oneClick: false,
       allowElevation: true,

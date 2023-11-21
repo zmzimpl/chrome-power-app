@@ -93,6 +93,7 @@ app
  * if you compile production app without publishing it to distribution server.
  * Like `npm run compile` does. It's ok 😅
  */
+console.log(import.meta.env);
 logger.info(`env, ${import.meta.env.PROD ? 'true' : 'false'}`);
 if (import.meta.env.PROD) {
   app

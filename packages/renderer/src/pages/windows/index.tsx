@@ -27,11 +27,13 @@ import {MESSAGE_CONFIG, WINDOW_STATUS} from '/@/constants';
 import {setMembership} from '/@/slices/user-slice';
 import {useDispatch} from 'react-redux';
 import api from '../../../../shared/api/api';
+import { useTranslation } from 'react-i18next';
 
 const Windows = () => {
   const OFFSET = 266;
   const [searchValue, setSearchValue] = useState(''); // Note: Set SOME_OFFSET based on your design
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET); // Note: Set SOME_OFFSET based on your design
+  const {t, i18n} = useTranslation();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedRow, setSelectedRow] = useState<DB.Window>();
@@ -64,19 +66,19 @@ const Windows = () => {
     {
       key: 'delete',
       danger: true,
-      label: 'Delete',
+      label: t('window_delete'),
       icon: <DeleteOutlined />,
     },
   ];
   const recorderDropdownItems: MenuProps['items'] = [
     {
-      key: 'update',
-      label: 'Update',
+      key: 'edit',
+      label: t('window_edit'),
       icon: <EditOutlined />,
     },
     {
       key: 'proxy',
-      label: 'Proxy Setting',
+      label: t('window_proxy_setting'),
       icon: <GlobalOutlined />,
     },
     {
@@ -85,7 +87,7 @@ const Windows = () => {
     {
       key: 'delete',
       danger: true,
-      label: 'Delete',
+      label: t('window_delete'),
       icon: <DeleteOutlined />,
     },
   ];
@@ -99,33 +101,33 @@ const Windows = () => {
         fixed: 'left',
       },
       {
-        title: 'Profile Id',
+        title: t('window_column_profile_id'),
         width: 100,
         dataIndex: 'profile_id',
         key: 'profile_id',
         fixed: 'left',
       },
       {
-        title: 'Group',
+        title: t('window_column_group'),
         width: 100,
         dataIndex: 'group_name',
         key: 'group_name',
         // fixed: 'left',
       },
       {
-        title: 'Name',
+        title: t('window_column_name'),
         width: 100,
         dataIndex: 'name',
         key: 'name',
       },
       {
-        title: 'Remark',
+        title: t('window_column_remark'),
         dataIndex: 'remark',
         key: 'remark',
         width: 150,
       },
       {
-        title: 'Tags',
+        title: t('window_column_tags'),
         dataIndex: 'tags',
         key: 'tags',
         width: 150,
@@ -148,13 +150,13 @@ const Windows = () => {
         ),
       },
       {
-        title: 'IP',
+        title: t('window_column_proxy'),
         dataIndex: 'ip',
         key: 'ip',
         width: 150,
       },
       {
-        title: 'Last Open Time',
+        title: t('window_column_last_open'),
         dataIndex: 'opened_at',
         key: 'opened_at',
         width: 150,
@@ -167,7 +169,7 @@ const Windows = () => {
         },
       },
       {
-        title: 'Created Time',
+        title: t('window_column_created_at'),
         dataIndex: 'created_at',
         key: 'created_at',
         width: 150,
@@ -179,7 +181,7 @@ const Windows = () => {
         },
       },
       {
-        title: 'Action',
+        title: t('window_column_action'),
         key: 'operation',
         fixed: 'right',
         width: 110,
@@ -191,7 +193,7 @@ const Windows = () => {
             type="primary"
             onClick={() => openWindows(recorder.id)}
           >
-            {recorder.status === 1 ? 'Open' : 'Running'}
+            {recorder.status === 1 ? t('window_open') : t('window_running')}
           </Button>
         ),
       },
@@ -214,7 +216,7 @@ const Windows = () => {
         ),
       },
     ];
-  }, [tagMap]);
+  }, [tagMap, i18n.language]);
 
   const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
     setSelectedRowKeys(newSelectedRowKeys as number[]);
@@ -369,7 +371,7 @@ const Windows = () => {
         setSelectedRow(recorder);
         deleteWindows();
         break;
-      case 'update':
+      case 'edit':
         navigate(`/window/edit?id=${recorder.id}`);
         break;
       case 'proxy':
@@ -489,14 +491,14 @@ const Windows = () => {
             onClick={() => openWindows()}
             type="primary"
           >
-            Open
+            {t('window_open')}
           </Button>
           <Button
             type="default"
             onClick={() => closeWindows()}
             icon={<CloseOutlined />}
           >
-            Close
+            {t('window_close')}
           </Button>
           <Dropdown
             menu={{

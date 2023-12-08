@@ -1,7 +1,9 @@
 import {Button, Card} from 'antd';
 import {SyncBridge} from '#preload';
+import { useTranslation } from 'react-i18next';
 
 const Sync = () => {
+  const {t} = useTranslation();
   const handleTileWindows = () => {
     SyncBridge.tileWindows();
   };
@@ -18,7 +20,7 @@ const Sync = () => {
           type="primary"
           onClick={handleTileWindows}
         >
-          Tile Windows
+          {t('tile_windows')}
         </Button>
       </Card>
     </>

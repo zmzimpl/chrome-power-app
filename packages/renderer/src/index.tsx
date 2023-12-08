@@ -10,6 +10,7 @@ import 'dayjs/locale/zh-cn';
 import enUS from 'antd/locale/en_US';
 import {Provider} from 'react-redux';
 import {store} from './store';
+import './i18n';
 
 const rootContainer = document.getElementById('app');
 

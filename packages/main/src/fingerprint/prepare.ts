@@ -14,16 +14,25 @@ import {db} from '../db';
 const logger = createLogger(API_LOGGER_LABEL);
 
 export const getProxyInfo = async (ip: string, gateway: 'ip2location' | 'geoip') => {
-  try {
-    const res = await api.get('/power-api/ip', {
-      params: {
-        gateway: gateway,
-        ip: ip,
-      },
-    });
-    return res.data;
-  } catch (error) {
-    logger.error(error);
+  let attempts = 0;
+  const maxAttempts = 3;
+
+  while (attempts < maxAttempts) {
+    try {
+      const res = await api.get('/power-api/ip', {
+        params: {
+          gateway: gateway,
+          ip: ip,
+        },
+      });
+      return res.data;
+    } catch (error) {
+      attempts++;
+      logger.error(error);
+      if (attempts === maxAttempts) {
+        throw error; // 如果达到最大尝试次数还是失败，抛出异常
+      }
+    }
   }
 };
 

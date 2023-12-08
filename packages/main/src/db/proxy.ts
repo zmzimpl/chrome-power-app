@@ -2,7 +2,7 @@ import {db} from '.';
 import type {DB} from '../../../shared/types/db';
 
 const all = async () => {
-  return await db('proxy').select('*');
+  return await db('proxy').select('*').orderBy('created_at', 'desc');
 };
 
 const getById = async (id: number) => {

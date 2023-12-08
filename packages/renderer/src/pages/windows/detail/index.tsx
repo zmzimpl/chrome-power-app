@@ -66,11 +66,12 @@ const WindowDetail = () => {
     initFormValue();
   }, [searchParams]);
 
-  const fetchFingerprints = async (windowId?: number) => {
+  const fetchFingerprints = async (windowId?: number, profileId?: string) => {
     try {
       const {data} = await api.get('/power-api/fingerprints/window', {
         params: {
           windowId: windowId,
+          profileId: profileId,
         },
       });
       setFingerprints(data);
@@ -94,7 +95,7 @@ const WindowDetail = () => {
         window.tags = [];
       }
       setFormValue(window || new Object());
-      fetchFingerprints(Number(id));
+      fetchFingerprints(Number(id), window.profile_id);
     } else {
       setFormValue(new Object());
       fetchFingerprints();

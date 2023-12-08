@@ -2,10 +2,12 @@ import {Button, Card, Form, Input, Space} from 'antd';
 import {CommonBridge} from '#preload';
 import {useEffect, useState} from 'react';
 import type {SettingOptions} from '../../../../shared/types/common';
+import { useTranslation } from 'react-i18next';
 
 const Settings = () => {
   const [formValue, setFormValue] = useState<SettingOptions>({profileCachePath: ''});
   const [form] = Form.useForm();
+  const {t} = useTranslation();
 
   useEffect(() => {
     fetchSettings();
@@ -49,7 +51,7 @@ const Settings = () => {
           onValuesChange={handleFormValueChange}
         >
           <Form.Item
-            label="Profile Cache Path"
+            label={t('settings_cache_path')}
             name="profileCachePath"
           >
             <Space.Compact style={{width: '100%'}}>
@@ -62,7 +64,7 @@ const Settings = () => {
                 type="default"
                 onClick={handleChoosePath}
               >
-                Choose Path
+                {t('settings_choose_cache_path')}
               </Button>
             </Space.Compact>
           </Form.Item>
@@ -74,7 +76,7 @@ const Settings = () => {
           className="w-20"
           onClick={() => handleSave(formValue)}
         >
-          Save
+          {t('footer_ok')}
         </Button>
       </div>
     </>

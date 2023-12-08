@@ -6,7 +6,8 @@ import WindowDetail from '../pages/windows/detail';
 import ProxyImport from '../pages/proxy/import';
 import {Icon} from '@iconify/react';
 import Sync from '../pages/sync';
-import type {ReactElement} from 'react';
+import {useMemo, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 
 interface RouteOption {
   path: string;
@@ -16,59 +17,65 @@ interface RouteOption {
   invisible?: boolean;
 }
 
-export const routes: RouteOption[] = [
-  {
-    path: '/',
-    name: 'Windows',
-    icon: <Icon icon="bx:windows" />,
-    component: Windows,
-  },
-  {
-    path: '/window/create',
-    name: 'New Window',
-    component: WindowDetail,
-    invisible: true,
-  },
-  {
-    path: '/window/edit',
-    name: 'Edit Window',
-    component: WindowDetail,
-    invisible: true,
-  },
-  {
-    path: '/proxy',
-    name: 'Proxy',
-    icon: <Icon icon="solar:global-outline" />,
-    component: Proxy,
-  },
-  {
-    path: '/proxy/import',
-    name: 'New Proxy',
-    component: ProxyImport,
-    invisible: true,
-  },
-  {
-    path: '/sync',
-    name: 'Sync',
-    icon: <Icon icon="ic:outline-sync" />,
-    component: Sync,
-  },
-  {
-    path: '/settings',
-    name: 'Settings',
-    icon: <Icon icon="material-symbols:settings-outline" />,
-    component: Settings,
-  },
-  // {
-  //   path: '/about',
-  //   name: 'About',
-  //   icon: <Icon icon="mdi:about-circle-outline" />,
-  //   component: About,
-  // },
-];
+export const useRoutes = () => {
+  const {t, i18n} = useTranslation();
 
-export const routesMap: {[key: string]: RouteOption} = {};
+  return useMemo(() => {
+    return [
+      {
+        path: '/',
+        name: t('menu_windows'),
+        icon: <Icon icon="bx:windows" />,
+        component: Windows,
+      },
+      {
+        path: '/window/create',
+        name: t('new_window'),
+        component: WindowDetail,
+        invisible: true,
+      },
+      {
+        path: '/window/edit',
+        name: t('edit_window'),
+        component: WindowDetail,
+        invisible: true,
+      },
+      {
+        path: '/proxy',
+        name: t('menu_proxy'),
+        icon: <Icon icon="solar:global-outline" />,
+        component: Proxy,
+      },
+      {
+        path: '/proxy/import',
+        name: t('new_proxy'),
+        component: ProxyImport,
+        invisible: true,
+      },
+      {
+        path: '/sync',
+        name: t('menu_sync'),
+        icon: <Icon icon="ic:outline-sync" />,
+        component: Sync,
+      },
+      {
+        path: '/settings',
+        name: t('menu_settings'),
+        icon: <Icon icon="material-symbols:settings-outline" />,
+        component: Settings,
+      },
+    ];
+  }, [i18n.language]);
+};
 
-routes.forEach(route => {
-  routesMap[route.path] = route;
-});
+export const useRoutesMap = () => {
+  const routes = useRoutes();
+
+  const routesMap: Record<string, RouteOption> = {};
+
+  routes.forEach(route => {
+    routesMap[route.path] = route;
+  });
+
+  return routesMap;
+};

@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import './index.css';
 import './styles/antd.css';
 import {Button, Layout, Spin, Typography} from 'antd';
-import {routes, routesMap} from './routes';
+import {useRoutes, useRoutesMap} from './routes';
 import Header from './components/header';
 import {useEffect, useState} from 'react';
 import type {Session} from '@supabase/supabase-js';
@@ -19,6 +19,7 @@ import {theme} from 'antd';
 import {CommonBridge} from '#preload';
 import {setMembership} from './slices/user-slice';
 import {useDispatch} from 'react-redux';
+import {useTranslation} from 'react-i18next';
 
 const {useToken} = theme;
 
@@ -28,26 +29,29 @@ const {Content, Sider} = Layout;
 
 dayjs.locale('zh-cn');
 
-const views: {id: ViewType; title: string; desc?: string}[] = [
-  {
-    id: CLASS_NAMES.SIGN_IN,
-    title: 'Sign In ',
-  },
-  {id: CLASS_NAMES.SIGN_UP, title: 'Sign Up'},
-  {
-    id: CLASS_NAMES.FORGOTTEN_PASSWORD,
-    title: 'Forgotten Password',
-    desc: "Enter your email and we'll send you a link to reset your password.",
-  },
-  {id: CLASS_NAMES.UPDATE_PASSWORD, title: 'Update Password'},
-  // {id: 'verify_otp', title: 'Verify Otp'},
-];
-
 const App = () => {
+  const {t} = useTranslation();
+  const routes = useRoutes();
+  const routesMap = useRoutesMap();
   const [isVisible, setIsVisible] = useState(false);
   useEffect(() => {
     setTimeout(() => setIsVisible(true), 100); // 延迟显示组件
   }, []);
+
+  const views: {id: ViewType; title: string; desc?: string}[] = [
+    {
+      id: CLASS_NAMES.SIGN_IN,
+      title: t('sign_in'),
+    },
+    {id: CLASS_NAMES.SIGN_UP, title: 'Sign Up'},
+    {
+      id: CLASS_NAMES.FORGOTTEN_PASSWORD,
+      title: t('forgotten_password'),
+      desc: t('forgotten_password_desc'),
+    },
+    {id: CLASS_NAMES.UPDATE_PASSWORD, title: t('update_password')},
+    // {id: 'verify_otp', title: 'Verify Otp'},
+  ];
 
   const [session, setSession] = useState<Session | null>(null);
   const {token} = useToken();
@@ -128,13 +132,13 @@ const App = () => {
           </div>
           {view.id === CLASS_NAMES.SIGN_UP && (
             <p className="mt-10 text-center text-sm text-gray-500">
-              Already have an account?{' '}
+              {t('account_already_have')}{' '}
               <Button
                 type="link"
                 className="font-semibold leading-6"
                 onClick={() => setView(views[0])}
               >
-                Sign In
+                {t('account_sign_in')}
               </Button>
             </p>
           )}
@@ -146,18 +150,18 @@ const App = () => {
                   className="font-semibold leading-6"
                   onClick={() => setView(views[2])}
                 >
-                  Forgot your password?
+                  {t('account_forgot_password')}
                 </Button>
               </p>
 
               <p className="mt-12 text-center text-sm text-gray-500">
-                Don't have an account?{' '}
+                {t('account_do_not_have')}{' '}
                 <Button
                   type="link"
                   className="font-semibold leading-6"
                   onClick={() => setView(views[1])}
                 >
-                  Sign up
+                  {t('account_sign_up')}
                 </Button>
               </p>
             </>
@@ -170,7 +174,7 @@ const App = () => {
                   className="font-semibold leading-6"
                   onClick={() => setView(views[0])}
                 >
-                  Sign In
+                  {t('account_sign_in')}
                 </Button>
               </p>
             </>

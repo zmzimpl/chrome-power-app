@@ -1,7 +1,7 @@
 import {join} from 'path';
 import {ProxyDB} from '../db/proxy';
 import {WindowDB} from '../db/window';
-import {getChromePath} from './device';
+// import {getChromePath} from './device';
 import {BrowserWindow, app} from 'electron';
 import type {Page} from 'puppeteer';
 import puppeteer from 'puppeteer';
@@ -9,7 +9,7 @@ import {execSync, spawn} from 'child_process';
 import * as portscanner from 'portscanner';
 import {sleep} from '../utils/sleep';
 import SocksServer from '../proxy-server/socksServer';
-import type {DB, SafeAny} from '../../../shared/types/db';
+import type {DB} from '../../../shared/types/db';
 import type {IP} from '../../../shared/types/ip';
 import {type IncomingMessage, type Server, type ServerResponse} from 'http';
 import {createLogger} from '../../../shared/utils/logger';
@@ -24,6 +24,9 @@ const logger = createLogger(WINDOW_LOGGER_LABEL);
 
 const HOST = '127.0.0.1';
 
+// const HomePath = app.getPath('userData');
+// console.log(HomePath);
+
 const getPublicIP = async () => {
   try {
     const response = await fetch('https://api.ipify.org?format=json');
@@ -35,57 +38,56 @@ const getPublicIP = async () => {
   }
 };
 
-const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP, fingerprint: SafeAny) => {
-  logger.info('set fingerprint');
-  const {userAgent, userAgentData} = fingerprint?.fingerprint?.navigator || {};
-  if (userAgent) {
-    await page.setUserAgent(userAgent, userAgentData);
-    const client = await page.target().createCDPSession();
-    await client.send('Network.setUserAgentOverride', {
-      userAgent: userAgent,
-      userAgentMetadata: userAgentData,
-    });
-  }
+const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP) => {
   page.on('framenavigated', async _msg => {
-    const title = await page.title();
-    if (!title.includes('By ChromePower')) {
-      await page.evaluate(title => {
-        document.title = title + ' By ChromePower';
-      }, title);
-    }
+    try {
+      const title = await page.title();
+      if (!title.includes('By ChromePower')) {
+        await page.evaluate(title => {
+          document.title = title + ' By ChromePower';
+        }, title);
+      }
 
-    await page.setGeolocation({latitude: ipInfo.ll[0], longitude: ipInfo.ll[1]});
-    await page.emulateTimezone(ipInfo.timeZone);
+      await page.setGeolocation({latitude: ipInfo.ll[0], longitude: ipInfo.ll[1]});
+      await page.emulateTimezone(ipInfo.timeZone);
+    } catch (error) {
+      logger.error(error);
+    }
   });
   await page.evaluateOnNewDocument(
     'navigator.mediaDevices.getUserMedia = navigator.webkitGetUserMedia = navigator.mozGetUserMedia = navigator.getUserMedia = webkitRTCPeerConnection = RTCPeerConnection = MediaStreamTrack = undefined;',
   );
 };
 
-async function connectBrowser(port: number, ipInfo: IP, fingerprint: SafeAny) {
+async function connectBrowser(port: number, ipInfo: IP) {
   const browserURL = `http://${HOST}:${port}`;
-  const browser = await puppeteer.connect({browserURL, defaultViewport: null});
+  const {data} = await api.get(browserURL + '/json/version');
+  if (data.webSocketDebuggerUrl) {
+    const browser = await puppeteer.connect({
+      browserWSEndpoint: data.webSocketDebuggerUrl,
+      defaultViewport: null,
+    });
 
-  browser.on('targetcreated', async target => {
-    const newPage = await target.page();
-    if (newPage) {
-      await attachFingerprintToPuppeteer(newPage, ipInfo, fingerprint);
+    browser.on('targetcreated', async target => {
+      const newPage = await target.page();
+      if (newPage) {
+        await attachFingerprintToPuppeteer(newPage, ipInfo);
+      }
+    });
+    const pages = await browser.pages();
+    const page =
+      pages.length &&
+      (pages[0].url() === 'about:blank' ||
+        !pages[0].url() ||
+        pages[0].url() === 'chrome://new-tab-page/')
+        ? pages[0]
+        : await browser.newPage();
+    try {
+      await attachFingerprintToPuppeteer(page, ipInfo);
+      await page.goto('https://browserleaks.com/canvas');
+    } catch (error) {
+      logger.error(error);
     }
-  });
-  const pages = await browser.pages();
-  console.log(pages[0].url());
-  const page =
-    pages.length &&
-    (pages[0].url() === 'about:blank' ||
-      !pages[0].url() ||
-      pages[0].url() === 'chrome://new-tab-page/')
-      ? pages[0]
-      : await browser.newPage();
-  try {
-    await attachFingerprintToPuppeteer(page, ipInfo, fingerprint);
-    await page.goto('https://abrahamjuliot.github.io/creepjs/');
-  } catch (error) {
-    logger.error(error);
   }
 }
 
@@ -97,7 +99,6 @@ const fetchWindowFingerprint = async (id: number, profileId: string) => {
         profileId: profileId,
       },
     });
-    console.log(fingerprint);
     return fingerprint;
   } catch (error) {
     logger.error(error);
@@ -120,7 +121,7 @@ export async function openFingerprintWindow(id: number) {
   const win = BrowserWindow.getAllWindows()[0];
   const windowDataDir = `${cachePath}\\${id}_${windowData.profile_id}`;
 
-  const chromePath = getChromePath();
+  const chromePath = 'D:\\chromium-dev\\source\\src\\out\\Default\\chrome.exe';
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
   if (windowData.proxy_id && proxyData.ip) {
@@ -129,8 +130,12 @@ export async function openFingerprintWindow(id: number) {
     const localIp = await getPublicIP();
     ipInfo = await getProxyInfo(localIp, 'ip2location');
   }
+  if (!ipInfo?.ip) {
+    logger.error('ipInfo is empty');
+    return;
+  }
   const fingerprint = await fetchWindowFingerprint(id, windowData.profile_id);
-  console.log(fingerprint?.fingerprint?.navigator?.userAgent);
+  logger.info('fingerprint', id, windowData.profile_id, fingerprint);
   if (chromePath) {
     const chromePort = await portscanner.findAPortNotInUse(9222, 10222);
     let finalProxy;
@@ -144,27 +149,59 @@ export async function openFingerprintWindow(id: number) {
       finalProxy = proxyInstance.proxyUrl;
       proxyServer = proxyInstance.proxyServer;
     }
-
+    console.log(JSON.stringify(fingerprint));
     const launchParamter = [
+      `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
+      '--force-color-profile=srgb',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--metrics-recording-only',
+      '--disable-background-mode',
       `--remote-debugging-port=${chromePort}`,
       `--user-data-dir=${windowDataDir}`,
-      `--user-agent=${fingerprint?.fingerprint?.navigator?.userAgent}`,
+      `--user-agent=${fingerprint?.ua}`,
+      // below is for debug
+      // '--enable-logging',
+      // '--v=1',
+      // '--enable-blink-features=IdleDetection',
+      // '--no-sandbox',
+      // '--disable-setuid-sandbox',
+      // '--auto-open-devtools-for-tabs',
     ];
 
     if (finalProxy) {
       launchParamter.push(`--proxy-server=${finalProxy}`);
     }
+    console.log(JSON.stringify(ipInfo));
     if (ipInfo?.timeZone) {
       launchParamter.push(`--timezone=${ipInfo.timeZone}`);
     }
-
-    const chromeInstance = spawn(chromePath, launchParamter);
+    let chromeInstance;
+    try {
+      chromeInstance = spawn(chromePath, launchParamter);
+    } catch (error) {
+      logger.error(error);
+    }
+    if (!chromeInstance) {
+      return;
+    }
+    await sleep(1);
     await WindowDB.update(id, {
       status: 2,
       port: chromePort,
       opened_at: db.fn.now() as unknown as string,
     });
     win.webContents.send('window-opened', id);
+
+    chromeInstance.stdout.on('data', _chunk => {
+      // const str = _chunk.toString();
+      // console.error('stderr: ', str);
+    });
+    // 这个地方需要监听 stderr，否则在某些网站会出现卡死的情况
+    chromeInstance.stderr.on('data', _chunk => {
+      // const str = _chunk.toString();
+      // console.error('stderr: ', str);
+    });
 
     chromeInstance.on('close', async () => {
       logger.info(`Chrome process exited at port ${chromePort}, closed time: ${new Date()}`);
@@ -183,7 +220,7 @@ export async function openFingerprintWindow(id: number) {
     await sleep(1);
 
     try {
-      connectBrowser(chromePort, ipInfo, fingerprint);
+      connectBrowser(chromePort, ipInfo);
     } catch (error) {
       logger.error(error);
       execSync(`taskkill /PID ${chromeInstance.pid} /F`);

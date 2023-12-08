@@ -8,6 +8,7 @@ import type {ColumnsType} from 'antd/es/table';
 import {ProxyBridge} from '#preload';
 import _ from 'lodash';
 import {PIN_URL} from '../../../../../shared/constants';
+import {useTranslation} from 'react-i18next';
 
 const {Text} = Typography;
 
@@ -25,9 +26,9 @@ interface ProxyImportProps {
 
 const ProxyImportFooter = ({proxies}: {proxies: DB.Proxy[]}) => {
   const navigate = useNavigate();
+  const {t} = useTranslation();
   const [messageApi, contextHolder] = message.useMessage(MESSAGE_CONFIG);
   const [loading, setLoading] = useState(false);
-
   const back = () => {
     history.back();
   };
@@ -68,14 +69,14 @@ const ProxyImportFooter = ({proxies}: {proxies: DB.Proxy[]}) => {
             className="w-20"
             onClick={() => handleOk()}
           >
-            OK
+            {t('footer_ok')}
           </Button>
           <Button
             type="text"
             onClick={() => back()}
             className="w-20"
           >
-            Cancel
+            {t('footer_cancel')}
           </Button>
         </Space>
       </div>
@@ -85,45 +86,45 @@ const ProxyImportFooter = ({proxies}: {proxies: DB.Proxy[]}) => {
 
 const ProxyImport = () => {
   const OFFSET = 624;
+  const {t} = useTranslation();
   const [importData, setImportData] = useState<ProxyImportProps[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET);
   const [checking, setChecking] = useState(false);
   const columns: ColumnsType<ProxyImportProps> = [
     {
-      title: 'Type',
-      width: 80,
+      title: t('proxy_import_column_type'),
+      width: 120,
       dataIndex: 'type',
     },
     {
-      title: 'Host',
-      width: 120,
+      title: t('proxy_import_column_host'),
+      width: 160,
       dataIndex: 'host',
     },
     {
-      title: 'Port',
+      title: t('proxy_import_column_port'),
       width: 80,
       dataIndex: 'port',
     },
     {
-      title: 'Username',
-      width: 120,
+      title: t('proxy_import_column_username'),
+      width: 160,
       dataIndex: 'username',
     },
     {
-      title: 'Password',
-      width: 120,
+      title: t('proxy_import_column_password'),
+      width: 160,
       dataIndex: 'password',
     },
     {
-      title: 'Remark',
-      width: 180,
+      title: t('proxy_import_column_remark'),
       dataIndex: 'remark',
     },
     {
-      title: 'Status',
+      title: t('proxy_import_column_status'),
       key: 'status',
-      width: 200,
+      width: 280,
       render: (_, recorder) => (
         <Space size={12}>
           {PIN_URL?.map((m, index: number) => (
@@ -270,26 +271,17 @@ const ProxyImport = () => {
           <Col span={12}>
             <Card
               className="bg-blue-50 select-text	h-[300px]"
+              rootClassName='overflow-auto'
               bodyStyle={{padding: '12px 16px'}}
             >
               <Space
                 direction="vertical"
                 size={4}
               >
-                {`Instructions:
-1. If the proxy type is not specified, it will default to HTTP type.
-2. Only HTTP and SOCKS5 proxy types are supported.
-3. Enter one proxy per line.
-4. Only IPv4 addresses are supported for the host.
-
-Input format (IPv4 only):
-192.168.0.1:8000{remark}
-192.168.0.1:8000:proxy_username:proxy_password{remark}
-socks5://192.168.0.1:8000{remark}
-socks5://192.168.0.1:8000:proxy_username:proxy_password{remark}`
+                {t('proxy_import_tip')
                   .split('\n')
                   .map((item, index) => {
-                    return <Text key={index}>{item}</Text>;
+                    return <Text className='break-keep' key={index}>{item}</Text>;
                   })}
               </Space>
             </Card>
@@ -312,9 +304,9 @@ socks5://192.168.0.1:8000:proxy_username:proxy_password{remark}`
             loading={checking}
             onClick={() => testAll()}
           >
-            Test All
+            {t('proxy_check_all')}
           </Button>
-          <Text>{`Total: ${importData.length}`}</Text>
+          <Text>{`${t('proxy_total')}: ${importData.length}`}</Text>
         </Space>
         <Table
           columns={columns}

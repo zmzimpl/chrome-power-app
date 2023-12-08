@@ -8,6 +8,7 @@ import {useDispatch} from 'react-redux';
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import api from '../../../../../../shared/api/api';
+import { useTranslation } from 'react-i18next';
 
 const WindowDetailFooter = ({
   currentTab,
@@ -22,6 +23,7 @@ const WindowDetailFooter = ({
   const [messageApi, contextHolder] = message.useMessage(MESSAGE_CONFIG);
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
+  const {t} = useTranslation();
 
   const back = () => {
     history.back();
@@ -93,7 +95,7 @@ const WindowDetailFooter = ({
               className="w-20"
               onClick={() => handleOk()}
             >
-              OK
+              {t('footer_ok')}
             </Button>
           )}
           <Button
@@ -101,7 +103,7 @@ const WindowDetailFooter = ({
             onClick={() => back()}
             className="w-20"
           >
-            Cancel
+            {t('footer_cancel')}
           </Button>
         </Space>
       </div>

@@ -1,6 +1,6 @@
 import {Button, Menu, type MenuProps, Row, Col} from 'antd';
 import type {MenuInfo} from 'rc-menu/lib/interface';
-import {routes} from '/@/routes';
+import {useRoutes} from '/@/routes';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {PlusCircleOutlined} from '@ant-design/icons';
 import type {RootState} from '/@/store';
@@ -9,6 +9,7 @@ import {useEffect} from 'react';
 import './index.css';
 import Link from 'antd/es/typography/Link';
 import React from 'react';
+import { t } from 'i18next';
 
 export interface MembershipOptions {
   expiredAt?: string;
@@ -19,10 +20,12 @@ export interface MembershipOptions {
 }
 
 export default function Navigation() {
+  const routes = useRoutes();
   const navigate = useNavigate();
   const location = useLocation();
   const membership = useSelector((state: RootState) => state.user.membership);
   const [formattedMembership, setFormattedMembership] = React.useState<MembershipOptions>();
+  const [menuItems, setMenuItems] = React.useState<MenuProps['items']>([]);
 
   const dateFormater = (date: string) => {
     if (!date) return;
@@ -39,17 +42,19 @@ export default function Navigation() {
     });
   }, [membership]);
 
-  const menuItems: MenuProps['items'] = routes
-    .filter(r => !r.invisible)
-    .map(route => {
-      return {
-        key: route.path,
-        icon: route.icon,
-        label: route.name,
-      };
-    });
-
-  menuItems.splice(3, 0, {type: 'divider'});
+  useEffect(() => {
+    const menuItemsTemp: MenuProps['items'] = routes
+      .filter(r => !r.invisible)
+      .map(route => {
+        return {
+          key: route.path,
+          icon: route.icon,
+          label: route.name,
+        };
+      });
+    menuItemsTemp.splice(3, 0, {type: 'divider'});
+    setMenuItems(menuItemsTemp);
+  }, [routes]);
 
   const onItemClicked = (info: MenuInfo) => {
     navigate(info.key);
@@ -67,7 +72,7 @@ export default function Navigation() {
           }}
           icon={<PlusCircleOutlined />}
         >
-          New Window
+          {t('new_window')}
         </Button>
       </div>
       <Menu
@@ -95,7 +100,7 @@ export default function Navigation() {
                   className="text-xs underline underline-offset-4 text-orange-400 hover:text-orange-500"
                   href="https://www.chromepower.xyz/pricing"
                 >
-                  {formattedMembership.expiredAt ? 'Renew' : 'Upgrade'}
+                  {formattedMembership.expiredAt ? t('membership_renew') : t('membership_upgrade')}
                 </Link>
               </Col>
             </Row>
@@ -104,7 +109,7 @@ export default function Navigation() {
                 span={10}
                 className="text-xs"
               >
-                <div>Windows</div>
+                <div>{t('membership_window_count')}</div>
               </Col>
 
               <Col

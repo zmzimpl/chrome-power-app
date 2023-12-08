@@ -34,6 +34,7 @@ import type {ColumnsType} from 'antd/es/table';
 import {PIN_URL} from '../../../../shared/constants';
 import {MESSAGE_CONFIG} from '/@/constants';
 import {useNavigate} from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 type ProxyFormProps = {
   proxy_type?: string;
@@ -46,6 +47,7 @@ type ProxyFormProps = {
 };
 
 const Proxy = () => {
+  const {t} = useTranslation();
   const OFFSET = 266;
   const [searchValue, setSearchValue] = useState('');
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET);
@@ -63,6 +65,7 @@ const Proxy = () => {
   const [updateCheckResult, setUpdateCheckResult] = useState('');
   const navigate = useNavigate();
 
+
   const moreActionDropdownItems: MenuProps['items'] = [
     // {
     //   key: 'export',
@@ -75,7 +78,7 @@ const Proxy = () => {
     {
       key: 'delete',
       danger: true,
-      label: 'Delete',
+      label: t('proxy_delete'),
       icon: <DeleteOutlined />,
     },
   ];
@@ -83,7 +86,7 @@ const Proxy = () => {
   const recorderDropdownItems: MenuProps['items'] = [
     {
       key: 'update',
-      label: 'Update',
+      label: t('proxy_edit'),
       icon: <EditOutlined />,
     },
     {
@@ -92,7 +95,7 @@ const Proxy = () => {
     {
       key: 'delete',
       danger: true,
-      label: 'Delete',
+      label: t('proxy_delete'),
       icon: <DeleteOutlined />,
     },
   ];
@@ -119,13 +122,13 @@ const Proxy = () => {
       key: 'ip',
     },
     {
-      title: 'Proxy Type',
+      title: t('proxy_column_type'),
       dataIndex: 'proxy_type',
       key: 'proxy_type',
       width: 80,
     },
     {
-      title: 'Status',
+      title: t('proxy_column_status'),
       key: 'status',
       width: 200,
       render: (_, recorder) => (
@@ -142,7 +145,7 @@ const Proxy = () => {
       ),
     },
     {
-      title: 'IP Contry',
+      title: t('proxy_column_country'),
       dataIndex: 'ip_country',
       key: 'ip_country',
       width: 100,
@@ -153,13 +156,13 @@ const Proxy = () => {
       ),
     },
     {
-      title: 'Remark',
+      title: t('proxy_column_remark'),
       dataIndex: 'remark',
       key: 'remark',
       width: 150,
     },
     {
-      title: 'IP Checker',
+      title: t('proxy_column_checker'),
       dataIndex: 'ip_checker',
       key: 'ip_checker',
       width: 150,
@@ -417,7 +420,7 @@ const Proxy = () => {
             onClick={() => checkProxy()}
             type="primary"
           >
-            Check
+            {t('proxy_check')}
           </Button>
         </Space>
         <Space
@@ -429,7 +432,7 @@ const Proxy = () => {
             onClick={() => newProxy()}
             type="primary"
           >
-            New Proxy
+            {t('proxy_new_proxy')}
           </Button>
           <Dropdown
             menu={{

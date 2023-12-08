@@ -9,9 +9,10 @@ interface FingerprintProps {
   language: string;
   screen: string;
   fonts: string;
-  // canvas: string;
-  // webGLImage: string;
-  // webGLMetaData: string;
+  canvas: string;
+  webRTC: string;
+  webGLImage: string;
+  audio: string;
 }
 
 const FingerprintInfo = ({fingerprints}: {fingerprints: SafeAny}) => {
@@ -22,6 +23,10 @@ const FingerprintInfo = ({fingerprints}: {fingerprints: SafeAny}) => {
     language: 'Based on IP address',
     screen: 'Default',
     fonts: 'Default',
+    canvas: 'Noise',
+    webRTC: 'Disabled',
+    webGLImage: 'Noise',
+    audio: 'Noise',
   });
   const fingerprinstLog: {title: string; field: keyof FingerprintProps}[] = [
     {
@@ -31,6 +36,10 @@ const FingerprintInfo = ({fingerprints}: {fingerprints: SafeAny}) => {
     {
       title: 'Timezone',
       field: 'timezone',
+    },
+    {
+      title: 'WebRTC',
+      field: 'webRTC',
     },
     {
       title: 'Location',
@@ -48,12 +57,24 @@ const FingerprintInfo = ({fingerprints}: {fingerprints: SafeAny}) => {
       title: 'Fonts',
       field: 'fonts',
     },
+    {
+      title: 'Canvas',
+      field: 'canvas',
+    },
+    {
+      title: 'WebGL Image',
+      field: 'webGLImage',
+    },
+    {
+      title: 'Audio Context',
+      field: 'audio',
+    },
   ];
   useEffect(() => {
     if (fingerprints) {
       setFingerprintDisplay({
         ...fingerprintDisplay,
-        ua: fingerprints?.fingerprint?.navigator?.userAgent || '',
+        ua: fingerprints?.ua || window.navigator.userAgent,
       });
     }
   }, [fingerprints]);

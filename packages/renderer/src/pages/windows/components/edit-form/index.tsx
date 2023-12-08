@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import type {DB} from '../../../../../../shared/types/db';
 import {GroupBridge, TagBridge, ProxyBridge} from '#preload';
 import {TAG_COLORS} from '/@/constants';
+import { useTranslation } from 'react-i18next';
 
 const {TextArea} = Input;
 
@@ -18,6 +19,7 @@ const WindowEditForm = ({
   const [groups, setGroups] = useState<DB.Group[]>([]);
   const [tags, setTags] = useState<DB.Tag[]>([]);
   const [proxies, setProxies] = useState<DB.Proxy[]>([]);
+  const {t} = useTranslation();
 
   useEffect(() => {
     if (JSON.stringify(formValue) === '{}') {
@@ -56,6 +58,7 @@ const WindowEditForm = ({
       return false;
     }
   };
+
   const onAddTag = async (name: string) => {
     const createdIds = await TagBridge?.create({
       name,
@@ -85,27 +88,26 @@ const WindowEditForm = ({
       labelCol={{span: 6}}
     >
       <Form.Item<FieldType>
-        label="Name"
+        label={t('window_edit_form_name')}
         name="name"
       >
-        <Input placeholder="Name" />
+        <Input placeholder={t('window_edit_form_name')} />
       </Form.Item>
 
       <Form.Item<FieldType>
         name="group_id"
-        label="Group"
+        label={t('window_edit_form_group')}
       >
         <AddableSelect
           options={groups}
           onAddItem={onAddGroup}
           addBtnLabel="Add Group"
-          placeholder="Please select group"
         ></AddableSelect>
       </Form.Item>
 
       <Form.Item<FieldType>
         name="tags"
-        label="Tags"
+        label={t('window_edit_form_tags')}
       >
         <AddableSelect
           mode="multiple"
@@ -113,7 +115,6 @@ const WindowEditForm = ({
           value={formValue.tags}
           onAddItem={onAddTag}
           addBtnLabel="Add Tag"
-          placeholder="Please select tag"
         ></AddableSelect>
       </Form.Item>
 
@@ -139,17 +140,16 @@ const WindowEditForm = ({
 
       <Form.Item<FieldType>
         name="remark"
-        label="Remark"
+        label={t('window_edit_form_remark')}
       >
         <TextArea
           rows={4}
-          placeholder="Remark"
         />
       </Form.Item>
 
       <Form.Item<FieldType>
         name="proxy_id"
-        label="Proxy"
+        label={t('window_edit_form_proxy')}
       >
         <Select
           placeholder="Proxy"

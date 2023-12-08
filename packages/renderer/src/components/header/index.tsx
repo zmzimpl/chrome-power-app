@@ -12,10 +12,12 @@ import logo from '../../../assets/logo.png';
 import {supabase} from '../../../../shared/interfaces/supabaseClient';
 import {Icon} from '@iconify/react';
 import {useNavigate} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 
 const {Header: AntdHeader} = Layout;
 
 export default function Header() {
+  const {t, i18n} = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
   const navigate = useNavigate();
   const checkIfMaximized = async () => {
@@ -31,14 +33,34 @@ export default function Header() {
 
   const items: MenuProps['items'] = [
     {
-      label: 'Settings',
+      label: t('header_settings'),
       key: 'settings',
+    },
+    {
+      label: t('header_language'),
+      key: 'language',
+      children: [
+        {
+          label: 'English',
+          key: 'en',
+          onClick: () => {
+            i18n.changeLanguage('en');
+          },
+        },
+        {
+          label: '简体中文',
+          key: 'zh-cn',
+          onClick: () => {
+            i18n.changeLanguage('zh');
+          },
+        },
+      ],
     },
     {
       type: 'divider',
     },
     {
-      label: 'Sign out',
+      label: t('header_sign_out'),
       key: 'signout',
     },
   ];

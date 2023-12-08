@@ -3,7 +3,7 @@ import {join, resolve} from 'node:path';
 
 async function createWindow() {
   const browserWindow = new BrowserWindow({
-    width: import.meta.env.DEV ? 1920 : 1600,
+    width: import.meta.env.DEV ? 1600 : 1400,
     height: 930,
     minWidth: 920,
     minHeight: 700,

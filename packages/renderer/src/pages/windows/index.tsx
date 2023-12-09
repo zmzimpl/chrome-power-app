@@ -253,7 +253,6 @@ const Windows = () => {
 
   const fetchProxies = async () => {
     const proxies = await ProxyBridge?.getAll();
-    proxies.splice(0, 0, {id: undefined, ip: 'No Proxy'});
     setProxies(proxies);
   };
 

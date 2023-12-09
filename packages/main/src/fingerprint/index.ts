@@ -109,7 +109,13 @@ export async function openFingerprintWindow(id: number) {
   }
   const win = BrowserWindow.getAllWindows()[0];
   const windowDataDir = `${cachePath}\\${id}_${windowData.profile_id}`;
-  const chromePath = 'D:\\chromium-dev\\source\\src\\out\\Default\\chrome.exe';
+  let chromePath;
+
+  if (import.meta.env.DEV) {
+    chromePath = 'D:\\chromium-dev\\source\\src\\out\\Default\\chrome.exe';
+  } else {
+    chromePath = app.getPath('userData');
+  }
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
   if (windowData.proxy_id && proxyData.ip) {

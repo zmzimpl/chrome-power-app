@@ -16,7 +16,7 @@ module.exports = async function () {
       output: 'dist',
       buildResources: 'buildResources',
     },
-    files: ['packages/**/dist/**', 'packages/**/assets/**', 'migrations', 'Chrome-bin'],
+    files: ['packages/**/dist/**', 'packages/**/assets/**', 'migrations'],
     extraResources: [
       {
         from: 'packages/main/src/native-addon/build/Release/',
@@ -24,9 +24,10 @@ module.exports = async function () {
         filter: ['*.node'],
       },
       {
-        from: 'Chrome-bin',
-        to: 'Chrome-bin',
-      }
+        from: 'packages/main/src/fingerprint/fingerprint-injector/',
+        to: 'app.asar.unpacked/node_modules/fingerprint-injector/',
+        filter: ['*.js'],
+      },
     ],
     extraMetadata: {
       version: getVersion(),

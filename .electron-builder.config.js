@@ -24,9 +24,10 @@ module.exports = async function () {
         filter: ['*.node'],
       },
       {
-        from: 'Chrome-bin',
-        to: 'Chrome-bin',
-      }
+        from: 'packages/main/src/fingerprint/fingerprint-injector/',
+        to: 'app.asar.unpacked/node_modules/fingerprint-injector/',
+        filter: ['*.js'],
+      },
     ],
     extraMetadata: {
       version: getVersion(),

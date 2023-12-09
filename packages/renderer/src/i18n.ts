@@ -46,6 +46,13 @@ i18n
           window_edit_form_group: 'Group',
           window_edit_form_proxy: 'Proxy',
           window_edit_form_tags: 'Tags',
+          window_detail_create: 'Create',
+          window_detail_import: 'Import',
+          window_import_from_template: 'Import from template',
+          window_import_from_template_tip: 'Click to upload(Excel)',
+          window_import_from_template_download: 'Download template',
+          window_import_from_ads: 'Import AdsPower file',
+          window_import_from_ads_tip: 'Click to upload(Txt/Excel)',
 
           proxy_check: 'Check',
           proxy_new_proxy: 'New proxy',
@@ -90,6 +97,7 @@ i18n
           menu_windows: 'Windows',
           menu_proxy: 'Proxy',
           menu_settings: 'Settings',
+          menu_logs: 'Running Logs',
           menu_sync: 'Sync',
 
           membership_renew: 'Renew',
@@ -140,6 +148,13 @@ i18n
           window_edit_form_group: '分组',
           window_edit_form_proxy: '代理',
           window_edit_form_tags: '标签',
+          window_detail_create: '创建',
+          window_detail_import: '导入',
+          window_import_from_template: '从模板导入',
+          window_import_from_template_tip: '点击上传(Excel)',
+          window_import_from_template_download: '下载模板',
+          window_import_from_ads: '导入 AdsPower 文件',
+          window_import_from_ads_tip: '点击上传(Txt/Excel)',
 
           proxy_check: '检查',
           proxy_new_proxy: '新建代理',
@@ -183,6 +198,7 @@ i18n
           menu_windows: '窗口管理',
           menu_proxy: '代理设置',
           menu_sync: '同步操作',
+          menu_logs: '运行日志',
           menu_settings: '设置',
 
           membership_renew: '续期',

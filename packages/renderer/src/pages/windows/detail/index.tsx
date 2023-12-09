@@ -10,6 +10,7 @@ import {WindowBridge} from '#preload';
 import FingerprintInfo from '../components/fingerprint-info';
 import api from '../../../../../shared/api/api';
 import WindowDetailFooter from '../components/edit-footer';
+import { useTranslation } from 'react-i18next';
 
 const WindowDetailTabs = ({
   formValue,
@@ -22,11 +23,12 @@ const WindowDetailTabs = ({
   onChange: (key: string) => void;
   formValueChangeCallback: (changed: DB.Window, data: DB.Window) => void;
 }) => {
+  const {t} = useTranslation();
   const DEFAULT_ACTIVE_KEY = '0';
   const items: TabsProps['items'] = [
     {
       key: 'windowForm',
-      label: 'Create',
+      label: t('window_detail_create'),
       forceRender: true,
       children: (
         <div className="flex w-full">
@@ -40,7 +42,7 @@ const WindowDetailTabs = ({
     },
     {
       key: 'import',
-      label: 'Import',
+      label: t('window_detail_import'),
       children: WindowImportForm(),
     },
   ];

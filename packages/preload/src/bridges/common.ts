@@ -22,4 +22,8 @@ export const CommonBridge = {
     const result = await ipcRenderer.invoke('common-save-settings', settings);
     return result;
   },
+  async getLogs(logModule: 'Main' | 'Windows' | 'Proxy' | 'Services' | 'Api') {
+    const result = await ipcRenderer.invoke('common-fetch-logs', logModule);
+    return result;
+  },
 };

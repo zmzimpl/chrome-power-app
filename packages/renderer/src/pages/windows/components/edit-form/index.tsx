@@ -39,7 +39,6 @@ const WindowEditForm = ({
   };
   const fetchProxies = async () => {
     const proxies = await ProxyBridge?.getAll();
-    proxies.splice(0, 0, {id: undefined, ip: 'No Proxy'});
     setProxies(proxies);
   };
 
@@ -91,7 +90,7 @@ const WindowEditForm = ({
         label={t('window_edit_form_name')}
         name="name"
       >
-        <Input placeholder={t('window_edit_form_name')} />
+        <Input />
       </Form.Item>
 
       <Form.Item<FieldType>
@@ -152,8 +151,8 @@ const WindowEditForm = ({
         label={t('window_edit_form_proxy')}
       >
         <Select
-          placeholder="Proxy"
           options={proxies}
+          allowClear
           showSearch
           filterOption={filterProxyOption}
           fieldNames={{label: 'ip', value: 'id'}}

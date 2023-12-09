@@ -7,7 +7,6 @@ import type {RootState} from '/@/store';
 import {useSelector} from 'react-redux';
 import {useEffect} from 'react';
 import './index.css';
-import Link from 'antd/es/typography/Link';
 import React from 'react';
 import { t } from 'i18next';
 
@@ -96,12 +95,12 @@ export default function Navigation() {
                 className="text-right "
                 span={9}
               >
-                <Link
+                <a
                   className="text-xs underline underline-offset-4 text-orange-400 hover:text-orange-500"
                   href="https://www.chromepower.xyz/pricing"
                 >
                   {formattedMembership.expiredAt ? t('membership_renew') : t('membership_upgrade')}
-                </Link>
+                </a>
               </Col>
             </Row>
             <Row className="mt-3 text-gray-500">

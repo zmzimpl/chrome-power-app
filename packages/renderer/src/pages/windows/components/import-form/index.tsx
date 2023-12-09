@@ -9,6 +9,7 @@ import {useDispatch} from 'react-redux';
 import {setMembership} from '/@/slices/user-slice';
 import api from '../../../../../../shared/api/api';
 import type {OperationResult} from '../../../../../../shared/types/common';
+import {useTranslation} from 'react-i18next';
 
 const WindowImportForm = () => {
   const key = 'updatable';
@@ -18,6 +19,7 @@ const WindowImportForm = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const {t} = useTranslation();
 
   const getMembership = async () => {
     try {
@@ -86,22 +88,26 @@ const WindowImportForm = () => {
           size="large"
           labelCol={{span: 5}}
         >
-          <Form.Item label="Import from Template">
+          <Form.Item label={t('window_import_from_template')}>
             <Space>
               <Upload {...props}>
-                <Button icon={<UploadOutlined />}>Click to Upload(excel)</Button>
+                <Button icon={<UploadOutlined />}>
+                  {t('window_import_from_template_tip')}
+                </Button>
               </Upload>
               <Button
                 type="link"
                 onClick={() => downLoadTempalte()}
               >
-                Download Template
+                {t('window_import_from_template_download')}
               </Button>
             </Space>
           </Form.Item>
-          <Form.Item label="Import from AdsPower">
+          <Form.Item label={t('window_import_from_ads')}>
             <Upload {...props}>
-              <Button icon={<UploadOutlined />}>Click to Upload(txt/excel)</Button>
+              <Button icon={<UploadOutlined />}>
+                {t('window_import_from_ads_tip')}
+              </Button>
             </Upload>
           </Form.Item>
         </Form>

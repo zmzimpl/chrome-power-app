@@ -27,17 +27,6 @@ const HOST = '127.0.0.1';
 // const HomePath = app.getPath('userData');
 // console.log(HomePath);
 
-const getPublicIP = async () => {
-  try {
-    const response = await fetch('https://api.ipify.org?format=json');
-    const data = await response.json();
-    return data.ip;
-  } catch (error) {
-    logger.error('Error fetching public IP:', error);
-    return null;
-  }
-};
-
 const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP) => {
   page.on('framenavigated', async _msg => {
     try {
@@ -120,22 +109,24 @@ export async function openFingerprintWindow(id: number) {
   }
   const win = BrowserWindow.getAllWindows()[0];
   const windowDataDir = `${cachePath}\\${id}_${windowData.profile_id}`;
-
   const chromePath = 'D:\\chromium-dev\\source\\src\\out\\Default\\chrome.exe';
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
   if (windowData.proxy_id && proxyData.ip) {
     ipInfo = await getProxyInfo(proxyData.ip, proxyData.ip_checker || 'ip2location');
   } else {
-    const localIp = await getPublicIP();
-    ipInfo = await getProxyInfo(localIp, 'ip2location');
+    let localIP = '';
+    if (import.meta.env.DEV) {
+      const {data} = await api.get('https://api64.ipify.org?format=json');
+      localIP = data.ip;
+    }
+    ipInfo = await getProxyInfo(localIP, 'ip2location');
   }
   if (!ipInfo?.ip) {
     logger.error('ipInfo is empty');
     return;
   }
   const fingerprint = await fetchWindowFingerprint(id, windowData.profile_id);
-  logger.info('fingerprint', id, windowData.profile_id, fingerprint);
   if (chromePath) {
     const chromePort = await portscanner.findAPortNotInUse(9222, 10222);
     let finalProxy;
@@ -149,7 +140,6 @@ export async function openFingerprintWindow(id: number) {
       finalProxy = proxyInstance.proxyUrl;
       proxyServer = proxyInstance.proxyServer;
     }
-    console.log(JSON.stringify(fingerprint));
     const launchParamter = [
       `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
       '--force-color-profile=srgb',

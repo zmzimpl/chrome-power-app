@@ -3,7 +3,7 @@ import {createLogger} from '../../../shared/utils/logger';
 import {dataStore} from '../../../shared/utils/dataStore';
 import {SERVICE_LOGGER_LABEL} from '../constants';
 import {join} from 'path';
-import {copyFileSync, writeFileSync} from 'fs';
+import {copyFileSync, writeFileSync, readFileSync, readdir} from 'fs';
 import type {DataStore, SettingOptions} from '../../../shared/types/common';
 import {getSettings} from '../utils/get-settings';
 
@@ -39,6 +39,47 @@ export const initCommonService = () => {
     return settings;
   });
 
+  ipcMain.handle(
+    'common-fetch-logs',
+    async (_, module: 'Main' | 'Windows' | 'Proxy' | 'Services' | 'Api' = 'Main') => {
+      // read directory and get all folders
+      // read directory and get all files
+      const logFiles = await new Promise<string[]>((resolve, reject) => {
+        readdir(`logs/${module}`, (err, files) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(files);
+          }
+        });
+      });
+      // read latest 10 files content
+      return logFiles.slice(-10).map(file => {
+        const logFile = `logs/${module}/${file}`;
+        const content = readFileSync(logFile, 'utf8');
+        const formatContent = content
+          .split('\n')
+          .map(line => {
+            const regex = /-\s*(info|warn|error):/;
+            let logLevel = 'info';
+            const match = line.match(regex);
+            if (match) {
+              logLevel = match[1];
+            }
+            return {
+              message: line,
+              level: logLevel,
+            };
+          })
+          .filter(line => line.message);
+        return {
+          name: file,
+          content: formatContent,
+        };
+      });
+    },
+  );
+
   ipcMain.handle('common-save-settings', async (_, values: SettingOptions) => {
     const userDataPath = app.getPath('userData');
     const configFilePath = join(userDataPath, 'chrome-power-config.json');
@@ -48,8 +89,6 @@ export const initCommonService = () => {
     } catch (error) {
       console.error('Error writing to the settings file:', error);
     }
-
-    return {};
 
     return {};
   });

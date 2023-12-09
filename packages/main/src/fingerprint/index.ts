@@ -112,9 +112,13 @@ export async function openFingerprintWindow(id: number) {
   let chromePath;
 
   if (import.meta.env.DEV) {
-    chromePath = 'D:\\chromium-dev\\source\\src\\out\\Default\\chrome.exe';
+    chromePath = 'Chrome-bin\\chrome.exe';
   } else {
-    chromePath = app.getPath('userData');
+    chromePath = join(
+      process.resourcesPath,
+      'Chrome-bin',
+      'chrome.exe',
+    );
   }
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};

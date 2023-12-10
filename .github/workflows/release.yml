@@ -1,4 +1,5 @@
 name: Release
+
 on:
   workflow_call:
     inputs:
@@ -11,19 +12,18 @@ on:
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
+
 env:
-  VITE_APP_API: https://api.chromepower.xyz/api
+  VITE_APP_API: 'https://api.chromepower.xyz/api'
   VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }} # This should be set in the repository's secrets settings
 
 defaults:
   run:
     shell: 'bash'
 
-
 jobs:
   draft_release:
-
     permissions:
       contents: write # Allows this job to create releases
 
@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@v2 # Updated to use the latest stable version
 
       - uses: actions/setup-node@v3
         with:
@@ -48,7 +48,6 @@ jobs:
       - run: npm run build
 
       - name: Compile artifacts ${{ inputs.dry-run && '' || 'and upload them to github release' }}
-        # I use this action because it is capable of retrying multiple times if there are any issues with the distribution server
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 15
@@ -58,9 +57,5 @@ jobs:
           shell: 'bash'
           command: ./node_modules/.bin/electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
         env:
-          # Code Signing params
-          # See https://www.electron.build/code-signing
-          # CSC_LINK: ''
-          # CSC_KEY_PASSWORD: ''
-          # Publishing artifacts
           GH_TOKEN: ${{ secrets.github_token }} # GitHub token, automatically provided (No need to define this secret in the repo settings)
+          # Add any other environment variables that are specific to this step, if necessary

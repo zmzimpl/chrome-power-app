@@ -27,4 +27,4 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-// declare module 'portscanner';
+declare module 'portscanner';

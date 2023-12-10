@@ -26,6 +26,10 @@ module.exports = async function () {
       {
         from: 'Chrome-bin',
         to: 'Chrome-bin',
+      },
+      {
+        from: 'migrations',
+        to: 'app/migrations',
       }
     ],
     extraMetadata: {

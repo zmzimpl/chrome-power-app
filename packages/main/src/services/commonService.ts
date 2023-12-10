@@ -42,8 +42,10 @@ export const initCommonService = () => {
   ipcMain.handle(
     'common-fetch-logs',
     async (_, module: 'Main' | 'Windows' | 'Proxy' | 'Services' | 'Api' = 'Main') => {
+      if (import.meta.env.DEV) {
+        return [];
+      }
       // read directory and get all folders
-      // read directory and get all files
       const logFiles = await new Promise<string[]>((resolve, reject) => {
         readdir(`logs/${module}`, (err, files) => {
           if (err) {

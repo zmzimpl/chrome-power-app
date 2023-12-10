@@ -73,7 +73,7 @@ async function connectBrowser(port: number, ipInfo: IP) {
         : await browser.newPage();
     try {
       await attachFingerprintToPuppeteer(page, ipInfo);
-      await page.goto('https://browserleaks.com/canvas');
+      // await page.goto('https://browserleaks.com/canvas');
     } catch (error) {
       logger.error(error);
     }

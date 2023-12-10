@@ -30,7 +30,7 @@ module.exports = async function () {
       {
         from: 'migrations',
         to: 'app/migrations',
-      }
+      },
     ],
     extraMetadata: {
       version: getVersion(),

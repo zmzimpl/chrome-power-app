@@ -20,12 +20,13 @@ i18n
           sign_up: 'Sign up',
           sign_out: 'Sign out',
           forgot_password: 'Forgot password',
-          forgotten_password_desc: 'Enter your email and we will send you a link to reset your password.',
+          forgotten_password_desc:
+            'Enter your email and we will send you a link to reset your password.',
           update_password: 'Update password',
 
           new_window: 'New window',
           edit_window: 'Edit window',
-        
+
           window_open: 'Open',
           window_close: 'Close',
           window_edit: 'Edit',
@@ -83,7 +84,6 @@ i18n
           proxy_import_column_remark: 'Remark',
           proxy_import_column_status: 'Status',
 
-
           tile_windows: 'Tile window',
 
           settings_cache_path: 'Cache path',
@@ -124,7 +124,7 @@ i18n
           forgot_password: '忘记密码',
           forgotten_password_desc: '输入您的电子邮件，我们将向您发送重置密码的链接。',
           update_password: '更新密码',
-          
+
           new_window: '新建窗口',
           edit_window: '编辑窗口',
 
@@ -139,7 +139,7 @@ i18n
           window_column_group: '分组',
           window_column_remark: '备注',
           window_column_name: '名称',
-          window_column_tags: '标签',  
+          window_column_tags: '标签',
           window_column_last_open: '最后打开',
           window_column_created_at: '创建时间',
           window_column_action: '操作',
@@ -192,7 +192,7 @@ i18n
 
           footer_ok: '确定',
           footer_cancel: '取消',
-        
+
           new_proxy: '新建代理',
 
           menu_windows: '窗口管理',

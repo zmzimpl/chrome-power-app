@@ -1,5 +1,5 @@
 import type {IpcRendererEvent} from 'electron';
-import { ipcRenderer} from 'electron';
+import {ipcRenderer} from 'electron';
 import type {DB, SafeAny} from '../../../shared/types/db';
 
 export const WindowBridge = {
@@ -42,7 +42,7 @@ export const WindowBridge = {
     const result = await ipcRenderer.invoke('window-open', id);
     return result;
   },
-  
+
   async close(id: number) {
     const result = await ipcRenderer.invoke('window-close', id);
     return result;

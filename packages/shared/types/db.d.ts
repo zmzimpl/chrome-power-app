@@ -17,7 +17,6 @@ export namespace DB {
     cookie?: string;
     status?: number;
 
-
     ip?: string;
     port?: number;
     local_proxy_port?: number;

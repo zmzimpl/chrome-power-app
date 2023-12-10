@@ -10,7 +10,6 @@ import {PROXY_LOGGER_LABEL} from '../constants';
 
 const logger = createLogger(PROXY_LOGGER_LABEL);
 
-
 interface SocketOptions {
   listenHost: string;
   listenPort: number;

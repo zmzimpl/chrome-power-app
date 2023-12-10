@@ -34,7 +34,7 @@ vi.mock('electron', () => {
     // 根据需要模拟其他 ipcMain 方法
   };
 
-  return { BrowserWindow: bw, app, ipcMain };
+  return {BrowserWindow: bw, app, ipcMain};
 });
 
 beforeEach(() => {

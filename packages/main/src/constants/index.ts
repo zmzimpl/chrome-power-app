@@ -17,5 +17,3 @@ export const WINDOW_LOGGER_LABEL = 'Window';
 export const PROXY_LOGGER_LABEL = 'Proxy';
 export const API_LOGGER_LABEL = 'Api';
 export const MAIN_LOGGER_LABEL = 'Main';
-
-

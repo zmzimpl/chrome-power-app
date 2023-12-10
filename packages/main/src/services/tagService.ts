@@ -2,7 +2,7 @@ import {ipcMain} from 'electron';
 import type {DB} from '../../../shared/types/db';
 import {TagDB} from '../db/tag';
 import {createLogger} from '../../../shared/utils/logger';
-import { SERVICE_LOGGER_LABEL } from '../constants';
+import {SERVICE_LOGGER_LABEL} from '../constants';
 
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 

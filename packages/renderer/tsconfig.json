@@ -9,7 +9,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop":true,
+    "esModuleInterop": true,
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
@@ -23,7 +23,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "types/**/*.d.ts",
-    "../../types/**/*.d.ts"
-, "../shared/interfaces/supabaseClient.ts"  ],
+    "../../types/**/*.d.ts",
+    "../shared/interfaces/supabaseClient.ts"
+  ],
   "exclude": ["**/*.spec.ts", "**/*.test.ts"]
 }

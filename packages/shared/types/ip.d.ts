@@ -1,6 +1,6 @@
 export interface IP {
-    ip: string;
-    country: string;
-    ll: number[];
-    timeZone: string;
+  ip: string;
+  country: string;
+  ll: number[];
+  timeZone: string;
 }

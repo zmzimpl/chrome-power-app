@@ -42,6 +42,11 @@ jobs:
 
       - name: Create .env.production.local file
         run: |
+          # 检查环境变量是否存在
+          echo "VITE_APP_API length: ${#VITE_APP_API}"
+          echo "VITE_SUPABASE_URL length: ${#VITE_SUPABASE_URL}"
+          echo "VITE_SUPABASE_ANON_KEY length: ${#VITE_SUPABASE_ANON_KEY}"
+          # 创建 .env.production.local 文件
           echo "VITE_APP_API=${{ secrets.VITE_APP_API }}" > .env.production.local
           echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env.production.local
           echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env.production.local

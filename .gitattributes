@@ -3,3 +3,6 @@ scripts/*.js linguist-detectable=false
 *.config.js linguist-detectable=false
 * text=auto eol=lf
 *.dll filter=lfs diff=lfs merge=lfs -text
+Chrome-bin/*.exe filter=lfs diff=lfs merge=lfs -text
+Chrome-bin/*.dll filter=lfs diff=lfs merge=lfs -text
+Chrome-bin/*.dat filter=lfs diff=lfs merge=lfs -text

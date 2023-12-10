@@ -38,6 +38,7 @@ jobs:
       contents: write # Allows this job to create releases
     with:
       dry-run: ${{ github.event_name != 'push' || (github.ref_type != 'tag' && github.ref_name != 'main') }}
+    secrets: inherit
     needs: []
     uses: ./.github/workflows/release.yml
 

@@ -30,7 +30,7 @@ Follow the steps below to start using this software:
 
 ## Todo
 
-- [ ] Mutiple Languages Support
+- [x] Mutiple Languages Support
 - [ ] Synchronization
 - [ ] Cookies Import
 - [ ] Extensions Management

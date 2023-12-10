@@ -5,7 +5,7 @@
   "private": true,
   "author": {
     "email": "zmzimpl@gmail.com",
-    "name": "Miles Zhang",
+    "name": "Miles",
     "url": "https://blog.ulsincere.com"
   },
   "main": "packages/main/dist/index.cjs",

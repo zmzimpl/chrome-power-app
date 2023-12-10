@@ -43,8 +43,8 @@ jobs:
       - run: npm run build
         env:
           VITE_APP_API: 'https://api.chromepower.xyz/api'
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }} # This should be set in the repository's secrets settings
+          VITE_SUPABASE_URL: $VITE_SUPABASE_URL
+          VITE_SUPABASE_ANON_KEY: $VITE_SUPABASE_ANON_KEY # This should be set in the repository's secrets settings
       
 
       - name: Compile artifacts ${{ inputs.dry-run && '' || 'and upload them to github release' }}

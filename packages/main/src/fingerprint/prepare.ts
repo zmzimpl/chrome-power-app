@@ -135,7 +135,6 @@ export async function testProxy(proxy: DB.Proxy) {
       }
     }
   } else {
-    console.log('no proxy');
     for (const pin of PIN_URL) {
       const startTime = Date.now();
       try {

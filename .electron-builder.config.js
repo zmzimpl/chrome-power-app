@@ -42,7 +42,7 @@ module.exports = async function () {
       allowToChangeInstallationDirectory: true,
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
-      shortcutName: 'chrome-power-beta',
+      shortcutName: 'chrome-power',
     },
 
     // Specify linux target just for disabling snap compilation

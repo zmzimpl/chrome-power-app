@@ -17,13 +17,15 @@ export const getProxyInfo = async (ip: string, gateway: 'ip2location' | 'geoip')
   let attempts = 0;
   const maxAttempts = 3;
   let localIP = '';
-  try {
-    const {data} = await api.get('https://api64.ipify.org?format=json', {
-      timeout: 5_000,
-    });
-    localIP = data.ip;
-  } catch (error) {
-    logger.error(error);
+  if (import.meta.env.DEV) {
+    try {
+      const {data} = await api.get('https://api64.ipify.org?format=json', {
+        timeout: 5_000,
+      });
+      localIP = data.ip;
+    } catch (error) {
+      logger.error(error);
+    }
   }
 
   while (attempts < maxAttempts) {

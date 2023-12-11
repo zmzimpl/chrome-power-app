@@ -70,7 +70,7 @@
     "@types/portscanner": "^2.1.2",
     "@vitejs/plugin-react": "^4.0.4",
     "agent-base": "^7.1.0",
-    "antd": "^5.9.4",
+    "antd": "^5.12.1",
     "axios": "^1.5.1",
     "btoa": "^1.2.1",
     "cors": "^2.8.5",

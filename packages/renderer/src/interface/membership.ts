@@ -7,6 +7,7 @@ export interface MembershipState {
   createdAt: string;
   windowsLimit?: number;
   windowsUsed?: number;
+  agree?: boolean;
 }
 
 // 初始化状态

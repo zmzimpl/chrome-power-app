@@ -2,45 +2,46 @@
 
 ---
 
-The first open source fingerprint browser. Based on Puppeteer, Electron, React Development.
+首款开源指纹浏览器。基于Puppeteer、Electron、React开发。
 
-This software is under the AGPL, so if you want to modify it for another commercial release, please keep it open source.
+此软件遵循AGPL协议，因此如果你想对其进行修改并进行商业发布，请保持开源。
 
-## Disclaimer
+## 免责声明
 
 <p style="color: red;">
-As we are currently in the testing phase, please make sure you know exactly how to store your data and assets before you go into production, as we will not be responsible for any loss of assets due to operational errors.
+此软件目前处于公测阶段，请确保你在进入生产前完全了解如何存储你的数据和资产以及可能存在的风险，因为由于操作错误导致的任何资产损失，我们概不负责。
 </p>
 
-## Get started
+## 开始
 
-Follow the steps below to start using this software:
+按照以下步骤开始使用此软件：
 
-- Download the installation package (Windows supported only) [Download the latest version here](https://github.com/zmzimpl/chrome-power-app/releases/download/v0.2.0/chrome-power-beta-Setup-0.2.0.exe)
-- Run the installer to complete the installation
-- Register your account and log in
-- It is highly recommended to go to the Settings page to set your cache directory.
-- Create Proxy
-- Create a Window
-  - Create an empty Window
-  - Import Windows
-    - Import from Template
-    - Import from AdsPower
-- The synchronization feature is under development, currently it only supports tiling all ChromePower windows.
+- 下载安装包（仅支持Windows） [点击此处下载](https://github.com/zmzimpl/chrome-power-app/releases/download/v1.0.0/chrome-power-Setup-1.0.0.exe)
+- 运行安装程序以完成安装
+- 注册账户并登录
+- 强烈建议前往设置页面设置你的缓存目录。
+- 创建代理
+- 创建窗口
+  - 创建空白窗口
+  - 导入窗口
+    - 从模板导入
+    - 从AdsPower导入
+- 同步功能正在开发中，目前仅支持平铺所有ChromePower窗口。
 
 ## Todo
 
-- [x] Mutiple Languages Support
-- [ ] Synchronization
-- [ ] Cookies Import/Export
-- [ ] Extensions Management
-- [ ] Automation script
+- [x] 多语言支持
+- [ ] ipv6 代理支持
+- [ ] 同步操作
+- [ ] Cookie导入/导出
+- [ ] 扩展程序管理
+- [ ] 自动化脚本
 
-## Buy me a coffe
+## 打赏
 
-Hey😁, If my open-source work has been helpful to you, please consider buying me a coffee.
+Hey😁, 如果我的开源工作对你有所帮助，请考虑请我喝杯咖啡。
 
-🙌You can support me by purchasing a membership to the software or by donating to the wallet below
+🙌你可以通过购买软件会员或向下面的钱包捐款来支持我
 
 Bitcoin Address: `bc1p0uex9rn8nd9uyguulp6r3d3t9kylrk42dg6sq22f3h5rktlk22ks6mlv6t`
 

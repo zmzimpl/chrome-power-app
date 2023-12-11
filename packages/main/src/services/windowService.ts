@@ -33,7 +33,7 @@ export const initWindowService = () => {
   });
 
   ipcMain.handle('window-create', async (_, window: DB.Window, fingerprint: SafeAny) => {
-    logger.info('window-create', JSON.stringify(window));
+    logger.info('try to create window', JSON.stringify(window));
     return await WindowDB.create(window, fingerprint);
   });
 

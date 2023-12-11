@@ -36,10 +36,44 @@ const all = async () => {
 };
 
 const getById = async (id: number) => {
-  return await db('window').select('window.*').where('window.id', '=', id).first();
+  // 获取 window 记录及其关联数据
+  const windowData = await db('window')
+    .select(
+      'window.*',
+      'group.name as group_name',
+      'proxy.ip',
+      'proxy.proxy',
+      'proxy.proxy_type',
+      'proxy.ip_country',
+      'proxy.ip_checker',
+    )
+    .where('window.id', '=', id)
+    .leftJoin('group', 'window.group_id', '=', 'group.id')
+    .leftJoin('proxy', 'window.proxy_id', '=', 'proxy.id')
+    .first();
+
+  if (windowData.tags) {
+    // 分割 tags 字符串
+    const tagIds = windowData.tags.toString().split(',').map(Number);
+
+    // 获取所有相关的标签名称
+    const tags = await db('tag').select('name').whereIn('id', tagIds);
+
+    // 将标签名称添加到返回结果中
+    windowData.tags_name = tags.map(tag => tag.name);
+  }
+
+  return windowData;
 };
 
 const update = async (id: number, updatedData: DB.Window) => {
+  delete updatedData.group_name;
+  delete updatedData.proxy;
+  delete updatedData.proxy_type;
+  delete updatedData.ip_country;
+  delete updatedData.ip_checker;
+  delete updatedData.ip;
+  delete updatedData.tags_name;
   try {
     await db('window')
       .where({id})
@@ -51,7 +85,7 @@ const update = async (id: number, updatedData: DB.Window) => {
   } catch (error) {
     return {
       success: false,
-      message: 'Failed to update window.',
+      message: 'Failed to update window.' + error,
     };
   }
 };
@@ -74,6 +108,7 @@ const create = async (windowData: DB.Window, fingerprint: SafeAny) => {
   if (!windowData.profile_id) {
     windowData.profile_id = generateUniqueProfileId();
   }
+  windowData.ua = fingerprint.ua;
   const [id] = await db('window').insert(windowData);
   try {
     const {data} = await api.post('/power-api/fingerprints/window', {

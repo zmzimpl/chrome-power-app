@@ -2,6 +2,7 @@
 
 export namespace DB {
   export interface Window {
+
     id?: number;
     profile_id?: string;
     name?: string;
@@ -20,6 +21,12 @@ export namespace DB {
     ip?: string;
     port?: number;
     local_proxy_port?: number;
+
+    proxy?: string;
+    proxy_type?: string;
+    ip_country?: string;
+    ip_checker?: string;
+    tags_name?: string[];
   }
 
   export interface Proxy {

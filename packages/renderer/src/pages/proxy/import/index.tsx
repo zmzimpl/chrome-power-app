@@ -255,10 +255,8 @@ const ProxyImport = () => {
     setChecking(true);
     for (let index = 0; index < importData.length; index++) {
       const proxy = importData[index];
-      console.log('test', proxy);
       toggleCheckingStatus(true, index);
       const result = await ProxyBridge?.checkProxy(transformProxy(proxy));
-      console.log(result);
       toggleCheckingStatus(false, index, result);
     }
     setChecking(false);

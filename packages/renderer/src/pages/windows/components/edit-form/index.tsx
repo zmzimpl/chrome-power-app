@@ -11,7 +11,9 @@ const {TextArea} = Input;
 const WindowEditForm = ({
   formValue,
   formChangeCallback,
+  loading,
 }: {
+  loading: boolean;
   formValue: DB.Window;
   formChangeCallback: (changed: DB.Window, data: DB.Window) => void;
 }) => {
@@ -80,6 +82,7 @@ const WindowEditForm = ({
   return (
     <Form
       layout="horizontal"
+      disabled={loading}
       form={form}
       size="large"
       initialValues={formValue}

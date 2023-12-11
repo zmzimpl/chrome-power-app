@@ -7,6 +7,7 @@ import {initServices} from './services';
 import {createLogger} from '../../shared/utils/logger';
 import {MAIN_LOGGER_LABEL} from './constants';
 import {extractChromeBin} from './utils/extract';
+import './server/index';
 
 const logger = createLogger(MAIN_LOGGER_LABEL);
 

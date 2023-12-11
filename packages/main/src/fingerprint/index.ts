@@ -19,6 +19,7 @@ import {getProxyInfo} from './prepare';
 import * as ProxyChain from 'proxy-chain';
 import api from '../../../shared/api/api';
 import {getSettings} from '../utils/get-settings';
+import {getPort} from '../server/index';
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
 
@@ -48,7 +49,7 @@ const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP) => {
   );
 };
 
-async function connectBrowser(port: number, ipInfo: IP) {
+async function connectBrowser(port: number, ipInfo: IP, windowId: number) {
   const browserURL = `http://${HOST}:${port}`;
   const {data} = await api.get(browserURL + '/json/version');
   if (data.webSocketDebuggerUrl) {
@@ -73,7 +74,12 @@ async function connectBrowser(port: number, ipInfo: IP) {
         : await browser.newPage();
     try {
       await attachFingerprintToPuppeteer(page, ipInfo);
-      // await page.goto('https://browserleaks.com/canvas');
+      console.log(getPort());
+      if (import.meta.env.VITE_START_PAGE_URL) {
+        await page.goto(
+          `${import.meta.env.VITE_START_PAGE_URL}?windowId=${windowId}&serverPort=${getPort()}`,
+        );
+      }
     } catch (error) {
       logger.error(error);
     }
@@ -121,12 +127,7 @@ export async function openFingerprintWindow(id: number) {
   if (windowData.proxy_id && proxyData.ip) {
     ipInfo = await getProxyInfo(proxyData.ip, proxyData.ip_checker || 'ip2location');
   } else {
-    let localIP = '';
-    if (import.meta.env.DEV) {
-      const {data} = await api.get('https://api64.ipify.org?format=json');
-      localIP = data.ip;
-    }
-    ipInfo = await getProxyInfo(localIP, 'ip2location');
+    ipInfo = await getProxyInfo('', 'ip2location');
   }
   if (!ipInfo?.ip) {
     logger.error('ipInfo is empty');
@@ -216,7 +217,7 @@ export async function openFingerprintWindow(id: number) {
     await sleep(1);
 
     try {
-      connectBrowser(chromePort, ipInfo);
+      connectBrowser(chromePort, ipInfo, windowData.id);
     } catch (error) {
       logger.error(error);
       execSync(`taskkill /PID ${chromeInstance.pid} /F`);

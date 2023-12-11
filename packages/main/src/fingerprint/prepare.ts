@@ -16,13 +16,18 @@ const logger = createLogger(API_LOGGER_LABEL);
 export const getProxyInfo = async (ip: string, gateway: 'ip2location' | 'geoip') => {
   let attempts = 0;
   const maxAttempts = 3;
+  let localIP = '';
+  if (import.meta.env.DEV) {
+    const {data} = await api.get('https://api64.ipify.org?format=json');
+    localIP = data.ip;
+  }
 
   while (attempts < maxAttempts) {
     try {
       const res = await api.get('/power-api/ip', {
         params: {
           gateway: gateway,
-          ip: ip,
+          ip: ip || localIP,
         },
       });
       return res.data;

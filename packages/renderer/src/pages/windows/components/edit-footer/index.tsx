@@ -14,14 +14,16 @@ const WindowDetailFooter = ({
   currentTab,
   formValue,
   fingerprints,
+  loading,
 }: {
+  loading: boolean;
   fingerprints: SafeAny;
   currentTab: string;
   formValue: DB.Window;
 }) => {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage(MESSAGE_CONFIG);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const dispatch = useDispatch();
   const {t} = useTranslation();
 
@@ -45,7 +47,7 @@ const WindowDetailFooter = ({
         ? `Saved successfully, will be automatically jumped after ${MESSAGE_CONFIG.duration}s`
         : result.message,
     ).then(() => {
-      setLoading(false);
+      setSaving(false);
       if (result.success) {
         navigate('/');
       }
@@ -63,7 +65,7 @@ const WindowDetailFooter = ({
   };
 
   const saveWindow = async (formValue: DB.Window) => {
-    setLoading(true);
+    setSaving(true);
     savePreparation(formValue);
     let result: OperationResult;
     if (formValue.id) {
@@ -90,7 +92,8 @@ const WindowDetailFooter = ({
         >
           {currentTab !== 'import' && (
             <Button
-              loading={loading}
+              disabled={loading}
+              loading={saving}
               type="primary"
               className="w-20"
               onClick={() => handleOk()}

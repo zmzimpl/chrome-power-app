@@ -10,7 +10,7 @@ import {WindowBridge} from '#preload';
 import FingerprintInfo from '../components/fingerprint-info';
 import api from '../../../../../shared/api/api';
 import WindowDetailFooter from '../components/edit-footer';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const WindowDetailTabs = ({
   formValue,
@@ -33,6 +33,7 @@ const WindowDetailTabs = ({
       children: (
         <div className="flex w-full">
           {WindowEditForm({
+            loading: false,
             formValue: formValue,
             formChangeCallback: formValueChangeCallback,
           })}
@@ -63,6 +64,7 @@ const WindowDetail = () => {
   const [currentTab, setCurrentTab] = useState('windowForm');
   const [searchParams] = useSearchParams();
   const [fingerprints, setFingerprints] = useState<SafeAny>(new Object());
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     initFormValue();
@@ -85,6 +87,7 @@ const WindowDetail = () => {
 
   const initFormValue = async () => {
     const id = searchParams.get('id');
+    setLoading(true);
     if (id) {
       const window = await WindowBridge?.getById(Number(id));
       if (window.tags) {
@@ -102,6 +105,7 @@ const WindowDetail = () => {
       setFormValue(new Object());
       fetchFingerprints();
     }
+    setLoading(false);
   };
 
   const onTabChange = useCallback((tab: string) => {
@@ -123,6 +127,7 @@ const WindowDetail = () => {
         {searchParams.get('id') ? (
           <div className="flex w-full mt-4">
             <WindowEditForm
+              loading={loading}
               formValue={formValue}
               formChangeCallback={formValueChangeCallback}
             ></WindowEditForm>
@@ -138,6 +143,7 @@ const WindowDetail = () => {
         )}
       </Card>
       <WindowDetailFooter
+        loading={loading}
         currentTab={currentTab}
         formValue={formValue}
         fingerprints={fingerprints}

@@ -21,6 +21,8 @@ interface ImportMetaEnv {
 
   /** Current app API */
   readonly VITE_APP_API: string;
+
+  readonly VITE_START_PAGE_URL: string;
 }
 
 interface ImportMeta {

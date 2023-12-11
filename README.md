@@ -32,7 +32,7 @@ Follow the steps below to start using this software:
 
 - [x] Mutiple Languages Support
 - [ ] Synchronization
-- [ ] Cookies Import
+- [ ] Cookies Import/Export
 - [ ] Extensions Management
 - [ ] Automation script
 

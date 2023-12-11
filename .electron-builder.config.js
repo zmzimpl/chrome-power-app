@@ -11,7 +11,7 @@
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
   return {
-    productName: 'chrome-power-beta',
+    productName: 'chrome-power',
     directories: {
       output: 'dist',
       buildResources: 'buildResources',

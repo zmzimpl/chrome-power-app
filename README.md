@@ -16,7 +16,7 @@ As we are currently in the testing phase, please make sure you know exactly how 
 
 Follow the steps below to start using this software:
 
-- Download the installation package (Windows supported only) [Download the latest version here](https://drive.google.com/file/d/1McuGozR4TP_GZisTubZG4K6unY1gRr5b/view?usp=drive_link)
+- Download the installation package (Windows supported only) [Download the latest version here](https://github.com/zmzimpl/chrome-power-app/releases/download/v0.2.0/chrome-power-beta-Setup-0.2.0.exe)
 - Run the installer to complete the installation
 - Register your account and log in
 - It is highly recommended to go to the Settings page to set your cache directory.

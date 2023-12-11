@@ -31,7 +31,7 @@ const server: Server = app
 app.get('/info', async (req, res) => {
   const {windowId} = req.query;
   if (!windowId) {
-    res.send({ success: false, message: 'windowId is required.', windowData: {}, ipInfo: {} });
+    res.send({success: false, message: 'windowId is required.', windowData: {}, ipInfo: {}});
     return;
   }
   let windowData: DB.Window = {};
@@ -65,6 +65,8 @@ app.get('/ping', async (req, res) => {
     let proxyData: DB.Proxy = {};
     if (windowData.proxy_id) {
       proxyData = await ProxyDB.getById(windowData.proxy_id);
+      pings = await testProxy(proxyData);
+    } else {
       pings = await testProxy(proxyData);
     }
   } catch (error) {

@@ -15,6 +15,7 @@ const {Text} = Typography;
 interface ProxyImportProps {
   id: number;
   type: string;
+  ip?: string;
   host: string;
   port: number;
   username?: string;
@@ -188,6 +189,12 @@ const ProxyImport = () => {
       proxy = proxy.substring(0, remarkIndex);
     }
 
+    // Validate the complete proxy format
+    const proxyRegex = /^([a-zA-Z0-9.-]+):(\d{1,5}):([a-zA-Z0-9-]+):([a-zA-Z0-9]+)$/;
+    if (!proxyRegex.test(proxy)) {
+      throw new Error('Invalid proxy format');
+    }
+
     // Split the remaining proxy string by ':'
     const parts = proxy.split(':');
 
@@ -198,11 +205,6 @@ const ProxyImport = () => {
       // Only assign username and password if they exist in the split parts
       username = parts[2];
       password = parts[3];
-    }
-
-    // Validate IPv4 address format for host
-    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
-      throw new Error('Invalid IPv4 address format');
     }
 
     return {
@@ -223,7 +225,6 @@ const ProxyImport = () => {
       proxy: `${host}:${port}` + (username ? `:${username}:${password}` : ''),
       remark: remark,
       ip_checker: 'ip2location',
-      ip: host,
     } as DB.Proxy;
   };
 
@@ -269,7 +270,7 @@ const ProxyImport = () => {
           <Col span={12}>
             <Card
               className="bg-blue-50 select-text	h-[300px]"
-              rootClassName='overflow-auto'
+              rootClassName="overflow-auto"
               bodyStyle={{padding: '12px 16px'}}
             >
               <Space
@@ -279,7 +280,14 @@ const ProxyImport = () => {
                 {t('proxy_import_tip')
                   .split('\n')
                   .map((item, index) => {
-                    return <Text className='break-keep' key={index}>{item}</Text>;
+                    return (
+                      <Text
+                        className="break-keep"
+                        key={index}
+                      >
+                        {item}
+                      </Text>
+                    );
                   })}
               </Space>
             </Card>

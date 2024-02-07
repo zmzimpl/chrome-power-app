@@ -1,4 +1,4 @@
-import {Button, Menu, type MenuProps, Row, Col} from 'antd';
+import {Button, Menu, type MenuProps, Row, Col, Spin} from 'antd';
 import type {MenuInfo} from 'rc-menu/lib/interface';
 import {useRoutes} from '/@/routes';
 import {useLocation, useNavigate} from 'react-router-dom';
@@ -8,7 +8,7 @@ import {useSelector} from 'react-redux';
 import {useEffect} from 'react';
 import './index.css';
 import React from 'react';
-import { t } from 'i18next';
+import {t} from 'i18next';
 
 export interface MembershipOptions {
   expiredAt?: string;
@@ -23,6 +23,7 @@ export default function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const membership = useSelector((state: RootState) => state.user.membership);
+  const membershipLoading = useSelector((state: RootState) => state.user.membershipLoading);
   const [formattedMembership, setFormattedMembership] = React.useState<MembershipOptions>();
   const [menuItems, setMenuItems] = React.useState<MenuProps['items']>([]);
 
@@ -84,11 +85,11 @@ export default function Navigation() {
         items={menuItems}
       />
       <div className="membership">
-        {formattedMembership?.userId && (
+        <Spin spinning={membershipLoading}>
           <>
             <Row>
               <Col span={15}>
-                <div className="text-blue-600">{formattedMembership.expiredAt || 'Indefinite'}</div>
+                <div className="text-blue-600">{formattedMembership?.expiredAt || !membershipLoading && 'Indefinite'}</div>
               </Col>
 
               <Col
@@ -99,7 +100,7 @@ export default function Navigation() {
                   className="text-xs underline underline-offset-4 text-orange-400 hover:text-orange-500"
                   href="https://www.chromepower.xyz/pricing"
                 >
-                  {formattedMembership.expiredAt ? t('membership_renew') : t('membership_upgrade')}
+                  {formattedMembership?.expiredAt ? t('membership_renew') : t('membership_upgrade')}
                 </a>
               </Col>
             </Row>
@@ -115,11 +116,11 @@ export default function Navigation() {
                 className="text-right text-xs"
                 span={14}
               >
-                {formattedMembership.windowsUsed} / {formattedMembership.windowsLimit}
+                {formattedMembership?.windowsUsed} / {formattedMembership?.windowsLimit}
               </Col>
             </Row>
           </>
-        )}
+        </Spin>
       </div>
     </>
   );

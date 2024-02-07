@@ -10,7 +10,7 @@
   },
   "main": "packages/main/dist/index.cjs",
   "scripts": {
-    "build:native-addon": "cd ./packages/main/src/native-addon && node-gyp configure && node-gyp build",
+    "build:native-addon": "cd ./packages/main/src/native-addon && node-gyp clean && node-gyp configure && node-gyp build",
     "build": "npm run build:main && npm run build:preload && npm run build:renderer",
     "build:main": "cd ./packages/main && vite build",
     "build:preload": "cd ./packages/preload && vite build",
@@ -69,8 +69,9 @@
     "@supabase/supabase-js": "^2.38.4",
     "@types/portscanner": "^2.1.2",
     "@vitejs/plugin-react": "^4.0.4",
+    "active-win": "^8.1.1",
     "agent-base": "^7.1.0",
-    "antd": "^5.12.1",
+    "antd": "^5.14.0",
     "axios": "^1.5.1",
     "btoa": "^1.2.1",
     "cors": "^2.8.5",
@@ -99,7 +100,7 @@
     "redux": "^4.2.1",
     "socks": "^2.7.1",
     "socks-proxy-agent": "^8.0.2",
-    "sqlite3": "^5.1.6",
+    "sqlite3": "^5.1.7",
     "winston": "^3.11.0",
     "xlsx": "^0.19.3"
   }

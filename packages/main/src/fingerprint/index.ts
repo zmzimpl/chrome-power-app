@@ -125,9 +125,9 @@ export async function openFingerprintWindow(id: number) {
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
   if (windowData.proxy_id && proxyData.ip) {
-    ipInfo = await getProxyInfo(proxyData.ip, proxyData.ip_checker || 'ip2location');
+    ipInfo = await getProxyInfo(proxyData);
   } else {
-    ipInfo = await getProxyInfo('', 'ip2location');
+    ipInfo = await getProxyInfo({});
   }
   if (!ipInfo?.ip) {
     logger.error('ipInfo is empty');
@@ -189,7 +189,7 @@ export async function openFingerprintWindow(id: number) {
       opened_at: db.fn.now() as unknown as string,
     });
     win.webContents.send('window-opened', id);
-
+    console.log('chromeInstance.pid', chromeInstance.pid);
     chromeInstance.stdout.on('data', _chunk => {
       // const str = _chunk.toString();
       // console.error('stderr: ', str);

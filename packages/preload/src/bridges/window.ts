@@ -33,6 +33,10 @@ export const WindowBridge = {
     const result = await ipcRenderer.invoke('window-getAll');
     return result;
   },
+  async getOpenedWindows() {
+    const result = await ipcRenderer.invoke('window-getOpened');
+    return result;
+  },
   async getById(id: number) {
     const result = await ipcRenderer.invoke('window-getById', id);
     return result;

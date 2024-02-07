@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{749F3E54-9F64-FE9D-BBCC-D04B79D63587}</ProjectGuid>
+    <ProjectGuid>{62981665-D7F2-077D-4C30-504E30245958}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>window-addon</RootNamespace>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
@@ -48,7 +48,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power-app-latest\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:__cplusplus -std:c++17 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -84,13 +84,13 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power-app-latest\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=window-addon;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;V8_DEPRECATION_WARNINGS;V8_IMMINENT_DEPRECATION_WARNINGS;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;NAPI_DISABLE_CPP_EXCEPTIONS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;DEBUG;_DEBUG;V8_ENABLE_CHECKS;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power-app-latest\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:__cplusplus -std:c++17 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
@@ -129,7 +129,7 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\include\node;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\src;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\config;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\openssl\openssl\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\uv\include;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\zlib;C:\Users\Administrator\AppData\Local\node-gyp\Cache\18.18.2\deps\v8\include;D:\dev\electron\chrome-power-app-latest\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=window-addon;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;V8_DEPRECATION_WARNINGS;V8_IMMINENT_DEPRECATION_WARNINGS;_GLIBCXX_USE_CXX11_ABI=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;NAPI_DISABLE_CPP_EXCEPTIONS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -140,11 +140,11 @@
     <ClCompile Include="..\window-addon.cpp">
       <ObjectFileName>$(IntDir)\window-addon.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="D:\dev\electron\chrome-power\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="D:\dev\electron\chrome-power-app-latest\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\node_modules\node-addon-api\nothing.vcxproj">
-      <Project>{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F}</Project>
+      <Project>{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

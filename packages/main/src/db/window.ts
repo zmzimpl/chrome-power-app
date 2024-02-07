@@ -35,6 +35,34 @@ const all = async () => {
     .orderBy('window.created_at', 'desc');
 };
 
+const getOpenedWindows = async () => {
+  return await db('window')
+    .select(
+      'window.id',
+      'window.group_id',
+      'window.proxy_id',
+      'window.tags',
+      'window.name',
+      'window.remark',
+      'window.created_at',
+      'window.updated_at',
+      'window.profile_id',
+      'window.opened_at',
+      'window.ua',
+      'window.status',
+      'group.name as group_name',
+      'proxy.ip',
+      'proxy.proxy',
+      'proxy.proxy_type',
+      'proxy.ip_country',
+      'proxy.ip_checker',
+    )
+    .leftJoin('group', 'window.group_id', '=', 'group.id')
+    .leftJoin('proxy', 'window.proxy_id', '=', 'proxy.id')
+    .where('window.status', '>', 1)
+    .orderBy('window.created_at', 'desc');
+};
+
 const getById = async (id: number) => {
   // 获取 window 记录及其关联数据
   const windowData = await db('window')
@@ -248,6 +276,7 @@ const externalImport = async (fileData: IWindowTemplate[]) => {
 export const WindowDB = {
   all,
   getById,
+  getOpenedWindows,
   update,
   create,
   remove,

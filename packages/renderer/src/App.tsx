@@ -17,7 +17,7 @@ import {supabase} from '../../shared/interfaces/supabaseClient';
 import api from '../../shared/api/api';
 import {theme} from 'antd';
 import {CommonBridge} from '#preload';
-import {setMembership} from './slices/user-slice';
+import {setMembership, setMembershipLoading} from './slices/user-slice';
 import {useDispatch} from 'react-redux';
 import {useTranslation} from 'react-i18next';
 
@@ -82,7 +82,7 @@ const App = () => {
   };
 
   const getMembership = async () => {
-    setLoading(true);
+    dispatch(setMembershipLoading(true));
     try {
       const {data} = await api.get('/power-api/users/membership');
       dispatch(setMembership(data));
@@ -90,10 +90,10 @@ const App = () => {
       if (!data.agree) {
         showUserAgreement();
       }
-      setLoading(false);
+      dispatch(setMembershipLoading(false));
     } catch (error) {
       console.log(error);
-      setLoading(false);
+      dispatch(setMembershipLoading(false));
     }
   };
 
@@ -212,10 +212,10 @@ const App = () => {
   } else {
     return (
       <Layout className={`h-full fade-in ${isVisible ? 'visible' : ''}`}>
-        <Spin
+        {/* <Spin
           spinning={loading}
           rootClassName={loading ? 'fullscreen-spin-wrapper visible' : ''}
-        />
+        /> */}
         <Header></Header>
         <Layout>
           <Sider

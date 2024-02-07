@@ -54,6 +54,9 @@ export const initWindowService = () => {
   ipcMain.handle('window-getAll', async () => {
     return await WindowDB.all();
   });
+  ipcMain.handle('window-getOpened', async () => {
+    return await WindowDB.getOpenedWindows();
+  });
 
   ipcMain.handle('window-getById', async (_, id: number) => {
     return await WindowDB.getById(id);

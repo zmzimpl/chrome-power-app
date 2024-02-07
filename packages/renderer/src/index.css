@@ -36,6 +36,10 @@ body {
   position: relative;
   padding: 15px 24px;
   box-shadow: inset 10px 0 10px -10px rgba(0, 0, 0, 0.05);
+
+  /* min-width: 1200px; */
+  /* overflow-y: auto; */
+  /* min-height: 700px; */
 }
 
 .content-card {

@@ -33,6 +33,7 @@ export namespace DB {
     id?: number;
     ip?: string;
     proxy?: string;
+    host?: string;
     proxy_type?: string;
     ip_checker?: 'ip2location' | 'geoip';
     ip_country?: string;

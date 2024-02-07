@@ -27,7 +27,7 @@ import {MESSAGE_CONFIG, WINDOW_STATUS} from '/@/constants';
 import {setMembership} from '/@/slices/user-slice';
 import {useDispatch} from 'react-redux';
 import api from '../../../../shared/api/api';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const Windows = () => {
   const OFFSET = 266;
@@ -151,9 +151,9 @@ const Windows = () => {
       },
       {
         title: t('window_column_proxy'),
-        dataIndex: 'ip',
-        key: 'ip',
-        width: 150,
+        dataIndex: 'proxy',
+        key: 'proxy',
+        width: 350,
       },
       {
         title: t('window_column_last_open'),
@@ -253,7 +253,14 @@ const Windows = () => {
 
   const fetchProxies = async () => {
     const proxies = await ProxyBridge?.getAll();
-    setProxies(proxies);
+    setProxies(
+      proxies.map((proxy: DB.Proxy) => {
+        return {
+          host: proxy.proxy?.split(':')[0] ?? proxy.id,
+          ...proxy,
+        };
+      }),
+    );
   };
 
   const moreAction = (info: MenuInfo) => {
@@ -587,7 +594,7 @@ const Windows = () => {
             setSelectedProxy(value);
           }}
           filterOption={filterProxyOption}
-          fieldNames={{label: 'ip', value: 'id'}}
+          fieldNames={{label: 'proxy', value: 'id'}}
         ></Select>
       </Modal>
       <div className="content-footer"></div>

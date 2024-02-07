@@ -13,16 +13,16 @@
     <Filter Include="D:\dev\electron">
       <UniqueIdentifier>{2AC18345-523C-4C0A-9F39-F87ED4DCD4EB}</UniqueIdentifier>
     </Filter>
-    <Filter Include="D:\dev\electron\chrome-power">
-      <UniqueIdentifier>{1C5D0EC0-B067-2526-36C1-F1BE8429743D}</UniqueIdentifier>
+    <Filter Include="D:\dev\electron\chrome-power-app-latest">
+      <UniqueIdentifier>{5949A38A-1F2A-AEB7-2DA3-E354142C0619}</UniqueIdentifier>
     </Filter>
-    <Filter Include="D:\dev\electron\chrome-power\node_modules">
+    <Filter Include="D:\dev\electron\chrome-power-app-latest\node_modules">
       <UniqueIdentifier>{56DF7A98-063D-FB9D-485C-089023B4C16A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="D:\dev\electron\chrome-power\node_modules\node-gyp">
+    <Filter Include="D:\dev\electron\chrome-power-app-latest\node_modules\node-gyp">
       <UniqueIdentifier>{77348C0E-2034-7791-74D5-63C077DF5A3B}</UniqueIdentifier>
     </Filter>
-    <Filter Include="D:\dev\electron\chrome-power\node_modules\node-gyp\src">
+    <Filter Include="D:\dev\electron\chrome-power-app-latest\node_modules\node-gyp\src">
       <UniqueIdentifier>{8CDEE807-BC53-E450-C8B8-4DEBB66742D4}</UniqueIdentifier>
     </Filter>
     <Filter Include="..">
@@ -33,8 +33,8 @@
     <ClCompile Include="..\window-addon.cpp">
       <Filter>..</Filter>
     </ClCompile>
-    <ClCompile Include="D:\dev\electron\chrome-power\node_modules\node-gyp\src\win_delay_load_hook.cc">
-      <Filter>D:\dev\electron\chrome-power\node_modules\node-gyp\src</Filter>
+    <ClCompile Include="D:\dev\electron\chrome-power-app-latest\node_modules\node-gyp\src\win_delay_load_hook.cc">
+      <Filter>D:\dev\electron\chrome-power-app-latest\node_modules\node-gyp\src</Filter>
     </ClCompile>
     <None Include="..\binding.gyp">
       <Filter>..</Filter>

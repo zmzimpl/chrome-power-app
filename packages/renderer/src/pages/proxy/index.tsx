@@ -40,6 +40,7 @@ type ProxyFormProps = {
   proxy_type?: string;
   ip_checker?: string;
   ip?: string;
+  host?: string;
   port?: string;
   username?: string;
   password?: string;
@@ -116,10 +117,15 @@ const Proxy = () => {
       fixed: 'left',
     },
     {
-      title: 'IP',
+      title: 'Host',
       width: 100,
-      dataIndex: 'ip',
-      key: 'ip',
+      dataIndex: 'host',
+      key: 'host',
+      render: (_, recorder) => (
+        <Space size={12}>
+          {recorder.proxy && recorder.proxy.split(':')[0]}
+        </Space>
+      ),
     },
     {
       title: t('proxy_column_type'),
@@ -216,7 +222,7 @@ const Proxy = () => {
             form.setFieldsValue({
               proxy_type: recorder.proxy_type,
               ip_checker: recorder.ip_checker,
-              ip: host,
+              host: host,
               port: port,
               username: username,
               password: password,
@@ -366,9 +372,9 @@ const Proxy = () => {
         id: selectedRow?.id,
         proxy_type: values.proxy_type,
         ip_checker: values.ip_checker,
-        ip: values.ip,
+        // host: values.host,
         proxy:
-          `${values.ip}:${values.port}` +
+          `${values.host}:${values.port}` +
           (values.username ? `:${values.username}:${values.password}` : ''),
         remark: values.remark,
       };
@@ -393,9 +399,9 @@ const Proxy = () => {
       const testResult = await ProxyBridge?.checkProxy({
         proxy_type: values.proxy_type,
         ip_checker: values.ip_checker,
-        ip: values.ip,
+        host: values.host,
         proxy:
-          `${values.ip}:${values.port}` +
+          `${values.host}:${values.port}` +
           (values.username ? `:${values.username}:${values.password}` : ''),
       });
       setUpdateCheckResult(JSON.stringify(testResult));
@@ -573,7 +579,7 @@ const Proxy = () => {
             </Form.Item>
             <Form.Item<ProxyFormProps>
               label="Host"
-              name="ip"
+              name="host"
               rules={[{required: true, message: 'Please input IP!'}]}
             >
               <Input />

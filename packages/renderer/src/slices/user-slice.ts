@@ -5,10 +5,12 @@ import {initialMembershipState, type MembershipState} from '../interface/members
 
 interface UserState {
   membership: MembershipState;
+  membershipLoading?: boolean;
 }
 
 const initialState: UserState = {
   membership: initialMembershipState,
+  membershipLoading: false,
 };
 
 const userSlice = createSlice({
@@ -18,10 +20,13 @@ const userSlice = createSlice({
     setMembership: (state, action: PayloadAction<MembershipState>) => {
       state.membership = action.payload;
     },
+    setMembershipLoading: (state, action: PayloadAction<boolean>) => {
+      state.membershipLoading = action.payload;
+    },
     // 可以根据需要添加更多动作
   },
 });
 
-export const {setMembership} = userSlice.actions;
+export const {setMembership, setMembershipLoading} = userSlice.actions;
 
 export default userSlice.reducer;

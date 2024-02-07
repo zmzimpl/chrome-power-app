@@ -44,7 +44,7 @@ app.get('/info', async (req, res) => {
       proxyData = await ProxyDB.getById(windowData.proxy_id);
     }
     // get proxy info
-    ipInfo = await getProxyInfo(proxyData.ip || '', proxyData.ip_checker || 'ip2location');
+    ipInfo = await getProxyInfo(proxyData);
   } catch (error) {
     console.error(error);
   }

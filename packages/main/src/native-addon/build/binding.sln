@@ -12,11 +12,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "(node_modules)", "..\..\..\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "(node-addon-api)", "..\..\..\..\..\node_modules\node-addon-api", "{CE7D0094-07A7-ECA6-E292-347B20915A19}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nothing", "..\..\..\..\node_modules\node-addon-api\nothing.vcxproj", "{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nothing", "..\..\..\..\node_modules\node-addon-api\nothing.vcxproj", "{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "window-addon", "window-addon.vcxproj", "{749F3E54-9F64-FE9D-BBCC-D04B79D63587}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "window-addon", "window-addon.vcxproj", "{62981665-D7F2-077D-4C30-504E30245958}"
 	ProjectSection(ProjectDependencies) = postProject
-		{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F} = {ECB61BBA-1E11-10EF-2DBE-92B91C84C82F}
+		{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC} = {14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC}
 	EndProjectSection
 EndProject
 Global
@@ -25,14 +25,14 @@ Global
 		Debug|x64 = Debug|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{749F3E54-9F64-FE9D-BBCC-D04B79D63587}.Release|x64.ActiveCfg = Release|x64
-		{749F3E54-9F64-FE9D-BBCC-D04B79D63587}.Release|x64.Build.0 = Release|x64
-		{749F3E54-9F64-FE9D-BBCC-D04B79D63587}.Debug|x64.ActiveCfg = Debug|x64
-		{749F3E54-9F64-FE9D-BBCC-D04B79D63587}.Debug|x64.Build.0 = Debug|x64
-		{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F}.Release|x64.ActiveCfg = Release|x64
-		{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F}.Release|x64.Build.0 = Release|x64
-		{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F}.Debug|x64.ActiveCfg = Debug|x64
-		{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F}.Debug|x64.Build.0 = Debug|x64
+		{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC}.Release|x64.ActiveCfg = Release|x64
+		{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC}.Release|x64.Build.0 = Release|x64
+		{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC}.Debug|x64.ActiveCfg = Debug|x64
+		{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC}.Debug|x64.Build.0 = Debug|x64
+		{62981665-D7F2-077D-4C30-504E30245958}.Release|x64.ActiveCfg = Release|x64
+		{62981665-D7F2-077D-4C30-504E30245958}.Release|x64.Build.0 = Release|x64
+		{62981665-D7F2-077D-4C30-504E30245958}.Debug|x64.ActiveCfg = Debug|x64
+		{62981665-D7F2-077D-4C30-504E30245958}.Debug|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -43,6 +43,6 @@ Global
 		{E2C934BB-1552-401F-EDE6-F7CBED2D4AF7} = {DDCEA4D0-6852-D253-DD6E-F4F64DF52AEE}
 		{B31683E0-34E4-BE14-902A-D051B21F60D4} = {E2C934BB-1552-401F-EDE6-F7CBED2D4AF7}
 		{CE7D0094-07A7-ECA6-E292-347B20915A19} = {B31683E0-34E4-BE14-902A-D051B21F60D4}
-		{ECB61BBA-1E11-10EF-2DBE-92B91C84C82F} = {CE7D0094-07A7-ECA6-E292-347B20915A19}
+		{14E2DB76-F35B-0A4B-4B8F-ABEE39A317FC} = {CE7D0094-07A7-ECA6-E292-347B20915A19}
 	EndGlobalSection
 EndGlobal

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type {DB, SafeAny} from '../../../shared/types/db';
 import type {AxiosError} from 'axios';
-import {createLogger} from '../../../shared/utils/logger';
+import {createLogger, getRequestProxy} from '../../../shared/utils/index';
 import api from '../../../shared/api/api';
 import {API_LOGGER_LABEL} from '../constants';
 import {HttpProxyAgent} from 'http-proxy-agent';
@@ -13,32 +13,33 @@ import {db} from '../db';
 
 const logger = createLogger(API_LOGGER_LABEL);
 
-export const getProxyInfo = async (
-  ip: string,
-  gateway: 'ip2location' | 'geoip' = 'ip2location',
-) => {
+const getRealIP = async (proxy: DB.Proxy) => {
+  const requestProxy = getRequestProxy(proxy.proxy!, proxy.proxy_type!);
+  try {
+    const {data} = await axios.get('https://api64.ipify.org?format=json', {
+      proxy: requestProxy,
+      timeout: 5_000,
+    });
+    console.log(data);
+    return data.ip;
+  } catch (error) {
+    logger.error(`| Prepare | getRealIP | error: ${error}`);
+  }
+};
+
+export const getProxyInfo = async (proxy: DB.Proxy) => {
   let attempts = 0;
   const maxAttempts = 3;
-  let localIP = '';
-  if (import.meta.env.DEV) {
-    try {
-      const {data} = await api.get('https://api64.ipify.org?format=json', {
-        timeout: 5_000,
-      });
-      logger.info('get local ip:', data, data.ip);
-      localIP = data.ip || '';
-    } catch (error) {
-      logger.error(error);
-    }
-  }
-
+  const realIP = await getRealIP(proxy);
+  const params = {
+    gateway: proxy.ip_checker || 'ip2location',
+    ip: realIP,
+  };
+  console.log('params', params);
   while (attempts < maxAttempts) {
     try {
       const res = await api.get('/power-api/ip', {
-        params: {
-          gateway: gateway,
-          ip: ip || localIP,
-        },
+        params: params,
       });
       return res.data;
     } catch (error) {
@@ -46,6 +47,7 @@ export const getProxyInfo = async (
       logger.error(error);
       if (attempts === maxAttempts) {
         logger.error(
+          '| Prepare | getProxyInfo | error:',
           `get ip info failed after ${maxAttempts} attempts`,
           (error as unknown as SafeAny)?.message,
         );
@@ -54,56 +56,60 @@ export const getProxyInfo = async (
   }
 };
 
+export function getAgent(proxy: DB.Proxy) {
+  let agent;
+  let agentField: string = 'httpsAgent';
+  if (proxy.proxy) {
+    const [host, port, username, password] = proxy.proxy.split(':');
+    switch (proxy.proxy_type?.toLowerCase()) {
+      case 'socks5':
+        agent = new SocksProxyAgent(
+          username ? `socks://${username}:${password}@${host}:${port}` : `socks://${host}:${port}`,
+        );
+        agentField = 'httpsAgent';
+        break;
+      case 'http':
+        agent = new HttpProxyAgent(
+          username ? `http://${username}:${password}@${host}:${port}` : `http://${host}:${port}`,
+        );
+        agentField = 'httpAgent';
+        break;
+      case 'https':
+        agent = new HttpsProxyAgent(
+          username ? `http://${username}:${password}@${host}:${port}` : `http://${host}:${port}`,
+        );
+        agentField = 'httpsAgent';
+        break;
+
+      default:
+        break;
+    }
+  }
+  return {
+    agent,
+    agentField,
+  };
+}
+
 export async function testProxy(proxy: DB.Proxy) {
   const result: {
     ipInfo?: {[key: string]: string};
     connectivity: {name: string; elapsedTime: number; status: string; reason?: string}[];
   } = {connectivity: []};
+
+  const requestProxy = getRequestProxy(proxy.proxy!, proxy.proxy_type!);
   try {
-    const ipInfo = await getProxyInfo(proxy.ip!, proxy.ip_checker || 'ip2location');
+    const ipInfo = await getProxyInfo(proxy);
     result.ipInfo = ipInfo || {};
   } catch (error) {
     logger.error(error);
   }
-
   if (proxy.proxy) {
-    const [host, port, username, password] = proxy.proxy.split(':');
     for (const pin of PIN_URL) {
       const startTime = Date.now();
       try {
-        let agent;
-        let agentField: string = 'httpsAgent';
-        switch (proxy.proxy_type?.toLowerCase()) {
-          case 'socks5':
-            agent = new SocksProxyAgent(
-              username
-                ? `socks://${username}:${password}@${host}:${port}`
-                : `socks://${host}:${port}`,
-            );
-            agentField = 'httpsAgent';
-            break;
-          case 'http':
-            agent = new HttpProxyAgent(
-              username
-                ? `http://${username}:${password}@${host}:${port}`
-                : `http://${host}:${port}`,
-            );
-            agentField = 'httpAgent';
-            break;
-          case 'https':
-            agent = new HttpsProxyAgent(
-              username
-                ? `http://${username}:${password}@${host}:${port}`
-                : `http://${host}:${port}`,
-            );
-            agentField = 'httpsAgent';
-            break;
-
-          default:
-            break;
-        }
         const response = await axios.get(pin.url, {
-          [agentField]: agent,
+          proxy: requestProxy,
           timeout: 5_000,
         });
         const endTime = Date.now();
@@ -173,6 +179,6 @@ export async function testProxy(proxy: DB.Proxy) {
       checked_at: db.fn.now(),
     } as DB.Group);
   }
-
+  
   return result;
 }

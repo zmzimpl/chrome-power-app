@@ -15,6 +15,7 @@ export namespace DB {
     updated_at?: string;
     proxy_id?: number;
     ua?: string;
+    fingerprint?: string;
     cookie?: string;
     status?: number;
 

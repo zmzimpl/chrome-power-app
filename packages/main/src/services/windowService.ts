@@ -8,6 +8,8 @@ import {WindowDB} from '../db/window';
 import {closeFingerprintWindow, openFingerprintWindow} from '../fingerprint/index';
 import {createLogger} from '../../../shared/utils/logger';
 import {SERVICE_LOGGER_LABEL} from '../constants';
+import {randomASCII, randomFloat, randomInt} from '../../../shared/utils';
+import path from 'path';
 
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 export const initWindowService = () => {
@@ -33,7 +35,7 @@ export const initWindowService = () => {
   });
 
   ipcMain.handle('window-create', async (_, window: DB.Window, fingerprint: SafeAny) => {
-    logger.info('try to create window', JSON.stringify(window));
+    logger.info('try to create window', JSON.stringify(window), JSON.stringify(fingerprint));
     return await WindowDB.create(window, fingerprint);
   });
 
@@ -54,8 +56,22 @@ export const initWindowService = () => {
   ipcMain.handle('window-getAll', async () => {
     return await WindowDB.all();
   });
+
   ipcMain.handle('window-getOpened', async () => {
     return await WindowDB.getOpenedWindows();
+  });
+
+  ipcMain.handle('window-fingerprint', async (_, windowId: number) => {
+    if (windowId) {
+      const window = await WindowDB.getById(windowId);
+      if (window) {
+        return {
+          ...JSON.parse(window.fingerprint),
+        };
+      }
+    } else {
+      return randomFingerprint();
+    }
   });
 
   ipcMain.handle('window-getById', async (_, id: number) => {
@@ -68,4 +84,19 @@ export const initWindowService = () => {
   ipcMain.handle('window-close', async (_, id: number) => {
     return await closeFingerprintWindow(id, true);
   });
+};
+
+export const randomFingerprint = () => {
+  const uaPath = path.join('assets', 'ua.txt');
+  const uaFile = readFileSync(uaPath, 'utf-8');
+  const uaList = uaFile.split('\n');
+  const randomIndex = Math.floor(Math.random() * uaList.length);
+  const ua = uaList[randomIndex];
+  const result = {
+    ua,
+    pathStr: randomASCII(),
+    webgl: randomFloat(),
+    audio: randomInt(),
+  };
+  return result;
 };

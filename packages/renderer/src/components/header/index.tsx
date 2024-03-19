@@ -9,7 +9,6 @@ import type {MenuInfo} from 'rc-menu/lib/interface';
 import {theme} from 'antd';
 const {useToken} = theme;
 import logo from '../../../assets/logo.png';
-import {supabase} from '../../../../shared/interfaces/supabaseClient';
 import {Icon} from '@iconify/react';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
@@ -56,13 +55,13 @@ export default function Header() {
         },
       ],
     },
-    {
-      type: 'divider',
-    },
-    {
-      label: t('header_sign_out'),
-      key: 'signout',
-    },
+    // {
+    //   type: 'divider',
+    // },
+    // {
+    //   label: t('header_sign_out'),
+    //   key: 'signout',
+    // },
   ];
 
   const appControl = (action: 'close' | 'minimize' | 'maximize') => {
@@ -72,9 +71,9 @@ export default function Header() {
 
   const dropdownAction = (info: MenuInfo) => {
     switch (info.key) {
-      case 'signout':
-        supabase.auth.signOut();
-        break;
+      // case 'signout':
+      //   supabase.auth.signOut();
+      //   break;
       case 'settings':
         navigate('/settings');
         break;

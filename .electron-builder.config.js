@@ -45,6 +45,10 @@ module.exports = async function () {
       shortcutName: 'chrome-power',
     },
 
+    win: {
+      requestedExecutionLevel: 'requireAdministrator',
+    },
+
     // Specify linux target just for disabling snap compilation
     linux: {
       target: 'deb',

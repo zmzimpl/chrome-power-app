@@ -3,9 +3,8 @@ import type {DB, SafeAny} from '../../../shared/types/db';
 import type {IWindowTemplate} from '../types/windowTemplate';
 import {GroupDB} from './group';
 import {ProxyDB} from './proxy';
-import {generateUniqueProfileId} from '../../../shared/utils/randomProfileId';
-import {dataStore} from '../../../shared/utils/dataStore';
-import api from '../../../shared/api/api';
+import {randomUniqueProfileId} from '../../../shared/utils/random';
+import { randomFingerprint } from '../services/windowService';
 
 const all = async () => {
   return await db('window')
@@ -50,6 +49,7 @@ const getOpenedWindows = async () => {
       'window.opened_at',
       'window.ua',
       'window.status',
+      'window.fingerprint',
       'group.name as group_name',
       'proxy.ip',
       'proxy.proxy',
@@ -119,54 +119,28 @@ const update = async (id: number, updatedData: DB.Window) => {
 };
 
 const create = async (windowData: DB.Window, fingerprint: SafeAny) => {
-  const {windowsUsed, windowsLimit} = dataStore.get('membership') as {
-    windowsUsed: number;
-    windowsLimit: number;
-  };
-  if (windowsUsed >= windowsLimit) {
-    return {
-      success: false,
-      message: 'You have reached the maximum number of windows allowed by your membership plan.',
-    };
-  }
   if (windowData.id && typeof windowData.id === 'string') {
     windowData.profile_id = windowData.id;
     delete windowData.id;
   }
   if (!windowData.profile_id) {
-    windowData.profile_id = generateUniqueProfileId();
+    windowData.profile_id = randomUniqueProfileId();
+    // 确保 profile_id 是唯一的
+    while (await db('window').where({profile_id: windowData.profile_id}).first()) {
+      windowData.profile_id = randomUniqueProfileId();
+    }
   }
   windowData.ua = fingerprint.ua;
+  windowData.fingerprint = JSON.stringify(fingerprint);
   const [id] = await db('window').insert(windowData);
-  try {
-    const {data} = await api.post('/power-api/fingerprints/window', {
-      fingerprint: fingerprint || {},
-      window_id: id,
-      profile_id: windowData.profile_id,
-    });
-    if (data) {
-      return {
-        success: true,
-        message: 'Window created successfully.',
-        data: {
-          ...windowData,
-          id,
-        },
-      };
-    } else {
-      await db('window').where({id}).delete();
-      return {
-        success: false,
-        message: 'Failed to create window.',
-      };
-    }
-  } catch (error) {
-    await db('window').where({id}).delete();
-    return {
-      success: false,
-      message: 'Failed to create window.',
-    };
-  }
+  return {
+    success: true,
+    message: 'Window created successfully.',
+    data: {
+      ...windowData,
+      id,
+    },
+  };
 };
 
 const remove = async (id: number) => {
@@ -179,11 +153,6 @@ const deleteAll = async () => {
 
 const batchRemove = async (ids: number[]) => {
   try {
-    await api.delete('/power-api/fingerprints/window', {
-      data: {
-        window_ids: ids,
-      },
-    });
     await db('window').update({status: 0}).whereIn('id', ids);
     return {
       success: true,
@@ -196,20 +165,14 @@ const batchRemove = async (ids: number[]) => {
     };
   }
 };
+
 const batchClear = async (ids: number[]) => {
   try {
-    const {data} = await api.delete('/power-api/fingerprints/window', {
-      data: {
-        window_ids: ids,
-      },
-    });
-    if (data.success) {
-      await db('window').delete().whereIn('id', ids);
-      return {
-        success: true,
-        message: 'Windows deleted successfully.',
-      };
-    }
+    await db('window').delete().whereIn('id', ids);
+    return {
+      success: true,
+      message: 'Windows deleted successfully.',
+    };
   } catch (error) {
     return {
       success: false,
@@ -260,7 +223,7 @@ const externalImport = async (fileData: IWindowTemplate[]) => {
       remark: row.remark,
       cookie: row.cookie,
     };
-    const {data: fingerprint} = await api.get('/power-api/fingerprints/window');
+    const fingerprint = randomFingerprint();
     const result = await WindowDB.create(window, fingerprint);
     if (result.data?.id) {
       newWindowAdded.push(result.data?.id);

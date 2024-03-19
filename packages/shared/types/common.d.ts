@@ -1,8 +1,3 @@
-export type DataStore = {
-  membership?: SafeAny;
-  session?: SafeAny;
-};
-
 export interface OperationResult {
   success: boolean;
   message: string;
@@ -11,4 +6,7 @@ export interface OperationResult {
 
 export interface SettingOptions {
   profileCachePath: string;
+  useLocalChrome: boolean,
+  localChromePath: string,
+  chromiumBinPath: string,
 }

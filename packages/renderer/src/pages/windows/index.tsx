@@ -19,14 +19,11 @@ import {
   ExclamationCircleFilled,
 } from '@ant-design/icons';
 import type {DB} from '../../../../shared/types/db';
-import {CommonBridge, GroupBridge, ProxyBridge, TagBridge, WindowBridge} from '#preload';
+import {GroupBridge, ProxyBridge, TagBridge, WindowBridge} from '#preload';
 import type {SearchProps} from 'antd/es/input';
 import {containsKeyword} from '/@/utils/str';
 import {useNavigate} from 'react-router-dom';
 import {MESSAGE_CONFIG, WINDOW_STATUS} from '/@/constants';
-import {setMembership} from '/@/slices/user-slice';
-import {useDispatch} from 'react-redux';
-import api from '../../../../shared/api/api';
 import {useTranslation} from 'react-i18next';
 
 const Windows = () => {
@@ -47,7 +44,6 @@ const Windows = () => {
   const [proxies, setProxies] = useState<DB.Proxy[]>([]);
   const [selectedProxy, setSelectedProxy] = useState<number>();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const moreActionDropdownItems: MenuProps['items'] = [
     // {
@@ -342,16 +338,6 @@ const Windows = () => {
     setDeleteModalVisible(true);
   };
 
-  const getMembership = async () => {
-    try {
-      const {data} = await api.get('/power-api/users/membership');
-      dispatch(setMembership(data));
-      await CommonBridge.share('membership', data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const onDeleteModalOk = async () => {
     const ids = selectedRow ? [selectedRow.id!] : selectedRowKeys;
     try {
@@ -361,7 +347,6 @@ const Windows = () => {
       await fetchWindowData();
       messageApi.success('Deleted successfully');
       setLoading(false);
-      getMembership();
     } catch (error) {
       messageApi.error('Failed to delete');
     }

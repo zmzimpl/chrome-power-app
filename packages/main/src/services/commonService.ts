@@ -1,10 +1,9 @@
 import {app, BrowserWindow, ipcMain, dialog, shell} from 'electron';
 import {createLogger} from '../../../shared/utils/logger';
-import {dataStore} from '../../../shared/utils/dataStore';
 import {SERVICE_LOGGER_LABEL} from '../constants';
 import {join} from 'path';
 import {copyFileSync, writeFileSync, readFileSync, readdir} from 'fs';
-import type {DataStore, SettingOptions} from '../../../shared/types/common';
+import type {SettingOptions} from '../../../shared/types/common';
 import {getSettings} from '../utils/get-settings';
 
 const logger = createLogger(SERVICE_LOGGER_LABEL);
@@ -95,22 +94,14 @@ export const initCommonService = () => {
     return {};
   });
 
-  ipcMain.handle('common-choose-path', async () => {
-    // const win = BrowserWindow.getAllWindows()[0];
+  ipcMain.handle(
+    'common-choose-path',
+    async (_, type: 'openFile' | 'openDirectory' = 'openDirectory') => {
+      // const win = BrowserWindow.getAllWindows()[0];
 
-    const path = await dialog.showOpenDialog({properties: ['openDirectory']});
+      const path = await dialog.showOpenDialog({properties: [type]});
 
-    return path.filePaths[0];
-  });
-
-  ipcMain.handle('data-share', async (_, key: keyof DataStore, value: unknown) => {
-    if (value === undefined) {
-      // 如果没有提供 value，那么视为获取数据的请求
-      return dataStore && dataStore.get(key);
-    } else {
-      // 如果提供了 value，那么视为设置数据的请求
-      dataStore.set(key, value);
-      return true; // 表明数据已成功设置
-    }
-  });
+      return path.filePaths[0];
+    },
+  );
 };

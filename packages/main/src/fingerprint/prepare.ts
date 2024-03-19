@@ -10,6 +10,7 @@ import {SocksProxyAgent} from 'socks-proxy-agent';
 import {ProxyDB} from '../db/proxy';
 import {PIN_URL} from '../../../shared/constants';
 import {db} from '../db';
+import { getOrigin } from '../server';
 
 const logger = createLogger(API_LOGGER_LABEL);
 
@@ -20,7 +21,6 @@ const getRealIP = async (proxy: DB.Proxy) => {
       proxy: requestProxy,
       timeout: 5_000,
     });
-    console.log(data);
     return data.ip;
   } catch (error) {
     logger.error(`| Prepare | getRealIP | error: ${error}`);
@@ -32,13 +32,11 @@ export const getProxyInfo = async (proxy: DB.Proxy) => {
   const maxAttempts = 3;
   const realIP = await getRealIP(proxy);
   const params = {
-    gateway: proxy.ip_checker || 'ip2location',
     ip: realIP,
   };
-  console.log('params', params);
   while (attempts < maxAttempts) {
     try {
-      const res = await api.get('/power-api/ip', {
+      const res = await api.get(getOrigin() + `/ip/${proxy.ip_checker || 'ip2location'}`, {
         params: params,
       });
       return res.data;
@@ -179,6 +177,6 @@ export async function testProxy(proxy: DB.Proxy) {
       checked_at: db.fn.now(),
     } as DB.Group);
   }
-  
+
   return result;
 }

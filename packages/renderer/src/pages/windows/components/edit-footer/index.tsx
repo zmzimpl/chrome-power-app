@@ -1,13 +1,10 @@
 import {Button, Space, message} from 'antd';
 import type {OperationResult} from '../../../../../../shared/types/common';
-import {CommonBridge, WindowBridge} from '#preload';
+import {WindowBridge} from '#preload';
 import type {DB, SafeAny} from '../../../../../../shared/types/db';
-import {setMembership} from '/@/slices/user-slice';
 import {MESSAGE_CONFIG} from '/@/constants';
-import {useDispatch} from 'react-redux';
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import api from '../../../../../../shared/api/api';
 import { useTranslation } from 'react-i18next';
 
 const WindowDetailFooter = ({
@@ -24,7 +21,6 @@ const WindowDetailFooter = ({
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage(MESSAGE_CONFIG);
   const [saving, setSaving] = useState(false);
-  const dispatch = useDispatch();
   const {t} = useTranslation();
 
   const back = () => {
@@ -54,16 +50,6 @@ const WindowDetailFooter = ({
     });
   };
 
-  const getMembership = async () => {
-    try {
-      const {data} = await api.get('/power-api/users/membership');
-      dispatch(setMembership(data));
-      await CommonBridge.share('membership', data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const saveWindow = async (formValue: DB.Window) => {
     setSaving(true);
     savePreparation(formValue);
@@ -74,9 +60,6 @@ const WindowDetailFooter = ({
     } else {
       if (currentTab === 'windowForm') {
         result = await WindowBridge?.create(formValue, fingerprints);
-        if (result.success) {
-          getMembership();
-        }
         showMessage(result);
       }
     }

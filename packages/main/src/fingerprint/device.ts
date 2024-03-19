@@ -31,7 +31,6 @@ export function getChromePath() {
         const stdout = stdoutBuffer.toString();
         const match = stdout.match(/(.:\\.*chrome.exe)/);
         if (match) {
-          logger.info(`Chrome path: ${match[1]}`);
           chromePath = match[1];
         } else {
           logger.error('Chrome not found');
@@ -46,7 +45,6 @@ export function getChromePath() {
         const stdout = stdoutBuffer.toString();
         const paths = stdout.split('\n').filter(path => path.endsWith('/Google Chrome.app'));
         if (paths.length > 0) {
-          logger.info(`Chrome path: ${paths[0]}`);
           chromePath = paths[0];
         } else {
           logger.error('Chrome not found');

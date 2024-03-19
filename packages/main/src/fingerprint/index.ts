@@ -20,10 +20,13 @@ import * as ProxyChain from 'proxy-chain';
 import api from '../../../shared/api/api';
 import {getSettings} from '../utils/get-settings';
 import {getPort} from '../server/index';
+import {randomFingerprint} from '../services/windowService';
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
 
 const HOST = '127.0.0.1';
+
+const settings = getSettings();
 
 // const HomePath = app.getPath('userData');
 // console.log(HomePath);
@@ -74,7 +77,6 @@ async function connectBrowser(port: number, ipInfo: IP, windowId: number) {
         : await browser.newPage();
     try {
       await attachFingerprintToPuppeteer(page, ipInfo);
-      console.log(getPort());
       if (import.meta.env.VITE_START_PAGE_URL) {
         await page.goto(
           `${import.meta.env.VITE_START_PAGE_URL}?windowId=${windowId}&serverPort=${getPort()}`,
@@ -86,18 +88,11 @@ async function connectBrowser(port: number, ipInfo: IP, windowId: number) {
   }
 }
 
-const fetchWindowFingerprint = async (id: number, profileId: string) => {
-  try {
-    const {data: fingerprint} = await api.get('/power-api/fingerprints/window', {
-      params: {
-        windowId: id,
-        profileId: profileId,
-      },
-    });
-    return fingerprint;
-  } catch (error) {
-    logger.error(error);
-    return undefined;
+const getDriverPath = () => {
+  if (settings.useLocalChrome) {
+    return settings.localChromePath;
+  } else {
+    return settings.chromiumBinPath;
   }
 };
 
@@ -106,7 +101,6 @@ export async function openFingerprintWindow(id: number) {
   const proxyData = await ProxyDB.getById(windowData.proxy_id);
   const proxyType = proxyData?.proxy_type?.toLowerCase();
   const userDataPath = app.getPath('userData');
-  const settings = getSettings();
   let cachePath;
   if (settings.profileCachePath) {
     cachePath = settings.profileCachePath;
@@ -115,13 +109,7 @@ export async function openFingerprintWindow(id: number) {
   }
   const win = BrowserWindow.getAllWindows()[0];
   const windowDataDir = `${cachePath}\\${id}_${windowData.profile_id}`;
-  let chromePath;
-
-  if (import.meta.env.DEV) {
-    chromePath = 'Chrome-bin\\chrome.exe';
-  } else {
-    chromePath = join(process.resourcesPath, 'Chrome-bin', 'chrome.exe');
-  }
+  const driverPath = getDriverPath();
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
   if (windowData.proxy_id && proxyData.ip) {
@@ -133,8 +121,17 @@ export async function openFingerprintWindow(id: number) {
     logger.error('ipInfo is empty');
     return;
   }
-  const fingerprint = await fetchWindowFingerprint(id, windowData.profile_id);
-  if (chromePath) {
+  const fingerprint =
+    windowData.fingerprint && windowData.fingerprint !== '{}'
+      ? JSON.parse(windowData.fingerprint)
+      : randomFingerprint();
+  if (!windowData.fingerprint || windowData.fingerprint === '{}') {
+    await WindowDB.update(id, {
+      ...windowData,
+      fingerprint,
+    });
+  }
+  if (driverPath) {
     const chromePort = await portscanner.findAPortNotInUse(9222, 10222);
     let finalProxy;
     let proxyServer: Server<typeof IncomingMessage, typeof ServerResponse> | ProxyChain.Server;
@@ -169,13 +166,13 @@ export async function openFingerprintWindow(id: number) {
     if (finalProxy) {
       launchParamter.push(`--proxy-server=${finalProxy}`);
     }
-    console.log(JSON.stringify(ipInfo));
     if (ipInfo?.timeZone) {
       launchParamter.push(`--timezone=${ipInfo.timeZone}`);
+      launchParamter.push(`--tz=${ipInfo.timeZone}`);
     }
     let chromeInstance;
     try {
-      chromeInstance = spawn(chromePath, launchParamter);
+      chromeInstance = spawn(driverPath, launchParamter);
     } catch (error) {
       logger.error(error);
     }
@@ -189,7 +186,6 @@ export async function openFingerprintWindow(id: number) {
       opened_at: db.fn.now() as unknown as string,
     });
     win.webContents.send('window-opened', id);
-    console.log('chromeInstance.pid', chromeInstance.pid);
     chromeInstance.stdout.on('data', _chunk => {
       // const str = _chunk.toString();
       // console.error('stderr: ', str);

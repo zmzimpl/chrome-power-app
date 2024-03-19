@@ -8,7 +8,6 @@ import type {DB, SafeAny} from '../../../../../shared/types/db';
 import {useSearchParams} from 'react-router-dom';
 import {WindowBridge} from '#preload';
 import FingerprintInfo from '../components/fingerprint-info';
-import api from '../../../../../shared/api/api';
 import WindowDetailFooter from '../components/edit-footer';
 import {useTranslation} from 'react-i18next';
 
@@ -70,14 +69,10 @@ const WindowDetail = () => {
     initFormValue();
   }, [searchParams]);
 
-  const fetchFingerprints = async (windowId?: number, profileId?: string) => {
+  const fetchFingerprints = async (windowId?: number) => {
     try {
-      const {data} = await api.get('/power-api/fingerprints/window', {
-        params: {
-          windowId: windowId,
-          profileId: profileId,
-        },
-      });
+      // eslint-disable-next-line no-unsafe-optional-chaining
+      const data = await WindowBridge?.getFingerprint(windowId);
       setFingerprints(data);
     } catch (error) {
       setFingerprints(new Object());
@@ -100,7 +95,7 @@ const WindowDetail = () => {
         window.tags = [];
       }
       setFormValue(window || new Object());
-      fetchFingerprints(Number(id), window.profile_id);
+      fetchFingerprints(Number(id));
     } else {
       setFormValue(new Object());
       fetchFingerprints();

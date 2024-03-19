@@ -5,9 +5,6 @@ import {CommonBridge, WindowBridge} from '#preload';
 import {useNavigate} from 'react-router-dom';
 import {MESSAGE_CONFIG} from '/@/constants';
 import {useState} from 'react';
-import {useDispatch} from 'react-redux';
-import {setMembership} from '/@/slices/user-slice';
-import api from '../../../../../../shared/api/api';
 import type {OperationResult} from '../../../../../../shared/types/common';
 import {useTranslation} from 'react-i18next';
 
@@ -18,18 +15,7 @@ const WindowImportForm = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const {t} = useTranslation();
-
-  const getMembership = async () => {
-    try {
-      const {data} = await api.get('/power-api/users/membership');
-      dispatch(setMembership(data));
-      await CommonBridge.share('membership', data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   const props: UploadProps = {
     name: 'import',
@@ -39,9 +25,6 @@ const WindowImportForm = () => {
         messageApi.open({type: 'loading', content: 'Importing...', key: key});
         const result: OperationResult = await WindowBridge?.import((file as unknown as File).path);
         console.log(result);
-        if (result.success) {
-          getMembership();
-        }
         messageApi
           .open({
             type: (result.data as number[]).length > 0 ? 'success' : 'error',

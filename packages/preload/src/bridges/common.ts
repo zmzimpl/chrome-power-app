@@ -6,8 +6,8 @@ export const CommonBridge = {
     const result = await ipcRenderer.invoke('common-download', path);
     return result;
   },
-  async choosePath() {
-    const result = await ipcRenderer.invoke('common-choose-path');
+  async choosePath(type: 'openFile' | 'openDirectory') {
+    const result = await ipcRenderer.invoke('common-choose-path', type);
     return result;
   },
   async share(key: string, value?: unknown) {

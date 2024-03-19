@@ -9,10 +9,11 @@ import {Icon} from '@iconify/react';
 import {useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import Logs from '../pages/logs';
+import Start from '../pages/start';
 
 interface RouteOption {
   path: string;
-  name: string;
+  name?: string;
   icon?: ReactElement;
   component: () => JSX.Element;
   invisible?: boolean;
@@ -70,6 +71,11 @@ export const useRoutes = () => {
         name: t('menu_settings'),
         icon: <Icon icon="material-symbols:settings-outline" />,
         component: Settings,
+      },
+      {
+        path: '/start',
+        component: () => <Start />,
+        invisible: true,
       },
     ];
   }, [i18n.language]);

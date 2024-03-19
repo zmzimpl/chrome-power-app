@@ -8,8 +8,6 @@ import {ConfigProvider, message} from 'antd';
 import {HashRouter as Router} from 'react-router-dom';
 import 'dayjs/locale/zh-cn';
 import enUS from 'antd/locale/en_US';
-import {Provider} from 'react-redux';
-import {store} from './store';
 import './i18n';
 
 const rootContainer = document.getElementById('app');
@@ -47,11 +45,9 @@ root.render(
       locale={enUS}
       theme={customTheme}
     >
-      <Provider store={store}>
-        <Router>
-          <App />
-        </Router>
-      </Provider>
+      <Router>
+        <App />
+      </Router>
     </ConfigProvider>
   </React.StrictMode>,
 );

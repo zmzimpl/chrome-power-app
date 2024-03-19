@@ -88,6 +88,9 @@ i18n
 
           settings_cache_path: 'Cache path',
           settings_choose_cache_path: 'Choose path',
+          settings_use_local_chrome: 'Use Chrome',
+          settings_chrome_path: 'Chrome Path',
+          setting_chromium_path: 'Chromium Path',
 
           footer_ok: 'OK',
           footer_cancel: 'Cancel',
@@ -99,10 +102,6 @@ i18n
           menu_settings: 'Settings',
           menu_logs: 'Running Logs',
           menu_sync: 'Sync',
-
-          membership_renew: 'Renew',
-          membership_upgrade: 'Upgrade',
-          membership_window_count: 'Windows',
 
           header_language: 'Language',
           header_settings: 'Settings',
@@ -189,6 +188,9 @@ i18n
 
           settings_cache_path: '缓存目录',
           settings_choose_cache_path: '选择路径',
+          settings_use_local_chrome: '使用本地 Chrome',
+          settings_chrome_path: 'Chrome 路径',
+          setting_chromium_path: 'Chromium 内核路径',
 
           footer_ok: '确定',
           footer_cancel: '取消',
@@ -200,10 +202,6 @@ i18n
           menu_sync: '同步操作',
           menu_logs: '运行日志',
           menu_settings: '设置',
-
-          membership_renew: '续期',
-          membership_upgrade: '升级',
-          membership_window_count: '窗口数',
 
           header_settings: '设置',
           header_language: '语言',

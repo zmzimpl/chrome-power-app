@@ -31,6 +31,10 @@ module.exports = async function () {
         from: 'migrations',
         to: 'app/migrations',
       },
+      {
+        from: 'assets',
+        to: 'app/assets',
+      },
     ],
     extraMetadata: {
       version: getVersion(),
@@ -43,6 +47,9 @@ module.exports = async function () {
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
       shortcutName: 'chrome-power',
+      win: {
+        icon: "buildResources/icon.ico",
+      }
     },
 
     win: {

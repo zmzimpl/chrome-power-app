@@ -18,7 +18,7 @@ const getIPInfo = async (ip: string, gateway: 'ip2location' | 'geoip') => {
   }
   if (gateway === 'ip2location') {
     const ip2location = new IP2Location();
-    const filePath = path.join('assets', 'IP2LOCATION-LITE-DB11.BIN');
+    const filePath = path.join(import.meta.env.MODE === 'development' ? 'assets' : 'resources/app/assets', 'IP2LOCATION-LITE-DB11.BIN');
     ip2location.open(filePath);
     const ipInfo = ip2location.getAll(ip);
     const {latitude, longitude, countryShort} = ipInfo;

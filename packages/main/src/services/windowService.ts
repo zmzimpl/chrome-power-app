@@ -87,7 +87,7 @@ export const initWindowService = () => {
 };
 
 export const randomFingerprint = () => {
-  const uaPath = path.join('assets', 'ua.txt');
+  const uaPath = path.join(import.meta.env.MODE === 'development' ? 'assets' : 'resources/app/assets', 'ua.txt');
   const uaFile = readFileSync(uaPath, 'utf-8');
   const uaList = uaFile.split('\n');
   const randomIndex = Math.floor(Math.random() * uaList.length);

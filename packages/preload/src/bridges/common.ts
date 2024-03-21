@@ -26,4 +26,8 @@ export const CommonBridge = {
     const result = await ipcRenderer.invoke('common-fetch-logs', logModule);
     return result;
   },
+  async getApi() {
+    const result = await ipcRenderer.invoke('common-api');
+    return result;
+  },
 };

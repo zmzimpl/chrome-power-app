@@ -42,6 +42,7 @@ i18n
           window_column_last_open: 'Last open',
           window_column_created_at: 'Created at',
           window_column_action: 'Action',
+          window_edit_form_profile_id: 'Profile ID',
           window_edit_form_name: 'Name',
           window_edit_form_remark: 'Remark',
           window_edit_form_group: 'Group',
@@ -89,7 +90,7 @@ i18n
           settings_cache_path: 'Cache path',
           settings_choose_cache_path: 'Choose path',
           settings_use_local_chrome: 'Use Chrome',
-          settings_chrome_path: 'Chrome Path',
+          settings_chrome_path: 'Chrome.exe Path',
           setting_chromium_path: 'Chromium Path',
 
           footer_ok: 'OK',
@@ -102,6 +103,7 @@ i18n
           menu_settings: 'Settings',
           menu_logs: 'Running Logs',
           menu_sync: 'Sync',
+          menu_api: 'API',
 
           header_language: 'Language',
           header_settings: 'Settings',
@@ -142,6 +144,7 @@ i18n
           window_column_last_open: '最后打开',
           window_column_created_at: '创建时间',
           window_column_action: '操作',
+          window_edit_form_profile_id: '缓存目录名',
           window_edit_form_name: '名称',
           window_edit_form_remark: '备注',
           window_edit_form_group: '分组',
@@ -189,7 +192,7 @@ i18n
           settings_cache_path: '缓存目录',
           settings_choose_cache_path: '选择路径',
           settings_use_local_chrome: '使用本地 Chrome',
-          settings_chrome_path: 'Chrome 路径',
+          settings_chrome_path: 'Chrome.exe 路径',
           setting_chromium_path: 'Chromium 内核路径',
 
           footer_ok: '确定',
@@ -202,6 +205,7 @@ i18n
           menu_sync: '同步操作',
           menu_logs: '运行日志',
           menu_settings: '设置',
+          menu_api: 'API',
 
           header_settings: '设置',
           header_language: '语言',

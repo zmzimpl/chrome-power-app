@@ -27,13 +27,11 @@ const Settings = () => {
 
   const fetchSettings = async () => {
     const settings = await CommonBridge.getSettings();
-    console.log(settings);
     setFormValue(settings);
     form.setFieldsValue(settings);
   };
 
   const handleSave = async (values: SettingOptions) => {
-    console.log(values);
     await CommonBridge.saveSettings(values);
   };
 

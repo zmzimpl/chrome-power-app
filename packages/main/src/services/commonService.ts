@@ -5,6 +5,8 @@ import {join} from 'path';
 import {copyFileSync, writeFileSync, readFileSync, readdir} from 'fs';
 import type {SettingOptions} from '../../../shared/types/common';
 import {getSettings} from '../utils/get-settings';
+import {getOrigin} from '../server';
+import axios from 'axios';
 
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 
@@ -104,4 +106,13 @@ export const initCommonService = () => {
       return path.filePaths[0];
     },
   );
+
+  ipcMain.handle('common-api', async () => {
+    const apiUrl = getOrigin();
+    const res = await axios.get(`${apiUrl}/status`);
+    return {
+      url: apiUrl,
+      ...(res?.data || {}),
+    };
+  });
 };

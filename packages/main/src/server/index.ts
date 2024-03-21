@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import IPRouter from './routes/ip';
 import WindowRouter from './routes/window';
+import ProfilesRouter from './routes/profiles';
 
 const app: Express = express();
 let port: number = 49156; // 初始端口
@@ -11,6 +12,15 @@ let port: number = 49156; // 初始端口
 app.use(cors());
 app.use('/ip', IPRouter);
 app.use('/window', WindowRouter);
+app.use('/profiles', ProfilesRouter);
+
+app.get('/status', async (req, res) => {
+
+  res.send({
+    status: 'ok',
+    port,
+  });
+});
 
 const server: Server = app
   .listen(port, () => {

@@ -10,6 +10,7 @@ import {useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import Logs from '../pages/logs';
 import Start from '../pages/start';
+import Api from '../pages/api';
 
 interface RouteOption {
   path: string;
@@ -71,6 +72,12 @@ export const useRoutes = () => {
         name: t('menu_settings'),
         icon: <Icon icon="material-symbols:settings-outline" />,
         component: Settings,
+      },
+      {
+        path: '/api',
+        name: t('menu_api'),
+        icon: <Icon icon="ant-design:api-outlined" />,
+        component: Api,
       },
       {
         path: '/start',

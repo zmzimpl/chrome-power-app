@@ -7,7 +7,8 @@ import type {ThemeConfig} from 'antd';
 import {ConfigProvider, message} from 'antd';
 import {HashRouter as Router} from 'react-router-dom';
 import 'dayjs/locale/zh-cn';
-import enUS from 'antd/locale/en_US';
+// import enUS from 'antd/locale/en_US';
+import zhCN from 'antd/locale/zh_CN';
 import './i18n';
 
 const rootContainer = document.getElementById('app');
@@ -42,7 +43,7 @@ const root = createRoot(rootContainer!);
 root.render(
   <React.StrictMode>
     <ConfigProvider
-      locale={enUS}
+      locale={zhCN}
       theme={customTheme}
     >
       <Router>

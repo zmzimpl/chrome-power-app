@@ -4,7 +4,7 @@ import {useEffect, useState} from 'react';
 import type {DB} from '../../../../../../shared/types/db';
 import {GroupBridge, TagBridge, ProxyBridge} from '#preload';
 import {TAG_COLORS} from '/@/constants';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 const {TextArea} = Input;
 
@@ -144,9 +144,7 @@ const WindowEditForm = ({
         name="remark"
         label={t('window_edit_form_remark')}
       >
-        <TextArea
-          rows={4}
-        />
+        <TextArea rows={4} />
       </Form.Item>
 
       <Form.Item<FieldType>
@@ -158,8 +156,15 @@ const WindowEditForm = ({
           allowClear
           showSearch
           filterOption={filterProxyOption}
-          fieldNames={{label: 'ip', value: 'id'}}
+          fieldNames={{label: 'proxy', value: 'id'}}
         ></Select>
+      </Form.Item>
+
+      <Form.Item<FieldType>
+        label={t('window_edit_form_profile_id')}
+        name="profile_id"
+      >
+        <Input />
       </Form.Item>
     </Form>
   );

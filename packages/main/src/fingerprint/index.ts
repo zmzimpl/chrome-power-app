@@ -26,8 +26,6 @@ const logger = createLogger(WINDOW_LOGGER_LABEL);
 
 const HOST = '127.0.0.1';
 
-const settings = getSettings();
-
 // const HomePath = app.getPath('userData');
 // console.log(HomePath);
 
@@ -85,10 +83,13 @@ async function connectBrowser(port: number, ipInfo: IP, windowId: number) {
     } catch (error) {
       logger.error(error);
     }
+    return data;
   }
 }
 
 const getDriverPath = () => {
+  const settings = getSettings();
+
   if (settings.useLocalChrome) {
     return settings.localChromePath;
   } else {
@@ -101,6 +102,8 @@ export async function openFingerprintWindow(id: number) {
   const proxyData = await ProxyDB.getById(windowData.proxy_id);
   const proxyType = proxyData?.proxy_type?.toLowerCase();
   const userDataPath = app.getPath('userData');
+  const settings = getSettings();
+
   let cachePath;
   if (settings.profileCachePath) {
     cachePath = settings.profileCachePath;
@@ -108,7 +111,7 @@ export async function openFingerprintWindow(id: number) {
     cachePath = join(userDataPath, 'cache');
   }
   const win = BrowserWindow.getAllWindows()[0];
-  const windowDataDir = `${cachePath}\\${id}_${windowData.profile_id}`;
+  const windowDataDir = `${cachePath}\\${windowData.profile_id}`;
   const driverPath = getDriverPath();
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
@@ -213,13 +216,16 @@ export async function openFingerprintWindow(id: number) {
     await sleep(1);
 
     try {
-      connectBrowser(chromePort, ipInfo, windowData.id);
+      return connectBrowser(chromePort, ipInfo, windowData.id);
     } catch (error) {
       logger.error(error);
       execSync(`taskkill /PID ${chromeInstance.pid} /F`);
+      closeFingerprintWindow(id, true);
+      return null;
     }
   } else {
-    win.webContents.send('window-opened', null);
+    logger.error('Driver path is empty');
+    return null;
   }
 }
 

@@ -47,9 +47,6 @@ module.exports = async function () {
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
       shortcutName: 'chrome-power',
-      win: {
-        icon: "buildResources/icon.ico",
-      }
     },
 
     win: {

@@ -1,5 +1,25 @@
 import {app, BrowserWindow, ipcMain, shell} from 'electron';
 import {join, resolve} from 'node:path';
+import express from 'express';
+import * as portscanner from 'portscanner';
+import type { BridgeMessage } from '../../shared/types/common';
+
+const server = express();
+const isDev = import.meta.env.DEV;
+let serverStarted = false;
+let PORT = 5173;
+
+// 仅在生产环境下启动Express服务器
+async function findAvailablePortAndStartServer() {
+  if (!isDev) {
+    PORT = await portscanner.findAPortNotInUse(5173, 8000);
+    server.use(express.static(resolve(__dirname, '../../renderer/dist')));
+    server.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      serverStarted = true;
+    });
+  }
+}
 
 async function createWindow() {
   const browserWindow = new BrowserWindow({
@@ -72,20 +92,32 @@ async function createWindow() {
      * Load from the Vite dev server for development.
      */
     await browserWindow.loadURL(import.meta.env.VITE_DEV_SERVER_URL);
+  } else if (serverStarted) {
+    await browserWindow.loadURL(`http://localhost:${PORT}/index.html`); // 确保端口号与你的服务器端口匹配
   } else {
-    /**
-     * Load from the local file system for production and test.
-     *
-     * Use BrowserWindow.loadFile() instead of BrowserWindow.loadURL() for WhatWG URL API limitations
-     * when path contains special characters like `#`.
-     * Let electron handle the path quirks.
-     * @see https://github.com/nodejs/node/issues/12682
-     * @see https://github.com/electron/electron/issues/6869
-     */
     await browserWindow.loadFile(resolve(__dirname, '../../renderer/dist/index.html'));
   }
 
   return browserWindow;
+}
+
+export async function initApp() {
+  await findAvailablePortAndStartServer();
+  const mainWindow = await createWindow();
+  return mainWindow;
+}
+
+export function getClientPort() {
+  return PORT;
+}
+
+export function getMainWindow() {
+  return BrowserWindow.getAllWindows()[0];
+}
+
+export function bridgeMessageToUI(msg: BridgeMessage) {
+  const mainWindow = getMainWindow();
+  mainWindow?.webContents.send('bridge-msg', msg);
 }
 
 /**
@@ -95,7 +127,7 @@ export async function restoreOrCreateWindow() {
   let window = BrowserWindow.getAllWindows().find(w => !w.isDestroyed());
 
   if (window === undefined) {
-    window = await createWindow();
+    window = await initApp();
   }
 
   if (window.isMinimized()) {

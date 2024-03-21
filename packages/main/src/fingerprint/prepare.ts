@@ -10,20 +10,38 @@ import {SocksProxyAgent} from 'socks-proxy-agent';
 import {ProxyDB} from '../db/proxy';
 import {PIN_URL} from '../../../shared/constants';
 import {db} from '../db';
-import { getOrigin } from '../server';
+import {getOrigin} from '../server';
+import {bridgeMessageToUI} from '../mainWindow';
+import type {AxiosProxyConfig} from 'axios';
 
 const logger = createLogger(API_LOGGER_LABEL);
 
 const getRealIP = async (proxy: DB.Proxy) => {
   const requestProxy = getRequestProxy(proxy.proxy!, proxy.proxy_type!);
+
+  const makeRequest = async (url: string, proxy: AxiosProxyConfig | undefined) => {
+    try {
+      const {data} = await axios.get(url, {
+        proxy: proxy,
+        timeout: 5_000,
+      });
+      return url.includes('ip-api.com') ? data.query : data.ip;
+    } catch (error) {
+      throw new Error(`Failed to fetch IP from ${url}: ${error}`);
+    }
+  };
+
   try {
-    const {data} = await axios.get('https://api64.ipify.org?format=json', {
-      proxy: requestProxy,
-      timeout: 5_000,
-    });
-    return data.ip;
+    return await Promise.race([
+      makeRequest('http://ip-api.com/json/?fields=61439', requestProxy),
+      makeRequest('https://api64.ipify.org?format=json', requestProxy),
+    ]);
   } catch (error) {
-    logger.error(`| Prepare | getRealIP | error: ${error}`);
+    bridgeMessageToUI({
+      type: 'error',
+      text: `获取真实IP失败: ${(error as {message: string}).message}`,
+    });
+    logger.error(`| Prepare | getRealIP | error: ${(error as {message: string}).message}`);
   }
 };
 

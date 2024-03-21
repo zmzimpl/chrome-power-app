@@ -1,5 +1,6 @@
+import type {IpcRendererEvent} from 'electron';
 import {ipcRenderer} from 'electron';
-import type {SettingOptions} from '../../../shared/types/common';
+import type {BridgeMessage, SettingOptions} from '../../../shared/types/common';
 
 export const CommonBridge = {
   async download(path: string) {
@@ -30,4 +31,10 @@ export const CommonBridge = {
     const result = await ipcRenderer.invoke('common-api');
     return result;
   },
+
+  onMessaged: (callback: (event: IpcRendererEvent, msg: BridgeMessage) => void) =>
+    ipcRenderer.on('bridge-msg', callback),
+
+  offMessaged: (callback: (event: IpcRendererEvent, msg: BridgeMessage) => void) =>
+    ipcRenderer.off('bridge-msg', callback),
 };

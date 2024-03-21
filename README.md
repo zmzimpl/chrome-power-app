@@ -2,7 +2,7 @@
 
 ---
 
-首款开源指纹浏览器。基于Puppeteer、Electron、React开发。
+首款开源指纹浏览器。基于 Puppeteer、Electron、React 开发。
 
 此软件遵循AGPL协议，因此如果你想对其进行修改并进行商业发布，请保持开源。
 
@@ -16,9 +16,8 @@
 
 按照以下步骤开始使用此软件：
 
-- 下载安装包（仅支持Windows） [点击此处下载](https://github.com/zmzimpl/chrome-power-app/releases/download/v1.0.0/chrome-power-Setup-1.0.0.exe)
-- 运行安装程序以完成安装
-- 注册账户并登录
+- 下载安装包（仅支持Windows） [点击此处下载](https://github.com/zmzimpl/chrome-power-app/releases)
+- 以管理员身份运行安装程序以完成安装
 - 强烈建议前往设置页面设置你的缓存目录。
 - 创建代理
 - 创建窗口
@@ -26,7 +25,6 @@
   - 导入窗口
     - 从模板导入
     - 从AdsPower导入
-- 同步功能正在开发中，目前仅支持平铺所有ChromePower窗口。
 
 ## Todo
 

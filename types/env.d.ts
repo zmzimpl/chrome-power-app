@@ -31,3 +31,4 @@ interface ImportMeta {
 
 declare module 'portscanner';
 declare module 'geoip-lite';
+declare module 'ip';

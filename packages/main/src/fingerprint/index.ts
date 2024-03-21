@@ -21,6 +21,7 @@ import api from '../../../shared/api/api';
 import {getSettings} from '../utils/get-settings';
 import {getPort} from '../server/index';
 import {randomFingerprint} from '../services/windowService';
+import { getClientPort } from '../mainWindow';
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
 
@@ -75,9 +76,9 @@ async function connectBrowser(port: number, ipInfo: IP, windowId: number) {
         : await browser.newPage();
     try {
       await attachFingerprintToPuppeteer(page, ipInfo);
-      if (import.meta.env.VITE_START_PAGE_URL) {
+      if (getClientPort()) {
         await page.goto(
-          `${import.meta.env.VITE_START_PAGE_URL}?windowId=${windowId}&serverPort=${getPort()}`,
+          `http://localhost:${getClientPort()}/#/start?windowId=${windowId}&serverPort=${getPort()}`,
         );
       }
     } catch (error) {

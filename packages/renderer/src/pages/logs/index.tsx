@@ -28,7 +28,7 @@ const Logs = () => {
     },
     {
       key: 'Api',
-      label: 'Sync',
+      label: 'Api',
     },
     {
       key: 'Service',

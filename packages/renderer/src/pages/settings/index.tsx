@@ -54,6 +54,7 @@ const Settings = () => {
       ...changed,
     };
     setFormValue(newFormValue);
+    handleSave(newFormValue);
   };
 
   // type FieldType = SettingOptions;
@@ -138,7 +139,7 @@ const Settings = () => {
           )}
         </Form>
       </Card>
-      <div className="content-footer pl-24">
+      {/* <div className="content-footer pl-24">
         <Button
           type="primary"
           className="w-20"
@@ -146,7 +147,7 @@ const Settings = () => {
         >
           {t('footer_ok')}
         </Button>
-      </div>
+      </div> */}
     </>
   );
 };

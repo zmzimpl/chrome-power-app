@@ -2,6 +2,7 @@ import {execSync} from 'child_process';
 import * as os from 'os';
 import {createLogger} from '../../../shared/utils/logger';
 import {APP_LOGGER_LABEL} from '../constants';
+import {parse} from 'path';
 
 const logger = createLogger(APP_LOGGER_LABEL);
 
@@ -55,4 +56,12 @@ export function getChromePath() {
       break;
   }
   return chromePath;
+}
+
+export function getRootDir() {
+  const installationPath = process.resourcesPath;
+  const parsedPath = parse(installationPath);
+  // 获取根目录
+  const rootDirectory = parsedPath.root;
+  return rootDirectory;
 }

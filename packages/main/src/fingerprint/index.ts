@@ -113,12 +113,8 @@ export async function openFingerprintWindow(id: number) {
   const proxyType = proxyData?.proxy_type?.toLowerCase();
   const settings = getSettings();
 
-  let cachePath;
-  if (settings.profileCachePath) {
-    cachePath = settings.profileCachePath;
-  } else {
-    cachePath = join(process.resourcesPath, 'chromePowerCache');
-  }
+  const cachePath = settings.profileCachePath;
+
   const win = BrowserWindow.getAllWindows()[0];
   const windowDataDir = join(
     cachePath,
@@ -193,6 +189,7 @@ export async function openFingerprintWindow(id: number) {
     if (!chromeInstance) {
       return;
     }
+    await sleep(1);
     await WindowDB.update(id, {
       status: 2,
       port: chromePort,

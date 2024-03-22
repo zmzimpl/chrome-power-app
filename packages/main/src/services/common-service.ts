@@ -84,6 +84,7 @@ export const initCommonService = () => {
   );
 
   ipcMain.handle('common-save-settings', async (_, values: SettingOptions) => {
+
     const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
 
     try {

@@ -11,7 +11,7 @@
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
   return {
-    productName: 'chrome-power',
+    productName: 'chrome-power-alpha',
     directories: {
       output: 'dist',
       buildResources: 'buildResources',
@@ -46,7 +46,7 @@ module.exports = async function () {
       allowToChangeInstallationDirectory: true,
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
-      shortcutName: 'chrome-power',
+      shortcutName: 'chrome-power-alpha',
     },
 
     win: {

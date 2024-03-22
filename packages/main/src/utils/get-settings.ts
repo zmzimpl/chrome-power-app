@@ -1,12 +1,12 @@
 import {existsSync, readFileSync, writeFileSync} from 'fs';
 import {join} from 'path';
 import type {SettingOptions} from '../../../shared/types/common';
-import {getChromePath} from '../fingerprint/device';
+import {getChromePath, getRootDir} from '../fingerprint/device';
 
 export const getSettings = (): SettingOptions => {
   const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
   let settings = {
-    profileCachePath: join(process.resourcesPath, 'chromePowerCache'),
+    profileCachePath: join(getRootDir(), 'chromePowerCache'),
     useLocalChrome: true,
     localChromePath: '',
     chromiumBinPath: '',

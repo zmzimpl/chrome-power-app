@@ -100,7 +100,7 @@ export default function Start() {
   return (
     <main className="h-full bg-gradient-to-r from-purple-200 via-blue-300 to-pink-200 border-purple-200 mx-[25%]">
       <header className="h-24 flex flex-col rounded-md items-center justify-center shadow-md bg-indigo-400 ">
-        <h1 className="text-2xl font-semibold text-white mb-2">IP: {moreInfo.ip}</h1>
+        <h1 className="text-2xl font-semibold text-white mb-2">IP: {moreInfo.ip || 'Disconnected'}</h1>
         <div className="flex justify-center text-white">
           <p>
             {moreInfo.country} - {moreInfo.timeZone}

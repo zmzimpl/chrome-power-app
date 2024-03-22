@@ -1,4 +1,4 @@
-import type {IWindowTemplate} from '../types/windowTemplate';
+import type {IWindowTemplate} from '../types/window-template';
 
 export function txtToJSON(txt: string): IWindowTemplate[] {
   const entries = txt.split('\n\n'); // 根据两个换行符来分割每一块数据

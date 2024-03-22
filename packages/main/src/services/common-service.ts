@@ -84,8 +84,7 @@ export const initCommonService = () => {
   );
 
   ipcMain.handle('common-save-settings', async (_, values: SettingOptions) => {
-    const userDataPath = app.getPath('userData');
-    const configFilePath = join(userDataPath, 'chrome-power-config.json');
+    const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
 
     try {
       writeFileSync(configFilePath, JSON.stringify(values), 'utf8');

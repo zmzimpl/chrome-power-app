@@ -2,13 +2,13 @@ import {join} from 'path';
 import {ProxyDB} from '../db/proxy';
 import {WindowDB} from '../db/window';
 // import {getChromePath} from './device';
-import {BrowserWindow, app} from 'electron';
+import {BrowserWindow} from 'electron';
 import type {Page} from 'puppeteer';
 import puppeteer from 'puppeteer';
 import {execSync, spawn} from 'child_process';
 import * as portscanner from 'portscanner';
 import {sleep} from '../utils/sleep';
-import SocksServer from '../proxy-server/socksServer';
+import SocksServer from '../proxy-server/socks-server';
 import type {DB} from '../../../shared/types/db';
 import type {IP} from '../../../shared/types/ip';
 import {type IncomingMessage, type Server, type ServerResponse} from 'http';
@@ -20,8 +20,8 @@ import * as ProxyChain from 'proxy-chain';
 import api from '../../../shared/api/api';
 import {getSettings} from '../utils/get-settings';
 import {getPort} from '../server/index';
-import {randomFingerprint} from '../services/windowService';
-import { getClientPort } from '../mainWindow';
+import {randomFingerprint} from '../services/window-service';
+import {bridgeMessageToUI, getClientPort} from '../mainWindow';
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
 
@@ -40,9 +40,13 @@ const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP) => {
         }, title);
       }
 
-      await page.setGeolocation({latitude: ipInfo.ll[0], longitude: ipInfo.ll[1]});
+      await page.setGeolocation({latitude: ipInfo.ll?.[0], longitude: ipInfo.ll?.[1]});
       await page.emulateTimezone(ipInfo.timeZone);
     } catch (error) {
+      bridgeMessageToUI({
+        type: 'error',
+        text: (error as {message: string}).message,
+      });
       logger.error(error);
     }
   });
@@ -51,7 +55,12 @@ const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP) => {
   );
 };
 
-async function connectBrowser(port: number, ipInfo: IP, windowId: number) {
+async function connectBrowser(
+  port: number,
+  ipInfo: IP,
+  windowId: number,
+  openStartPage: boolean = true,
+) {
   const browserURL = `http://${HOST}:${port}`;
   const {data} = await api.get(browserURL + '/json/version');
   if (data.webSocketDebuggerUrl) {
@@ -69,14 +78,14 @@ async function connectBrowser(port: number, ipInfo: IP, windowId: number) {
     const pages = await browser.pages();
     const page =
       pages.length &&
-      (pages[0].url() === 'about:blank' ||
-        !pages[0].url() ||
-        pages[0].url() === 'chrome://new-tab-page/')
-        ? pages[0]
+      (pages?.[0]?.url() === 'about:blank' ||
+        !pages?.[0]?.url() ||
+        pages?.[0]?.url() === 'chrome://new-tab-page/')
+        ? pages?.[0]
         : await browser.newPage();
     try {
       await attachFingerprintToPuppeteer(page, ipInfo);
-      if (getClientPort()) {
+      if (getClientPort() && openStartPage) {
         await page.goto(
           `http://localhost:${getClientPort()}/#/start?windowId=${windowId}&serverPort=${getPort()}`,
         );
@@ -102,29 +111,30 @@ export async function openFingerprintWindow(id: number) {
   const windowData = await WindowDB.getById(id);
   const proxyData = await ProxyDB.getById(windowData.proxy_id);
   const proxyType = proxyData?.proxy_type?.toLowerCase();
-  const userDataPath = app.getPath('userData');
   const settings = getSettings();
 
   let cachePath;
   if (settings.profileCachePath) {
     cachePath = settings.profileCachePath;
   } else {
-    cachePath = join(userDataPath, 'cache');
+    cachePath = join(process.resourcesPath, 'chromePowerCache');
   }
   const win = BrowserWindow.getAllWindows()[0];
-  const windowDataDir = `${cachePath}\\${windowData.profile_id}`;
+  const windowDataDir = join(
+    cachePath,
+    settings.useLocalChrome ? 'chrome' : 'chromium',
+    windowData.profile_id,
+  );
   const driverPath = getDriverPath();
 
   let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
   if (windowData.proxy_id && proxyData.ip) {
     ipInfo = await getProxyInfo(proxyData);
-  } else {
-    ipInfo = await getProxyInfo({});
+    if (!ipInfo?.ip) {
+      logger.error('ipInfo is empty');
+    }
   }
-  if (!ipInfo?.ip) {
-    logger.error('ipInfo is empty');
-    return;
-  }
+
   const fingerprint =
     windowData.fingerprint && windowData.fingerprint !== '{}'
       ? JSON.parse(windowData.fingerprint)
@@ -183,7 +193,6 @@ export async function openFingerprintWindow(id: number) {
     if (!chromeInstance) {
       return;
     }
-    await sleep(1);
     await WindowDB.update(id, {
       status: 2,
       port: chromePort,
@@ -217,7 +226,7 @@ export async function openFingerprintWindow(id: number) {
     await sleep(1);
 
     try {
-      return connectBrowser(chromePort, ipInfo, windowData.id);
+      return connectBrowser(chromePort, ipInfo, windowData.id, !!windowData.proxy_id);
     } catch (error) {
       logger.error(error);
       execSync(`taskkill /PID ${chromeInstance.pid} /F`);
@@ -225,6 +234,10 @@ export async function openFingerprintWindow(id: number) {
       return null;
     }
   } else {
+    bridgeMessageToUI({
+      type: 'error',
+      text: 'Driver path is empty',
+    });
     logger.error('Driver path is empty');
     return null;
   }

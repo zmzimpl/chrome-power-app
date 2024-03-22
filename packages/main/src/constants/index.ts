@@ -1,4 +1,4 @@
-import {getDbPath} from '../utils/getDBPath';
+import {getDbPath} from '../utils/get-db-path';
 
 export const DB_CONFIG = {
   client: 'sqlite3',

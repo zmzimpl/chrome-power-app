@@ -80,8 +80,6 @@ router.get('/ping', async (req, res) => {
     } catch (error) {
       console.error(error);
     }
-    //   // test proxy
-    //   const result = await testProxy(proxyData);
     res.send({
       pings: pings.connectivity,
     });

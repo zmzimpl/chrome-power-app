@@ -1,14 +1,12 @@
-import {app} from 'electron';
 import {existsSync, readFileSync, writeFileSync} from 'fs';
 import {join} from 'path';
 import type {SettingOptions} from '../../../shared/types/common';
 import {getChromePath} from '../fingerprint/device';
 
 export const getSettings = (): SettingOptions => {
-  const userDataPath = app.getPath('userData');
-  const configFilePath = join(userDataPath, 'chrome-power-config.json');
+  const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
   let settings = {
-    profileCachePath: `${userDataPath}\\cache`,
+    profileCachePath: join(process.resourcesPath, 'chromePowerCache'),
     useLocalChrome: true,
     localChromePath: '',
     chromiumBinPath: '',

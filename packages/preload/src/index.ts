@@ -2,7 +2,7 @@
  * @module preload
  */
 
-export {sha256sum} from './nodeCrypto';
+export {sha256sum} from './node-crypto';
 export {versions} from './versions';
 export {customizeToolbarControl} from './customize-control';
 export {WindowBridge} from './bridges/window';

@@ -1,8 +1,8 @@
 import {ipcMain} from 'electron';
 import {readFileSync} from 'fs';
-import {txtToJSON} from '../utils/txtToJson';
+import {txtToJSON} from '../utils/txt-to-json';
 import * as XLSX from 'xlsx';
-import type {IWindowTemplate} from '../types/windowTemplate';
+import type {IWindowTemplate} from '../types/window-template';
 import type {DB, SafeAny} from '../../../shared/types/db';
 import {WindowDB} from '../db/window';
 import {closeFingerprintWindow, openFingerprintWindow} from '../fingerprint/index';

@@ -1,9 +1,9 @@
-import {initCommonService} from './commonService';
-import {initGroupService} from './groupService';
-import {initProxyService} from './proxyService';
-import {initSyncService} from './syncService';
-import {initTagService} from './tagService';
-import {initWindowService} from './windowService';
+import {initCommonService} from './common-service';
+import {initGroupService} from './group-service';
+import {initProxyService} from './proxy-service';
+import {initSyncService} from './sync-service';
+import {initTagService} from './tag-service';
+import {initWindowService} from './window-service';
 
 export async function initServices() {
   initCommonService();

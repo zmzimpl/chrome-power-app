@@ -42,6 +42,7 @@ const getRealIP = async (proxy: DB.Proxy) => {
       text: `获取真实IP失败: ${(error as {message: string}).message}`,
     });
     logger.error(`| Prepare | getRealIP | error: ${(error as {message: string}).message}`);
+    return '';
   }
 };
 
@@ -120,73 +121,39 @@ export async function testProxy(proxy: DB.Proxy) {
   } catch (error) {
     logger.error(error);
   }
-  if (proxy.proxy) {
-    for (const pin of PIN_URL) {
-      const startTime = Date.now();
-      try {
-        const response = await axios.get(pin.url, {
-          proxy: requestProxy,
-          timeout: 5_000,
+  for (const pin of PIN_URL) {
+    const startTime = Date.now();
+    try {
+      const response = await axios.get(pin.url, {
+        proxy: proxy.proxy ? requestProxy : undefined,
+        timeout: 5_000,
+      });
+      const endTime = Date.now();
+      const elapsedTime = endTime - startTime; // Calculate the time taken for the request
+      if (response.status === 200) {
+        result.connectivity.push({
+          name: pin.n,
+          status: 'connected',
+          elapsedTime: elapsedTime,
         });
-        const endTime = Date.now();
-        const elapsedTime = endTime - startTime; // Calculate the time taken for the request
-        if (response.status === 200) {
-          result.connectivity.push({
-            name: pin.n,
-            status: 'connected',
-            elapsedTime: elapsedTime,
-          });
-        } else {
-          result.connectivity.push({
-            name: pin.n,
-            status: 'failed',
-            reason: `Status code: ${response.status}`,
-            elapsedTime: elapsedTime,
-          });
-        }
-      } catch (error) {
-        logger.error(`ping ${pin.name} failed:`, (error as AxiosError)?.message);
-        const endTime = Date.now();
-        const elapsedTime = endTime - startTime;
+      } else {
         result.connectivity.push({
           name: pin.n,
           status: 'failed',
-          reason: (error as AxiosError)?.message,
+          reason: `Status code: ${response.status}`,
           elapsedTime: elapsedTime,
         });
       }
-    }
-  } else {
-    for (const pin of PIN_URL) {
-      const startTime = Date.now();
-      try {
-        const response = await axios.get(pin.url, {
-          timeout: 5_000,
-        });
-        if (response.status === 200) {
-          result.connectivity.push({
-            name: pin.n,
-            status: 'connected',
-            elapsedTime: 0,
-          });
-        } else {
-          result.connectivity.push({
-            name: pin.n,
-            status: 'failed',
-            reason: `Status code: ${response.status}`,
-            elapsedTime: 0,
-          });
-        }
-      } catch (error) {
-        const endTime = Date.now();
-        const elapsedTime = endTime - startTime;
-        result.connectivity.push({
-          name: pin.n,
-          status: 'failed',
-          reason: (error as AxiosError)?.message,
-          elapsedTime: elapsedTime,
-        });
-      }
+    } catch (error) {
+      logger.error(`ping ${pin.name} failed:`, (error as AxiosError)?.message);
+      const endTime = Date.now();
+      const elapsedTime = endTime - startTime;
+      result.connectivity.push({
+        name: pin.n,
+        status: 'failed',
+        reason: (error as AxiosError)?.message,
+        elapsedTime: elapsedTime,
+      });
     }
   }
   if (proxy.id) {

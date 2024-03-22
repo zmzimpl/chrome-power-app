@@ -21,13 +21,10 @@ router.get('/info', async (req, res) => {
     if (windowData.proxy_id) {
       proxyData = await ProxyDB.getById(windowData.proxy_id);
     }
-    // get proxy info
     ipInfo = await getProxyInfo(proxyData);
   } catch (error) {
     console.error(error);
   }
-  //   // test proxy
-  //   const result = await testProxy(proxyData);
   res.send({windowData, ipInfo});
 });
 

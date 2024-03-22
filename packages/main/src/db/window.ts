@@ -1,10 +1,10 @@
 import {db} from '.';
 import type {DB, SafeAny} from '../../../shared/types/db';
-import type {IWindowTemplate} from '../types/windowTemplate';
+import type {IWindowTemplate} from '../types/window-template';
 import {GroupDB} from './group';
 import {ProxyDB} from './proxy';
 import {randomUniqueProfileId} from '../../../shared/utils/random';
-import { randomFingerprint } from '../services/windowService';
+import { randomFingerprint } from '../services/window-service';
 
 const all = async () => {
   return await db('window')

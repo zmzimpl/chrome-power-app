@@ -1,4 +1,4 @@
-import {Form, Input, Select} from 'antd';
+import {Form, Input, Select, Row, Col, Space, Typography} from 'antd';
 import AddableSelect from '/@/components/addable-select';
 import {useEffect, useState} from 'react';
 import type {DB} from '../../../../../../shared/types/db';
@@ -7,6 +7,7 @@ import {TAG_COLORS} from '/@/constants';
 import {useTranslation} from 'react-i18next';
 
 const {TextArea} = Input;
+const {Text} = Typography;
 
 const WindowEditForm = ({
   formValue,
@@ -41,6 +42,7 @@ const WindowEditForm = ({
   };
   const fetchProxies = async () => {
     const proxies = await ProxyBridge?.getAll();
+    console.log(proxies);
     setProxies(proxies);
   };
 
@@ -74,7 +76,11 @@ const WindowEditForm = ({
   };
 
   const filterProxyOption = (input: string, option?: DB.Proxy) => {
-    return (option?.ip ?? '').toLowerCase().includes(input.toLowerCase());
+    return (
+      (option?.ip ?? '').toLowerCase().includes(input.toLowerCase()) ||
+      (option?.proxy ?? '').toLowerCase().includes(input.toLowerCase()) ||
+      (option?.remark ?? '').toLowerCase().includes(input.toLowerCase())
+    );
   };
 
   type FieldType = DB.Window;
@@ -157,6 +163,43 @@ const WindowEditForm = ({
           showSearch
           filterOption={filterProxyOption}
           fieldNames={{label: 'proxy', value: 'id'}}
+          optionRender={option => {
+            return (
+              <Row justify="space-between">
+                <Col span={2}>
+                  <Text code>#{option.data.id}</Text>
+                </Col>
+
+                <Col span={16}>
+                  <Space direction="vertical">
+                    <Text
+                      style={{width: 200}}
+                      ellipsis={{tooltip: `${option.data.proxy}  ${option.data.remark}`}}
+                    >
+                      {option.data.proxy}
+                    </Text>
+                    {option.data.remark && (
+                      <Text
+                        mark
+                        style={{width: 200}}
+                        ellipsis={{tooltip: `${option.data.proxy}  ${option.data.remark}`}}
+                      >
+                        {option.data.remark}
+                      </Text>
+                    )}
+                  </Space>
+                </Col>
+                <Col span={1}>
+                  <span
+                    role="img"
+                    aria-label={option.data.proxy}
+                  >
+                    {option.data.usageCount}
+                  </span>
+                </Col>
+              </Row>
+            );
+          }}
         ></Select>
       </Form.Item>
 

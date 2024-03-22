@@ -1,5 +1,5 @@
 import type {MenuProps} from 'antd';
-import {Button, Card, Dropdown, Input, Modal, Select, Space, Table, Tag, message} from 'antd';
+import {Button, Card, Dropdown, Input, Modal, Select, Space, Table, Tag, Row, Col, Typography, message} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import type {MenuInfo} from 'rc-menu/lib/interface';
 import {useEffect, useMemo, useState} from 'react';
@@ -25,6 +25,8 @@ import {containsKeyword} from '/@/utils/str';
 import {useNavigate} from 'react-router-dom';
 import {MESSAGE_CONFIG, WINDOW_STATUS} from '/@/constants';
 import {useTranslation} from 'react-i18next';
+
+const {Text} = Typography;
 
 const Windows = () => {
   const OFFSET = 266;
@@ -440,7 +442,11 @@ const Windows = () => {
   };
 
   const filterProxyOption = (input: string, option?: DB.Proxy) => {
-    return (option?.ip ?? '').toLowerCase().includes(input.toLowerCase());
+    return (
+      (option?.ip ?? '').toLowerCase().includes(input.toLowerCase()) ||
+      (option?.proxy ?? '').toLowerCase().includes(input.toLowerCase()) ||
+      (option?.remark ?? '').toLowerCase().includes(input.toLowerCase())
+    );
   };
 
   return (
@@ -580,6 +586,43 @@ const Windows = () => {
           }}
           filterOption={filterProxyOption}
           fieldNames={{label: 'proxy', value: 'id'}}
+          optionRender={option => {
+            return (
+              <Row justify="space-between">
+                <Col span={2}>
+                  <Text code>#{option.data.id}</Text>
+                </Col>
+
+                <Col span={16}>
+                  <Space direction="vertical">
+                    <Text
+                      style={{width: 300}}
+                      ellipsis={{tooltip: `${option.data.proxy}  ${option.data.remark}`}}
+                    >
+                      {option.data.proxy}
+                    </Text>
+                    {option.data.remark && (
+                      <Text
+                        mark
+                        style={{width: 300}}
+                        ellipsis={{tooltip: `${option.data.proxy}  ${option.data.remark}`}}
+                      >
+                        {option.data.remark}
+                      </Text>
+                    )}
+                  </Space>
+                </Col>
+                <Col span={1}>
+                  <span
+                    role="img"
+                    aria-label={option.data.proxy}
+                  >
+                    {option.data.usageCount}
+                  </span>
+                </Col>
+              </Row>
+            );
+          }}
         ></Select>
       </Modal>
       <div className="content-footer"></div>

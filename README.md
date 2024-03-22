@@ -24,23 +24,20 @@
   - 创建空白窗口
   - 导入窗口
     - 从模板导入
-    - 从AdsPower导入
+    - 从 AdsPower 导入
 
 ## Todo
 
 - [x] 多语言支持
-- [ ] ipv6 代理支持
+- [x] Puppeteer/Playwright/Selenium 接入
 - [ ] 同步操作
-- [ ] Cookie导入/导出
 - [ ] 扩展程序管理
 - [ ] 自动化脚本
 
 ## 打赏
 
-Hey😁, 如果我的开源工作对你有所帮助，请考虑请我喝杯咖啡。
-
-🙌你可以通过购买软件会员或向下面的钱包捐款来支持我
+🙌你可以通过向下面的钱包打赏一笔咖啡钱来支持我
 
 Bitcoin Address: `bc1p0uex9rn8nd9uyguulp6r3d3t9kylrk42dg6sq22f3h5rktlk22ks6mlv6t`
 
-Ethereum Address: `0x5D544C2329d812B1eA1D3F520C882d69811c7a06`
+Ethereum Address: `0x83DF381FF65806B68AA1963636f4ca87990F2860`

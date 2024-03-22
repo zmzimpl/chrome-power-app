@@ -41,6 +41,7 @@ export namespace DB {
     check_result?: string;
     checking?: boolean;
     remark?: string;
+    usageCount?: number;
     // ... other properties
   }
 

@@ -1,8 +1,15 @@
 import {db} from '.';
-import type {DB} from '../../../shared/types/db';
+import type {DB, SafeAny} from '../../../shared/types/db';
 
 const all = async () => {
-  return await db('proxy').select('*').orderBy('created_at', 'desc');
+  return await db('proxy')
+    .leftJoin('window', function () {
+      this.on('window.proxy_id', '=', 'proxy.id').andOn('window.status', '>', 0 as SafeAny); // 增加的筛选条件
+    })
+    .select('proxy.*')
+    .count('window.id as usageCount')
+    .groupBy('proxy.id')
+    .orderBy('proxy.created_at', 'desc');
 };
 
 const getById = async (id: number) => {

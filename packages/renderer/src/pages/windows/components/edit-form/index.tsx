@@ -42,7 +42,6 @@ const WindowEditForm = ({
   };
   const fetchProxies = async () => {
     const proxies = await ProxyBridge?.getAll();
-    console.log(proxies);
     setProxies(proxies);
   };
 

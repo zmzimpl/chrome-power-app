@@ -16,7 +16,6 @@ const Api = () => {
   const fetchApi = async () => {
     const apiInfo = await CommonBridge.getApi();
     setApiInfo(apiInfo);
-    console.log(apiInfo);
   };
 
   useEffect(() => {

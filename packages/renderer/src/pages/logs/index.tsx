@@ -30,14 +30,10 @@ const Logs = () => {
       key: 'Api',
       label: 'Api',
     },
-    {
-      key: 'Service',
-      label: 'Service',
-    },
   ];
   const [logsData, setLogsData] = React.useState<logsDataOptions[]>([]);
 
-  const fetchLogs = async (logModule: 'Main' | 'Windows' | 'Proxy' | 'Services' | 'Api') => {
+  const fetchLogs = async (logModule: 'Main' | 'Windows' | 'Proxy' | 'Api') => {
     const logs = await CommonBridge.getLogs(logModule);
     setLogsData(logs);
   };
@@ -55,7 +51,7 @@ const Logs = () => {
       >
         <Tabs
           onChange={(key: string) =>
-            fetchLogs(key as 'Main' | 'Windows' | 'Proxy' | 'Services' | 'Api')
+            fetchLogs(key as 'Main' | 'Windows' | 'Proxy' | 'Api')
           }
           size="small"
           items={items}

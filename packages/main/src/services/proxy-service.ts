@@ -2,12 +2,8 @@ import {ipcMain} from 'electron';
 import type {DB} from '../../../shared/types/db';
 import {ProxyDB} from '../db/proxy';
 import {testProxy} from '../fingerprint/prepare';
-import {createLogger} from '../../../shared/utils/logger';
-import {SERVICE_LOGGER_LABEL} from '../constants';
 
-const logger = createLogger(SERVICE_LOGGER_LABEL);
 export const initProxyService = () => {
-  logger.info('init proxy bridge...');
 
   ipcMain.handle('proxy-create', async (_, proxy: DB.Proxy) => {
     return await ProxyDB.create(proxy);
@@ -37,7 +33,6 @@ export const initProxyService = () => {
   });
 
   ipcMain.handle('proxy-test', async (_, testParams: number | DB.Proxy) => {
-    logger.info('proxy-test', testParams, typeof testParams);
     if (typeof testParams === 'number') {
       const proxy = await ProxyDB.getById(testParams);
       return await testProxy(proxy);

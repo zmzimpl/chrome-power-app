@@ -11,7 +11,6 @@ import axios from 'axios';
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 
 export const initCommonService = () => {
-  logger.info('init common service...');
   ipcMain.handle('common-download', async (_, filePath: string) => {
     const win = BrowserWindow.getAllWindows()[0];
     const defaultPath = join(app.getPath('downloads'), 'template.xlsx');
@@ -90,7 +89,7 @@ export const initCommonService = () => {
     try {
       writeFileSync(configFilePath, JSON.stringify(values), 'utf8');
     } catch (error) {
-      console.error('Error writing to the settings file:', error);
+      logger.error('Error writing to the settings file:', error);
     }
 
     return {};

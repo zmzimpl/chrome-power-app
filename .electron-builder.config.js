@@ -11,7 +11,7 @@
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
   return {
-    productName: 'chrome-power-alpha',
+    productName: 'chrome-power',
     directories: {
       output: 'dist',
       buildResources: 'buildResources',
@@ -46,16 +46,11 @@ module.exports = async function () {
       allowToChangeInstallationDirectory: true,
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
-      shortcutName: 'chrome-power-alpha',
+      shortcutName: 'chrome-power',
     },
 
     win: {
       requestedExecutionLevel: 'requireAdministrator',
-    },
-
-    // Specify linux target just for disabling snap compilation
-    linux: {
-      target: 'deb',
     },
   };
 };

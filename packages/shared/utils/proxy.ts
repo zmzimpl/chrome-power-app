@@ -6,14 +6,13 @@ export const getRequestProxy = (
 ): AxiosProxyConfig | undefined => {
   if (!proxy) return;
   const [host, port, username, password] = proxy.split(':');
-
   return {
     protocol: proxy_type.toLocaleLowerCase(),
     host,
     port: +port,
-    auth: {
+    auth: username ? {
       username,
       password,
-    },
+    } : undefined,
   };
 };

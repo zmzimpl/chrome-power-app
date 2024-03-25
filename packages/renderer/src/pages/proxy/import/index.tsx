@@ -162,49 +162,44 @@ const ProxyImport = () => {
   }, []);
 
   const parseProxy = (proxy: string, index: number) => {
-    // Default type is HTTP
-    let type = 'HTTP';
+    let type = 'HTTP'; // 默认类型
     let host = '',
       port = 0,
       username = '',
       password = '',
       remark = '';
 
-    // Convert the start of the proxy string to lowercase for comparison
     const proxyLower = proxy.toLowerCase();
 
-    // Check if the type is specified and it's SOCKS5 or HTTP
     if (proxyLower.startsWith('socks5://')) {
       type = 'SOCKS5';
-      proxy = proxy.substring(9); // Remove the 'socks5://' (9 characters)
+      proxy = proxy.substring(9);
     } else if (proxyLower.startsWith('http://')) {
-      type = 'HTTP';
-      proxy = proxy.substring(7); // Remove the 'http://' (7 characters)
+      proxy = proxy.substring(7);
     }
 
-    // Extract the remark if present
+    // 如果存在，提取备注
     const remarkIndex = proxy.indexOf('{');
     if (remarkIndex !== -1) {
       remark = proxy.substring(remarkIndex + 1, proxy.length - 1);
-      proxy = proxy.substring(0, remarkIndex);
+      proxy = proxy.substring(0, remarkIndex).trim();
     }
 
-    // Validate the complete proxy format
-    const proxyRegex = /^([a-zA-Z0-9.-]+):(\d{1,5}):([a-zA-Z0-9-]+):([a-zA-Z0-9]+)$/;
+    // 调整正则表达式以使用户名和密码可选
+    const proxyRegex = /^([a-zA-Z0-9.-]+):(\d{1,5})(?::([a-zA-Z0-9-]*):([a-zA-Z0-9]*))?$/;
+
     if (!proxyRegex.test(proxy)) {
-      throw new Error('Invalid proxy format');
+      throw new Error('无效的代理格式');
     }
 
-    // Split the remaining proxy string by ':'
-    const parts = proxy.split(':');
+    const parts = proxy.match(proxyRegex);
 
-    // Assign values based on the number of parts we got
-    host = parts[0];
-    port = Number(parts[1]);
-    if (parts.length >= 4) {
-      // Only assign username and password if they exist in the split parts
-      username = parts[2];
-      password = parts[3];
+    host = parts?.[1] || '';
+    port = Number(parts?.[2] || '');
+
+    if (parts?.[3] && parts[4]) {
+      username = parts[3];
+      password = parts[4];
     }
 
     return {

@@ -17,13 +17,22 @@ import type {AxiosProxyConfig} from 'axios';
 const logger = createLogger(API_LOGGER_LABEL);
 
 const getRealIP = async (proxy: DB.Proxy) => {
-  const requestProxy = getRequestProxy(proxy.proxy!, proxy.proxy_type!);
+  let agent: SocksProxyAgent | HttpProxyAgent<`http://${string}:${string}`> | HttpsProxyAgent<`http://${string}:${string}`> | undefined = undefined;
+  let requestProxy: AxiosProxyConfig | undefined = undefined;
+  if (proxy.proxy_type?.toLowerCase() === 'socks5') {
+    const agentInfo = getAgent(proxy);
+    agent = agentInfo.agent;
+  } else {
+    requestProxy = getRequestProxy(proxy.proxy!, proxy.proxy_type!);
+  }
 
   const makeRequest = async (url: string, proxy: AxiosProxyConfig | undefined) => {
     try {
       const {data} = await axios.get(url, {
-        proxy: proxy,
+        proxy: agent ? false : proxy,
         timeout: 5_000,
+        httpAgent: agent,
+        httpsAgent: agent,
       });
       return url.includes('ip-api.com') ? data.query : data.ip;
     } catch (error) {
@@ -114,7 +123,14 @@ export async function testProxy(proxy: DB.Proxy) {
     connectivity: {name: string; elapsedTime: number; status: string; reason?: string}[];
   } = {connectivity: []};
 
-  const requestProxy = getRequestProxy(proxy.proxy!, proxy.proxy_type!);
+  let agent: SocksProxyAgent | HttpProxyAgent<`http://${string}:${string}`> | HttpsProxyAgent<`http://${string}:${string}`> | undefined = undefined;
+  let requestProxy: AxiosProxyConfig | undefined = undefined;
+  if (proxy.proxy_type?.toLowerCase() === 'socks5') {
+    const agentInfo = getAgent(proxy);
+    agent = agentInfo.agent;
+  } else {
+    requestProxy = getRequestProxy(proxy.proxy!, proxy.proxy_type!);
+  }
   try {
     const ipInfo = await getProxyInfo(proxy);
     result.ipInfo = ipInfo || {};
@@ -125,8 +141,10 @@ export async function testProxy(proxy: DB.Proxy) {
     const startTime = Date.now();
     try {
       const response = await axios.get(pin.url, {
-        proxy: proxy.proxy ? requestProxy : undefined,
+        proxy: proxy.proxy && proxy.proxy_type?.toLocaleLowerCase() !== 'socks5' ? requestProxy : undefined,
         timeout: 5_000,
+        httpAgent: agent,
+        httpsAgent: agent,
       });
       const endTime = Date.now();
       const elapsedTime = endTime - startTime; // Calculate the time taken for the request

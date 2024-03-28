@@ -30,9 +30,17 @@
 - [x] 代理设置
 - [x] 中英文支持
 - [x] Puppeteer/Playwright/Selenium 接入
+- [ ] Mac 安装支持
+- [ ] 支持 cookie 登录
 - [ ] 扩展程序管理
 - [ ] 同步操作
 - [ ] 自动化脚本
+
+## 本地运行/打包
+
+- 安装依赖 `npm i`
+- 运行调试 `npm run watch`
+- 打包部署 `npm run publish`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
 
 ## 打赏
 

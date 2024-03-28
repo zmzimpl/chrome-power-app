@@ -63,7 +63,7 @@ const Api = () => {
           GET /profiles
         </Paragraph>
         <Paragraph>* 根据 ID 打开指定窗口（返回值中有调试链接）</Paragraph>
-        <Paragraph code copyable={{ text: `${apiInfo.url}/profiles/windowId=` }}>
+        <Paragraph code copyable={{ text: `${apiInfo.url}/profiles/browser?windowId=` }}>
           GET /profiles/browser?windowId=xxx
         </Paragraph>
       </Card>

@@ -176,6 +176,8 @@ export async function testProxy(proxy: DB.Proxy) {
   }
   if (proxy.id) {
     await ProxyDB.update(proxy.id, {
+      ip: result?.ipInfo?.ip,
+      ip_country: result?.ipInfo?.country,
       check_result: JSON.stringify(result),
       checked_at: db.fn.now(),
     } as DB.Group);

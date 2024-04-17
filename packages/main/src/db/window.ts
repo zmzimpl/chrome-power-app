@@ -4,7 +4,7 @@ import type {IWindowTemplate} from '../types/window-template';
 import {GroupDB} from './group';
 import {ProxyDB} from './proxy';
 import {randomUniqueProfileId} from '../../../shared/utils/random';
-import { randomFingerprint } from '../services/window-service';
+import {randomFingerprint} from '../services/window-service';
 
 const all = async () => {
   return await db('window')
@@ -118,7 +118,7 @@ const update = async (id: number, updatedData: DB.Window) => {
   }
 };
 
-const create = async (windowData: DB.Window, fingerprint: SafeAny) => {
+const create = async (windowData: DB.Window, fingerprint?: SafeAny) => {
   if (windowData.id && typeof windowData.id === 'string') {
     windowData.profile_id = windowData.id;
     delete windowData.id;
@@ -130,8 +130,14 @@ const create = async (windowData: DB.Window, fingerprint: SafeAny) => {
       windowData.profile_id = randomUniqueProfileId();
     }
   }
-  windowData.ua = fingerprint.ua;
-  windowData.fingerprint = JSON.stringify(fingerprint);
+  if (fingerprint) {
+    windowData.ua = fingerprint.ua;
+    windowData.fingerprint = JSON.stringify(fingerprint);
+  } else {
+    const randFingerprint = randomFingerprint();
+    windowData.ua = randFingerprint.ua;
+    windowData.fingerprint = JSON.stringify(randFingerprint);
+  }
   const [id] = await db('window').insert(windowData);
   return {
     success: true,

@@ -13,16 +13,16 @@ export namespace DB {
     opened_at?: string;
     created_at?: string;
     updated_at?: string;
-    proxy_id?: number;
     ua?: string;
     fingerprint?: string;
     cookie?: string;
     status?: number;
-
+    
     ip?: string;
     port?: number;
     local_proxy_port?: number;
-
+    
+    proxy_id?: number | null;
     proxy?: string;
     proxy_type?: string;
     ip_country?: string;

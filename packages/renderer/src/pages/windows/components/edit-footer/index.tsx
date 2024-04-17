@@ -55,7 +55,10 @@ const WindowDetailFooter = ({
     savePreparation(formValue);
     let result: OperationResult;
     if (formValue.id) {
-      result = await WindowBridge?.update(formValue.id, formValue);
+      result = await WindowBridge?.update(formValue.id, {
+        ...formValue,
+        proxy_id: formValue.proxy_id || null,
+      });
       showMessage(result);
     } else {
       if (currentTab === 'windowForm') {

@@ -21,7 +21,10 @@ import api from '../../../shared/api/api';
 import {getSettings} from '../utils/get-settings';
 import {getPort} from '../server/index';
 import {randomFingerprint} from '../services/window-service';
-import {bridgeMessageToUI, getClientPort} from '../mainWindow';
+import {bridgeMessageToUI, getClientPort, getMainWindow} from '../mainWindow';
+import {Mutex} from 'async-mutex';
+
+const mutex = new Mutex();
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
 
@@ -107,136 +110,153 @@ const getDriverPath = () => {
   }
 };
 
+const getAvailablePort = async () => {
+  for (let attempts = 0; attempts < 10; attempts++) {
+    try {
+      const port = await portscanner.findAPortNotInUse(9222, 40222);
+      return port; // 成功绑定后返回
+    } catch (error) {
+      console.log('Port already in use, retrying...');
+    }
+  }
+  throw new Error('Failed to find a free port after multiple attempts');
+};
+
 export async function openFingerprintWindow(id: number) {
-  const windowData = await WindowDB.getById(id);
-  const proxyData = await ProxyDB.getById(windowData.proxy_id);
-  const proxyType = proxyData?.proxy_type?.toLowerCase();
-  const settings = getSettings();
+  const release = await mutex.acquire();
+  try {
+    const windowData = await WindowDB.getById(id);
+    const proxyData = await ProxyDB.getById(windowData.proxy_id);
+    const proxyType = proxyData?.proxy_type?.toLowerCase();
+    const settings = getSettings();
 
-  const cachePath = settings.profileCachePath;
+    const cachePath = settings.profileCachePath;
 
-  const win = BrowserWindow.getAllWindows()[0];
-  const windowDataDir = join(
-    cachePath,
-    settings.useLocalChrome ? 'chrome' : 'chromium',
-    windowData.profile_id,
-  );
-  const driverPath = getDriverPath();
+    const win = BrowserWindow.getAllWindows()[0];
+    const windowDataDir = join(
+      cachePath,
+      settings.useLocalChrome ? 'chrome' : 'chromium',
+      windowData.profile_id,
+    );
+    const driverPath = getDriverPath();
 
-  let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
-  if (windowData.proxy_id && proxyData.ip) {
-    ipInfo = await getProxyInfo(proxyData);
-    if (!ipInfo?.ip) {
-      logger.error('ipInfo is empty');
-    }
-  }
-
-  const fingerprint =
-    windowData.fingerprint && windowData.fingerprint !== '{}'
-      ? JSON.parse(windowData.fingerprint)
-      : randomFingerprint();
-  if (!windowData.fingerprint || windowData.fingerprint === '{}') {
-    await WindowDB.update(id, {
-      ...windowData,
-      fingerprint,
-    });
-  }
-  if (driverPath) {
-    const chromePort = await portscanner.findAPortNotInUse(9222, 10222);
-    let finalProxy;
-    let proxyServer: Server<typeof IncomingMessage, typeof ServerResponse> | ProxyChain.Server;
-    if (proxyData && proxyType === 'socks5' && proxyData.proxy) {
-      const proxyInstance = await createSocksProxy(proxyData);
-      finalProxy = proxyInstance.proxyUrl;
-      proxyServer = proxyInstance.proxyServer;
-    } else if (proxyData && proxyType === 'http' && proxyData.proxy) {
-      const proxyInstance = await createHttpProxy(proxyData);
-      finalProxy = proxyInstance.proxyUrl;
-      proxyServer = proxyInstance.proxyServer;
-    }
-    const launchParamter = [
-      `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
-      '--force-color-profile=srgb',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--metrics-recording-only',
-      '--disable-background-mode',
-      `--remote-debugging-port=${chromePort}`,
-      `--user-data-dir=${windowDataDir}`,
-      `--user-agent=${fingerprint?.ua}`,
-      // below is for debug
-      // '--enable-logging',
-      // '--v=1',
-      // '--enable-blink-features=IdleDetection',
-      // '--no-sandbox',
-      // '--disable-setuid-sandbox',
-      // '--auto-open-devtools-for-tabs',
-    ];
-
-    if (finalProxy) {
-      launchParamter.push(`--proxy-server=${finalProxy}`);
-    }
-    if (ipInfo?.timeZone) {
-      launchParamter.push(`--timezone=${ipInfo.timeZone}`);
-      launchParamter.push(`--tz=${ipInfo.timeZone}`);
-    }
-    let chromeInstance;
-    try {
-      chromeInstance = spawn(driverPath, launchParamter);
-    } catch (error) {
-      logger.error(error);
-    }
-    if (!chromeInstance) {
-      return;
-    }
-    await sleep(1);
-    await WindowDB.update(id, {
-      status: 2,
-      port: chromePort,
-      opened_at: db.fn.now() as unknown as string,
-    });
-    win.webContents.send('window-opened', id);
-    chromeInstance.stdout.on('data', _chunk => {
-      // const str = _chunk.toString();
-      // console.error('stderr: ', str);
-    });
-    // 这个地方需要监听 stderr，否则在某些网站会出现卡死的情况
-    chromeInstance.stderr.on('data', _chunk => {
-      // const str = _chunk.toString();
-      // console.error('stderr: ', str);
-    });
-
-    chromeInstance.on('close', async () => {
-      logger.info(`Chrome process exited at port ${chromePort}, closed time: ${new Date()}`);
-      if (proxyType === 'socks5') {
-        (proxyServer as Server<typeof IncomingMessage, typeof ServerResponse>)?.close(() => {
-          logger.info('Socks5 Proxy server was closed.');
-        });
-      } else if (proxyType === 'http') {
-        (proxyServer as ProxyChain.Server).close(true, () => {
-          logger.info('Http Proxy server was closed.');
-        });
+    let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
+    if (windowData.proxy_id && proxyData.ip) {
+      ipInfo = await getProxyInfo(proxyData);
+      if (!ipInfo?.ip) {
+        logger.error('ipInfo is empty');
       }
-      closeFingerprintWindow(id);
-    });
+    }
 
-    await sleep(1);
+    const fingerprint =
+      windowData.fingerprint && windowData.fingerprint !== '{}'
+        ? JSON.parse(windowData.fingerprint)
+        : randomFingerprint();
+    if (!windowData.fingerprint || windowData.fingerprint === '{}') {
+      await WindowDB.update(id, {
+        ...windowData,
+        fingerprint,
+      });
+    }
+    if (driverPath) {
+      const chromePort = await getAvailablePort();
+      let finalProxy;
+      let proxyServer: Server<typeof IncomingMessage, typeof ServerResponse> | ProxyChain.Server;
+      if (proxyData && proxyType === 'socks5' && proxyData.proxy) {
+        const proxyInstance = await createSocksProxy(proxyData);
+        finalProxy = proxyInstance.proxyUrl;
+        proxyServer = proxyInstance.proxyServer;
+      } else if (proxyData && proxyType === 'http' && proxyData.proxy) {
+        const proxyInstance = await createHttpProxy(proxyData);
+        finalProxy = proxyInstance.proxyUrl;
+        proxyServer = proxyInstance.proxyServer;
+      }
+      const launchParamter = [
+        `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
+        '--force-color-profile=srgb',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--metrics-recording-only',
+        '--disable-background-mode',
+        `--remote-debugging-port=${chromePort}`,
+        `--user-data-dir=${windowDataDir}`,
+        `--user-agent=${fingerprint?.ua}`,
+        // below is for debug
+        // '--enable-logging',
+        // '--v=1',
+        // '--enable-blink-features=IdleDetection',
+        // '--no-sandbox',
+        // '--disable-setuid-sandbox',
+        // '--auto-open-devtools-for-tabs',
+      ];
 
-    try {
-      return connectBrowser(chromePort, ipInfo, windowData.id, !!windowData.proxy_id);
-    } catch (error) {
-      logger.error(error);
-      execSync(`taskkill /PID ${chromeInstance.pid} /F`);
-      closeFingerprintWindow(id, true);
+      if (finalProxy) {
+        launchParamter.push(`--proxy-server=${finalProxy}`);
+      }
+      if (ipInfo?.timeZone) {
+        launchParamter.push(`--timezone=${ipInfo.timeZone}`);
+        launchParamter.push(`--tz=${ipInfo.timeZone}`);
+      }
+      let chromeInstance;
+      try {
+        chromeInstance = spawn(driverPath, launchParamter);
+      } catch (error) {
+        logger.error(error);
+      }
+      if (!chromeInstance) {
+        return;
+      }
+      await sleep(1);
+      await WindowDB.update(id, {
+        status: 2,
+        port: chromePort,
+        opened_at: db.fn.now() as unknown as string,
+      });
+      win.webContents.send('window-opened', id);
+      chromeInstance.stdout.on('data', _chunk => {
+        // const str = _chunk.toString();
+        // console.error('stderr: ', str);
+      });
+      // 这个地方需要监听 stderr，否则在某些网站会出现卡死的情况
+      chromeInstance.stderr.on('data', _chunk => {
+        // const str = _chunk.toString();
+        // console.error('stderr: ', str);
+      });
+
+      chromeInstance.on('close', async () => {
+        logger.info(`Chrome process exited at port ${chromePort}, closed time: ${new Date()}`);
+        if (proxyType === 'socks5') {
+          (proxyServer as Server<typeof IncomingMessage, typeof ServerResponse>)?.close(() => {
+            logger.info('Socks5 Proxy server was closed.');
+          });
+        } else if (proxyType === 'http') {
+          (proxyServer as ProxyChain.Server).close(true, () => {
+            logger.info('Http Proxy server was closed.');
+          });
+        }
+        closeFingerprintWindow(id);
+      });
+
+      await sleep(1);
+
+      try {
+        return connectBrowser(chromePort, ipInfo, windowData.id, !!windowData.proxy_id);
+      } catch (error) {
+        logger.error(error);
+        execSync(`taskkill /PID ${chromeInstance.pid} /F`);
+        closeFingerprintWindow(id, true);
+        return null;
+      }
+    } else {
+      bridgeMessageToUI({
+        type: 'error',
+        text: 'Driver path is empty',
+      });
+      logger.error('Driver path is empty');
       return null;
     }
-  } else {
-    bridgeMessageToUI({
-      type: 'error',
-      text: 'Driver path is empty',
-    });
-    logger.error('Driver path is empty');
-    return null;
+  } finally {
+    release();
   }
 }
 
@@ -306,7 +326,7 @@ export async function closeFingerprintWindow(id: number, force = false) {
       }
     }
     await WindowDB.update(id, {status: 1, port: undefined});
-    const win = BrowserWindow.getAllWindows()[0];
+    const win = getMainWindow();
     if (win) {
       win.webContents.send('window-closed', id);
     }

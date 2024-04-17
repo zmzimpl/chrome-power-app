@@ -6,6 +6,8 @@
 
 此软件遵循AGPL协议，因此如果你想对其进行修改发布，请保持开源。
 
+Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimpl/chrome-power-chromium)
+
 ## 免责声明
 
 本代码仅用于技术交流、学习，请勿用于非法、商业用途。本代码不保存任何用户数据，同时也不对用户数据负责，请知悉。
@@ -39,8 +41,18 @@
 ## 本地运行/打包
 
 - 安装依赖 `npm i`
+- 手动解压代码目录下的 `Chrome-bin.zip`，注意只有一层目录
 - 运行调试 `npm run watch`
 - 打包部署 `npm run publish`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
+
+## API 文档
+
+[Postman API](https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#intro)
+
+## 同类开源工具
+
+- [VirtualBrowser](https://github.com/Virtual-Browser/VirtualBrowser)
+- [toolBoxClient](https://github.com/web3ToolBoxDev/toolBoxClient)
 
 ## 打赏
 

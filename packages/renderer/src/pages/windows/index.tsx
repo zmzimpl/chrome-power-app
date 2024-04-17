@@ -92,7 +92,7 @@ const Windows = () => {
   const columns: ColumnsType<DB.Window> = useMemo(() => {
     return [
       {
-        title: '#',
+        title: 'ID',
         width: 60,
         dataIndex: 'id',
         key: 'id',
@@ -378,9 +378,10 @@ const Windows = () => {
     }
   };
 
-  const handleProxySettingSave = () => {
-    if (selectedRow && selectedProxy) {
-      WindowBridge?.update(selectedRow.id!, {proxy_id: selectedProxy});
+  const handleProxySettingSave = async () => {
+
+    if (selectedRow) {
+      await WindowBridge?.update(selectedRow.id!, {proxy_id: selectedProxy ? selectedProxy : null});
       setProxySettingVisible(false);
       messageApi.success('Update proxy successfully');
       fetchWindowData();

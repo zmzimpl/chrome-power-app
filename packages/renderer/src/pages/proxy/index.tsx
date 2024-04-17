@@ -29,12 +29,13 @@ import {
   EyeTwoTone,
   EyeInvisibleTwoTone,
   WifiOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
 import {PIN_URL} from '../../../../shared/constants';
 import {MESSAGE_CONFIG} from '/@/constants';
 import {useNavigate} from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 
 type ProxyFormProps = {
   proxy_type?: string;
@@ -65,7 +66,6 @@ const Proxy = () => {
   const [updateChecking, setUpdateChecking] = useState(false);
   const [updateCheckResult, setUpdateCheckResult] = useState('');
   const navigate = useNavigate();
-
 
   const moreActionDropdownItems: MenuProps['items'] = [
     // {
@@ -110,8 +110,8 @@ const Proxy = () => {
 
   const columns: ColumnsType<DB.Proxy> = [
     {
-      title: '#',
-      width: 30,
+      title: 'ID',
+      width: 60,
       dataIndex: 'id',
       key: 'id',
       fixed: 'left',
@@ -122,9 +122,7 @@ const Proxy = () => {
       dataIndex: 'host',
       key: 'host',
       render: (_, recorder) => (
-        <Space size={12}>
-          {recorder.proxy && recorder.proxy.split(':')[0]}
-        </Space>
+        <Space size={12}>{recorder.proxy && recorder.proxy.split(':')[0]}</Space>
       ),
     },
     {
@@ -151,16 +149,34 @@ const Proxy = () => {
       ),
     },
     {
-      title: t('proxy_column_country'),
-      dataIndex: 'ip_country',
-      key: 'ip_country',
-      width: 100,
-      render: (_, recorder) => (
-        <Space size={12}>
-          {recorder.check_result && JSON.parse(recorder.check_result)?.ipInfo?.country}
-        </Space>
-      ),
+      title: 'IP',
+      dataIndex: 'ip',
+      key: 'ip',
+      width: 120,
+      render: (_, recorder) =>
+        recorder.ip ? (
+          <Space size={12}>
+            {recorder.ip}
+            {recorder.ip_country}
+          </Space>
+        ) : (
+          <Space size={12}>
+            {recorder.check_result && JSON.parse(recorder.check_result)?.ipInfo?.ip}
+            {recorder.check_result && JSON.parse(recorder.check_result)?.ipInfo?.country}
+          </Space>
+        ),
     },
+    // {
+    //   title: t('proxy_column_country'),
+    //   dataIndex: 'ip_country',
+    //   key: 'ip_country',
+    //   width: 100,
+    //   render: (_, recorder) => (
+    //     <Space size={12}>
+    //       {recorder.check_result && JSON.parse(recorder.check_result)?.ipInfo?.country}
+    //     </Space>
+    //   ),
+    // },
     {
       title: t('proxy_column_remark'),
       dataIndex: 'remark',
@@ -428,6 +444,15 @@ const Proxy = () => {
           >
             {t('proxy_check')}
           </Button>
+          <Button
+            type="default"
+            className="font-black"
+            onClick={async () => {
+              await fetchProxyData();
+              messageApi.success('Refreshed successfully');
+            }}
+            icon={<SyncOutlined />}
+          ></Button>
         </Space>
         <Space
           size={8}

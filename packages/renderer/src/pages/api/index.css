@@ -1,0 +1,9 @@
+.api-container-card {
+  height: calc(100% - 64px);
+  overflow: auto;
+}
+
+.api-container-card .ant-card-body {
+  padding: 0;
+  height: 100%;
+}

@@ -3,7 +3,6 @@ import {ProxyDB} from '../db/proxy';
 import {WindowDB} from '../db/window';
 // import {getChromePath} from './device';
 import {BrowserWindow} from 'electron';
-import type {Page} from 'puppeteer';
 import puppeteer from 'puppeteer';
 import {execSync, spawn} from 'child_process';
 import * as portscanner from 'portscanner';
@@ -23,6 +22,7 @@ import {getPort} from '../server/index';
 import {randomFingerprint} from '../services/window-service';
 import {bridgeMessageToUI, getClientPort, getMainWindow} from '../mainWindow';
 import {Mutex} from 'async-mutex';
+import {modifyPageInfo, presetCookie} from '../puppeteer/helpers';
 
 const mutex = new Mutex();
 
@@ -30,40 +30,13 @@ const logger = createLogger(WINDOW_LOGGER_LABEL);
 
 const HOST = '127.0.0.1';
 
-// const HomePath = app.getPath('userData');
-// console.log(HomePath);
-
-const attachFingerprintToPuppeteer = async (page: Page, ipInfo: IP) => {
-  page.on('framenavigated', async _msg => {
-    try {
-      const title = await page.title();
-      if (!title.includes('By ChromePower')) {
-        await page.evaluate(title => {
-          document.title = title + ' By ChromePower';
-        }, title);
-      }
-
-      await page.setGeolocation({latitude: ipInfo.ll?.[0], longitude: ipInfo.ll?.[1]});
-      await page.emulateTimezone(ipInfo.timeZone);
-    } catch (error) {
-      bridgeMessageToUI({
-        type: 'error',
-        text: (error as {message: string}).message,
-      });
-      logger.error(error);
-    }
-  });
-  await page.evaluateOnNewDocument(
-    'navigator.mediaDevices.getUserMedia = navigator.webkitGetUserMedia = navigator.mozGetUserMedia = navigator.getUserMedia = webkitRTCPeerConnection = RTCPeerConnection = MediaStreamTrack = undefined;',
-  );
-};
-
 async function connectBrowser(
   port: number,
   ipInfo: IP,
   windowId: number,
   openStartPage: boolean = true,
 ) {
+  const windowData = await WindowDB.getById(windowId);
   const browserURL = `http://${HOST}:${port}`;
   const {data} = await api.get(browserURL + '/json/version');
   if (data.webSocketDebuggerUrl) {
@@ -72,10 +45,22 @@ async function connectBrowser(
       defaultViewport: null,
     });
 
+    if (!windowData.opened_at) {
+      await presetCookie(windowId, browser);
+    }
+    await WindowDB.update(windowId, {
+      status: 2,
+      port: port,
+      opened_at: db.fn.now() as unknown as string,
+    });
+
     browser.on('targetcreated', async target => {
       const newPage = await target.page();
       if (newPage) {
-        await attachFingerprintToPuppeteer(newPage, ipInfo);
+        await newPage.waitForNavigation({waitUntil: 'networkidle0'});
+        // await newPage.setRequestInterception(true);
+        // await pageRequestInterceptor(windowId, newPage);
+        await modifyPageInfo(windowId, newPage, ipInfo);
       }
     });
     const pages = await browser.pages();
@@ -87,7 +72,7 @@ async function connectBrowser(
         ? pages?.[0]
         : await browser.newPage();
     try {
-      await attachFingerprintToPuppeteer(page, ipInfo);
+      await modifyPageInfo(windowId, page, ipInfo);
       if (getClientPort() && openStartPage) {
         await page.goto(
           `http://localhost:${getClientPort()}/#/start?windowId=${windowId}&serverPort=${getPort()}`,
@@ -122,7 +107,7 @@ const getAvailablePort = async () => {
   throw new Error('Failed to find a free port after multiple attempts');
 };
 
-export async function openFingerprintWindow(id: number) {
+export async function openFingerprintWindow(id: number, headless = false) {
   const release = await mutex.acquire();
   try {
     const windowData = await WindowDB.getById(id);
@@ -181,6 +166,7 @@ export async function openFingerprintWindow(id: number) {
         `--remote-debugging-port=${chromePort}`,
         `--user-data-dir=${windowDataDir}`,
         `--user-agent=${fingerprint?.ua}`,
+        '--unhandled-rejections=strict',
         // below is for debug
         // '--enable-logging',
         // '--v=1',
@@ -197,6 +183,10 @@ export async function openFingerprintWindow(id: number) {
         launchParamter.push(`--timezone=${ipInfo.timeZone}`);
         launchParamter.push(`--tz=${ipInfo.timeZone}`);
       }
+      if (headless) {
+        launchParamter.push('--headless');
+        launchParamter.push('--disable-gpu');
+      }
       let chromeInstance;
       try {
         chromeInstance = spawn(driverPath, launchParamter);
@@ -207,11 +197,6 @@ export async function openFingerprintWindow(id: number) {
         return;
       }
       await sleep(1);
-      await WindowDB.update(id, {
-        status: 2,
-        port: chromePort,
-        opened_at: db.fn.now() as unknown as string,
-      });
       win.webContents.send('window-opened', id);
       chromeInstance.stdout.on('data', _chunk => {
         // const str = _chunk.toString();
@@ -234,7 +219,7 @@ export async function openFingerprintWindow(id: number) {
             logger.info('Http Proxy server was closed.');
           });
         }
-        closeFingerprintWindow(id);
+        await closeFingerprintWindow(id);
       });
 
       await sleep(1);
@@ -244,7 +229,7 @@ export async function openFingerprintWindow(id: number) {
       } catch (error) {
         logger.error(error);
         execSync(`taskkill /PID ${chromeInstance.pid} /F`);
-        closeFingerprintWindow(id, true);
+        await closeFingerprintWindow(id, true);
         return null;
       }
     } else {
@@ -314,7 +299,7 @@ export async function closeFingerprintWindow(id: number, force = false) {
   const window = await WindowDB.getById(id);
   const port = window.port;
   const status = window.status;
-  if (status === 2) {
+  if (status > 1) {
     if (force) {
       try {
         const browserURL = `http://${HOST}:${port}`;

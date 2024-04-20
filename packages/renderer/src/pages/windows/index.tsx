@@ -1,5 +1,19 @@
 import type {MenuProps} from 'antd';
-import {Button, Card, Dropdown, Input, Modal, Select, Space, Table, Tag, Row, Col, Typography, message} from 'antd';
+import {
+  Button,
+  Card,
+  Dropdown,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Row,
+  Col,
+  Typography,
+  message,
+} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import type {MenuInfo} from 'rc-menu/lib/interface';
 import {useEffect, useMemo, useState} from 'react';
@@ -15,6 +29,7 @@ import {
   GlobalOutlined,
   DeleteOutlined,
   SyncOutlined,
+  UsergroupAddOutlined,
   // ExportOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
@@ -78,6 +93,11 @@ const Windows = () => {
       key: 'proxy',
       label: t('window_proxy_setting'),
       icon: <GlobalOutlined />,
+    },
+    {
+      key: 'set-cookie',
+      label: t('window_set_cookie'),
+      icon: <UsergroupAddOutlined />,
     },
     {
       type: 'divider',
@@ -182,16 +202,23 @@ const Windows = () => {
         title: t('window_column_action'),
         key: 'operation',
         fixed: 'right',
-        width: 110,
+        width: 120,
         align: 'center',
         render: (_, recorder) => (
           <Button
             icon={<ChromeOutlined />}
-            disabled={recorder.status === WINDOW_STATUS.RUNNING}
+            disabled={
+              recorder.status === WINDOW_STATUS.RUNNING ||
+              recorder.status === WINDOW_STATUS.PREPARING
+            }
             type="primary"
             onClick={() => openWindows(recorder.id)}
           >
-            {recorder.status === 1 ? t('window_open') : t('window_running')}
+            {recorder.status === 1
+              ? t('window_open')
+              : recorder.status === 2
+              ? t('window_running')
+              : t('window_preparing')}
           </Button>
         ),
       },
@@ -358,7 +385,15 @@ const Windows = () => {
     setDeleteModalVisible(false);
   };
 
-  const recorderAction = (info: MenuInfo, recorder: DB.Window) => {
+  const setCookie = async (window: DB.Window) => {
+    const result = await WindowBridge.toogleSetCookie(window.id!);
+    messageApi.open({
+      type: result.success ? 'success' : 'error',
+      content: result.message,
+    });
+  };
+
+  const recorderAction = async (info: MenuInfo, recorder: DB.Window) => {
     switch (info.key) {
       case 'delete':
         setSelectedRow(recorder);
@@ -372,6 +407,10 @@ const Windows = () => {
         setSelectedProxy(recorder.proxy_id ?? undefined);
         setProxySettingVisible(true);
         break;
+      case 'set-cookie':
+        setSelectedRow(recorder);
+        await setCookie(recorder);
+        break;
 
       default:
         break;
@@ -379,7 +418,6 @@ const Windows = () => {
   };
 
   const handleProxySettingSave = async () => {
-
     if (selectedRow) {
       await WindowBridge?.update(selectedRow.id!, {proxy_id: selectedProxy ? selectedProxy : null});
       setProxySettingVisible(false);

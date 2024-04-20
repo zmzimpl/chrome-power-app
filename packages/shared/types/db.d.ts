@@ -2,7 +2,6 @@
 
 export namespace DB {
   export interface Window {
-
     id?: number;
     profile_id?: string;
     name?: string;
@@ -16,12 +15,13 @@ export namespace DB {
     ua?: string;
     fingerprint?: string;
     cookie?: string;
+    /** 0: removed; 1: closed; 2: running; 3: Preparing  */
     status?: number;
-    
+
     ip?: string;
     port?: number;
     local_proxy_port?: number;
-    
+
     proxy_id?: number | null;
     proxy?: string;
     proxy_type?: string;

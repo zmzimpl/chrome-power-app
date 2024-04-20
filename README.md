@@ -1,5 +1,7 @@
 # Chrome Power
 
+![Visualization](pic.png)
+
 ---
 
 首款开源指纹浏览器。基于 Puppeteer、Electron、React 开发。
@@ -33,17 +35,25 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 - [x] 中英文支持
 - [x] Puppeteer/Playwright/Selenium 接入
 - [ ] Mac 安装支持
-- [ ] 支持 cookie 登录
+- [ ] 支持 cookie 导入
 - [ ] 扩展程序管理
 - [ ] 同步操作
 - [ ] 自动化脚本
 
+## 关于 Linux，Mac 支持问题
+
+因为本人没有相关测试环境，请有相关需求的朋友自行通过本地编译运行，本质上与打包安装是相同的，甚至更方便升级。
+
+欢迎 Linux、Mac 用户完善打包功能提 PR
+
 ## 本地运行/打包
+
+环境：Node v18.18.2， npm 9.8.1
 
 - 安装依赖 `npm i`
 - 手动解压代码目录下的 `Chrome-bin.zip`，注意只有一层目录
 - 运行调试 `npm run watch`
-- 打包部署 `npm run publish`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
+- （非必要）打包部署 `npm run publish`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
 
 ## API 文档
 

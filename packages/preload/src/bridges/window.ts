@@ -56,6 +56,11 @@ export const WindowBridge = {
     return result;
   },
 
+  async toogleSetCookie(id: number) {
+    const result = await ipcRenderer.invoke('window-set-cookie', id);
+    return result;
+  },
+
   onWindowClosed: (callback: (event: IpcRendererEvent, id: number) => void) =>
     ipcRenderer.on('window-closed', callback),
 

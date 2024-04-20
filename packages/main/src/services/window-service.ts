@@ -10,6 +10,8 @@ import {createLogger} from '../../../shared/utils/logger';
 import {SERVICE_LOGGER_LABEL} from '../constants';
 import {randomASCII, randomFloat, randomInt} from '../../../shared/utils';
 import path from 'path';
+import puppeteer from 'puppeteer';
+import {presetCookie} from '../puppeteer/helpers';
 
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 export const initWindowService = () => {
@@ -35,7 +37,14 @@ export const initWindowService = () => {
   });
 
   ipcMain.handle('window-create', async (_, window: DB.Window, fingerprint: SafeAny) => {
-    logger.info('try to create window', JSON.stringify(window), JSON.stringify(fingerprint));
+    logger.info(
+      'try to create window',
+      JSON.stringify({
+        ...window,
+        cookie: window?.cookie ? `preset ${window.cookie.length} cookies` : [],
+      }),
+      JSON.stringify(fingerprint),
+    );
     return await WindowDB.create(window, fingerprint);
   });
 
@@ -84,10 +93,30 @@ export const initWindowService = () => {
   ipcMain.handle('window-close', async (_, id: number) => {
     return await closeFingerprintWindow(id, true);
   });
+
+  ipcMain.handle('window-set-cookie', async (_, id: number) => {
+    await WindowDB.update(id, {
+      status: 3,
+    });
+    const {webSocketDebuggerUrl} = await openFingerprintWindow(id, true);
+    const browser = await puppeteer.connect({
+      browserWSEndpoint: webSocketDebuggerUrl,
+      defaultViewport: null,
+    });
+    await presetCookie(id, browser);
+    await browser.close();
+    return {
+      success: true,
+      message: 'Set cookie successfully.',
+    };
+  });
 };
 
 export const randomFingerprint = () => {
-  const uaPath = path.join(import.meta.env.MODE === 'development' ? 'assets' : 'resources/app/assets', 'ua.txt');
+  const uaPath = path.join(
+    import.meta.env.MODE === 'development' ? 'assets' : 'resources/app/assets',
+    'ua.txt',
+  );
   const uaFile = readFileSync(uaPath, 'utf-8');
   const uaList = uaFile.split('\n');
   const randomIndex = Math.floor(Math.random() * uaList.length);

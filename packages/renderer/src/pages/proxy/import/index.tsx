@@ -186,7 +186,7 @@ const ProxyImport = () => {
     }
 
     // 调整正则表达式以使用户名和密码可选
-    const proxyRegex = /^([a-zA-Z0-9.-]+):(\d{1,5})(?::([a-zA-Z0-9-]*):([a-zA-Z0-9]*))?$/;
+    const proxyRegex = /^([a-zA-Z0-9.-]+):(\d{1,5})(?::([a-zA-Z0-9._-]*):([a-zA-Z0-9._-]*))?$/;
 
     if (!proxyRegex.test(proxy)) {
       throw new Error('无效的代理格式');

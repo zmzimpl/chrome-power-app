@@ -135,16 +135,6 @@ const WindowEditForm = ({
         />
       </Form.Item> */}
 
-      {/* <Form.Item<FieldType>
-        name="cookie"
-        label="Cookie"
-      >
-        <TextArea
-          rows={4}
-          placeholder="Cookie"
-        />
-      </Form.Item> */}
-
       <Form.Item<FieldType>
         name="remark"
         label={t('window_edit_form_remark')}
@@ -207,6 +197,18 @@ const WindowEditForm = ({
         name="profile_id"
       >
         <Input />
+      </Form.Item>
+
+      <Form.Item<FieldType>
+        name="cookie"
+        label="Cookie"
+      >
+        <TextArea
+          rows={7}
+          placeholder={
+            'Cookie, eg: [{"name":"O365Consumer","value":"1","domain":"outlook.live.com","path":"","httpOnly":true,"secure":true,"session":true,"expires":1744367913,"sameSite":"no_restriction"}]'
+          }
+        />
       </Form.Item>
     </Form>
   );

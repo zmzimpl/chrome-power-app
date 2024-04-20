@@ -34,8 +34,8 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 - [x] 代理设置
 - [x] 中英文支持
 - [x] Puppeteer/Playwright/Selenium 接入
+- [x] 支持 cookie 导入
 - [ ] Mac 安装支持
-- [ ] 支持 cookie 导入
 - [ ] 扩展程序管理
 - [ ] 同步操作
 - [ ] 自动化脚本

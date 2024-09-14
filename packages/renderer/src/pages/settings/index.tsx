@@ -9,6 +9,7 @@ type FieldType = {
   useLocalChrome: boolean;
   localChromePath: string;
   chromiumBinPath: string;
+  automationConnect: boolean;
 };
 
 const Settings = () => {
@@ -17,6 +18,7 @@ const Settings = () => {
     useLocalChrome: true,
     localChromePath: '',
     chromiumBinPath: '',
+    automationConnect: false,
   });
   const [form] = Form.useForm();
   const {t} = useTranslation();
@@ -137,6 +139,12 @@ const Settings = () => {
               </Space.Compact>
             </Form.Item>
           )}
+          <Form.Item<FieldType>
+            label={t('settings_automation_connect')}
+            name="automationConnect"
+            >
+              <Switch value={formValue.automationConnect} />
+          </Form.Item>
         </Form>
       </Card>
       {/* <div className="content-footer pl-24">

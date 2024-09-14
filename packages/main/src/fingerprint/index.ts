@@ -22,8 +22,8 @@ import {getPort} from '../server/index';
 import {randomFingerprint} from '../services/window-service';
 import {bridgeMessageToUI, getClientPort, getMainWindow} from '../mainWindow';
 import {Mutex} from 'async-mutex';
-import {modifyPageInfo, presetCookie} from '../puppeteer/helpers';
-
+import {presetCookie} from '../puppeteer/helpers';
+import {modifyPageInfo} from '../puppeteer/helpers';
 const mutex = new Mutex();
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
@@ -37,6 +37,7 @@ async function connectBrowser(
   openStartPage: boolean = true,
 ) {
   const windowData = await WindowDB.getById(windowId);
+  const settings = getSettings();
   const browserURL = `http://${HOST}:${port}`;
   const {data} = await api.get(browserURL + '/json/version');
   if (data.webSocketDebuggerUrl) {
@@ -58,9 +59,9 @@ async function connectBrowser(
       const newPage = await target.page();
       if (newPage) {
         await newPage.waitForNavigation({waitUntil: 'networkidle0'});
-        // await newPage.setRequestInterception(true);
-        // await pageRequestInterceptor(windowId, newPage);
-        await modifyPageInfo(windowId, newPage, ipInfo);
+        if (!settings.useLocalChrome) {
+          await modifyPageInfo(windowId, newPage, ipInfo);
+        }
       }
     });
     const pages = await browser.pages();
@@ -72,12 +73,15 @@ async function connectBrowser(
         ? pages?.[0]
         : await browser.newPage();
     try {
-      await modifyPageInfo(windowId, page, ipInfo);
+      if (!settings.useLocalChrome) {
+        await modifyPageInfo(windowId, page, ipInfo);
+      }
       if (getClientPort() && openStartPage) {
         await page.goto(
           `http://localhost:${getClientPort()}/#/start?windowId=${windowId}&serverPort=${getPort()}`,
         );
       }
+
     } catch (error) {
       logger.error(error);
     }
@@ -143,6 +147,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
         fingerprint,
       });
     }
+
     if (driverPath) {
       const chromePort = await getAvailablePort();
       let finalProxy;
@@ -165,7 +170,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
         '--disable-background-mode',
         `--remote-debugging-port=${chromePort}`,
         `--user-data-dir=${windowDataDir}`,
-        `--user-agent=${fingerprint?.ua}`,
+        // `--user-agent=${fingerprint?.ua}`,
         '--unhandled-rejections=strict',
         // below is for debug
         // '--enable-logging',
@@ -179,7 +184,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
       if (finalProxy) {
         launchParamter.push(`--proxy-server=${finalProxy}`);
       }
-      if (ipInfo?.timeZone) {
+      if (ipInfo?.timeZone && !settings.useLocalChrome) {
         launchParamter.push(`--timezone=${ipInfo.timeZone}`);
         launchParamter.push(`--tz=${ipInfo.timeZone}`);
       }
@@ -219,13 +224,25 @@ export async function openFingerprintWindow(id: number, headless = false) {
             logger.info('Http Proxy server was closed.');
           });
         }
-        await closeFingerprintWindow(id);
+        await closeFingerprintWindow(id, true);
       });
 
       await sleep(1);
 
       try {
-        return connectBrowser(chromePort, ipInfo, windowData.id, !!windowData.proxy_id);
+        if (!settings.useLocalChrome || settings.automationConnect) {
+          return connectBrowser(chromePort, ipInfo, windowData.id, !!windowData.proxy_id);
+        } else {
+          await WindowDB.update(windowData.id, {
+            status: 2,
+            port: undefined,
+            opened_at: db.fn.now() as unknown as string,
+          });
+          return {
+            window: windowData,
+            browser: { message: 'Automation connect is disabled' },
+          };
+        }
       } catch (error) {
         logger.error(error);
         execSync(`taskkill /PID ${chromeInstance.pid} /F`);
@@ -300,7 +317,7 @@ export async function closeFingerprintWindow(id: number, force = false) {
   const port = window.port;
   const status = window.status;
   if (status > 1) {
-    if (force) {
+    if (force && port) {
       try {
         const browserURL = `http://${HOST}:${port}`;
         const browser = await puppeteer.connect({browserURL, defaultViewport: null});

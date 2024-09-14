@@ -94,7 +94,7 @@ i18n
           settings_use_local_chrome: 'Use Chrome',
           settings_chrome_path: 'Chrome.exe Path',
           setting_chromium_path: 'Chromium Path',
-
+          settings_automation_connect: 'Automation connect',
           footer_ok: 'OK',
           footer_cancel: 'Cancel',
 
@@ -110,6 +110,22 @@ i18n
           header_language: 'Language',
           header_settings: 'Settings',
           header_sign_out: 'Sign out',
+
+          // 英语
+          api_title: 'API',
+          api_link: 'Document',
+          api_description: 'API is used for developers to connect to browser instances using `Puppeteer / Playwright / Selenium` and other automation tools to execute automation scripts. Non-developers do not need to use this feature.',
+          api_status: 'API Status',
+          api_url: 'API URL',
+          api_supported: 'Supported API',
+          api_control: 'Control Start/Stop',
+          api_getProfiles: 'Get all Profiles list',
+          api_openProfile: 'Open specified Profiles by ID (contains debugging link)',
+          api_closeProfile: 'Close specified Profiles by ID',
+          api_windows: 'Windows CRUD',
+          api_windowsDoc: 'Details Document',
+          api_proxy: 'Proxy CRUD',
+          api_proxyDoc: 'Details Document',
         },
       },
       zh: {
@@ -198,7 +214,7 @@ i18n
           settings_use_local_chrome: '使用本地 Chrome',
           settings_chrome_path: 'Chrome.exe 路径',
           setting_chromium_path: 'Chromium 内核路径',
-
+          settings_automation_connect: '自动化连接',
           footer_ok: '确定',
           footer_cancel: '取消',
 
@@ -214,6 +230,21 @@ i18n
           header_settings: '设置',
           header_language: '语言',
           header_sign_out: '退出登录',
+
+          api_title: 'API',
+          api_link: '接口文档',
+          api_description: 'API 作用于开发人员通过 `Puppeteer / Playwright / Selenium` 等自动化工具连接浏览器实例，执行自动化脚本，非开发人员无需使用此功能。',
+          api_status: '接口状态',
+          api_url: '接口 URL',
+          api_supported: '已支持接口',
+          api_control: '控制开启/关闭',
+          api_getProfiles: '获取所有 Profiles 列表',
+          api_openProfile: '根据 ID 打开指定 Profiles（返回值中有调试链接）',
+          api_closeProfile: '根据 ID 关闭指定 Profiles',
+          api_windows: 'Windows CRUD',
+          api_windowsDoc: '详情文档',
+          api_proxy: '代理 CRUD',
+          api_proxyDoc: '详情文档',
         },
       },
     },

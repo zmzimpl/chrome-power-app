@@ -98,39 +98,6 @@ export const presetCookie = async (windowId: number, browser: Browser) => {
         cookies: correctedCookie,
       });
       await page.close();
-      //   cookieToMap(windowId, correctedCookie || []);
-      //   const runTask = limitConcurrency(10); // 最多同时执行 10 个任务
-
-      //   const cookieTasks: Promise<void>[] = [];
-      //   const cookiesMap = cookieMap.get(windowId);
-
-      //   if (cookiesMap) {
-      //     cookiesMap.forEach((cookies, domain) => {
-      //       cookieTasks.push(
-      //         new Promise<void>(resolve => {
-      //           runTask(async () => {
-      //             const page = await browser.newPage();
-      //             // 获取 CDP 会话
-      //             const client = await page.target().createCDPSession();
-      //             try {
-      //               await client.send('Network.enable');
-      //               await client.send('Network.setCookies', {
-      //                 cookies: cookies,
-      //               });
-      //             } catch (error) {
-      //               console.log(domain, 'set cookie error:', error);
-      //             } finally {
-      //               await page.close();
-      //             }
-      //             resolve();
-      //           });
-      //         }),
-      //       );
-      //     });
-      //   }
-
-      //   await Promise.all(cookieTasks);
-      // }
     }
   }
   return true;

@@ -64,9 +64,6 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.7",
-    "@supabase/auth-ui-react": "^0.4.6",
-    "@supabase/auth-ui-shared": "^0.1.8",
-    "@supabase/supabase-js": "^2.38.4",
     "@types/portscanner": "^2.1.2",
     "@vitejs/plugin-react": "^4.0.4",
     "active-win": "^8.1.1",

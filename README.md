@@ -64,6 +64,12 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 - [VirtualBrowser](https://github.com/Virtual-Browser/VirtualBrowser)
 - [toolBoxClient](https://github.com/web3ToolBoxDev/toolBoxClient)
 
+## FAQ
+
+### Windows 10 安装之后闪退
+
+尝试在安装完成之后，右键启动程序 - 属性，在目标的末尾加入 --no-sandbox 或者 --in-process-gpu，再尝试启动
+
 ## 打赏
 
 🙌你可以通过向下面的钱包打赏一杯咖啡来支持我

@@ -16,7 +16,7 @@
     "sourceType": "module"
   },
   "plugins": ["@typescript-eslint"],
-  "ignorePatterns": ["node_modules/**", "**/dist/**"],
+  "ignorePatterns": ["node_modules/**", "**/dist/**", "!.electron-builder.config.js"],
   "rules": {
     "@typescript-eslint/no-unused-vars": [
       "error",

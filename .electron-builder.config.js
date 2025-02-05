@@ -16,7 +16,12 @@ module.exports = async function () {
       output: 'dist',
       buildResources: 'buildResources',
     },
-    files: ['packages/**/dist/**', 'packages/**/assets/**', 'migrations'],
+    files: [
+      'packages/**/dist/**', 
+      'packages/**/assets/**', 
+      'migrations',
+      'node_modules/sqlite3/**/*',
+    ],
     extraResources: [
       {
         from: 'packages/main/src/native-addon/build/Release/',
@@ -39,7 +44,17 @@ module.exports = async function () {
     extraMetadata: {
       version: getVersion(),
     },
-    asarUnpack: ['**/*.node'],
+    asarUnpack: [
+      '**/*.node',
+      'node_modules/sqlite3/**/*',
+    ],
+    
+    // Windows 配置
+    win: {
+      target: ['nsis'],
+      requestedExecutionLevel: 'requireAdministrator',
+      icon: 'buildResources/icon.ico',  // 确保此路径存在
+    },
     nsis: {
       oneClick: false,
       allowElevation: true,
@@ -48,9 +63,20 @@ module.exports = async function () {
       createStartMenuShortcut: true,
       shortcutName: 'chrome-power',
     },
-
-    win: {
-      requestedExecutionLevel: 'requireAdministrator',
+    
+    // macOS 配置
+    mac: {
+      identity: null,
+      target: ['dmg', 'zip'],
+      category: 'public.app-category.developer-tools',
+      icon: 'buildResources/icon.icns',  // 确保此路径存在
+      hardenedRuntime: true,
+      gatekeeperAssess: false,
+      entitlements: 'buildResources/entitlements.mac.plist',
+      entitlementsInherit: 'buildResources/entitlements.mac.plist',
+    },
+    dmg: {
+      sign: false,
     },
   };
 };

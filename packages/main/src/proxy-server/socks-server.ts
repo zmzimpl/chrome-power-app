@@ -134,7 +134,7 @@ class HttpProxy extends EventEmitter {
 
 export default function SocksServer(opt: SocketOptions) {
   logger.info(
-    `Listen on ${opt.listenHost}:${opt.listenPort}, and forward traffic to ${opt.socksHost}:${opt.socksPort}`,
+    `Socks server listen on ${opt.listenHost}:${opt.listenPort}, and forward traffic to ${opt.socksHost}:${opt.socksPort}`,
   );
   const proxy = new HttpProxy(opt);
   return proxy.start();

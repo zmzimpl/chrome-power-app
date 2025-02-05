@@ -94,12 +94,12 @@ const Settings = () => {
               </Button>
             </Space.Compact>
           </Form.Item>
-          <Form.Item<FieldType>
+          {/* <Form.Item<FieldType>
             label={t('settings_use_local_chrome')}
             name="useLocalChrome"
           >
             <Switch value={formValue.useLocalChrome} />
-          </Form.Item>
+          </Form.Item> */}
           {formValue.useLocalChrome ? (
             <Form.Item<FieldType>
               label={t('settings_chrome_path')}

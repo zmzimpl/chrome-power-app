@@ -19,11 +19,12 @@ import * as ProxyChain from 'proxy-chain';
 import api from '../../../shared/api/api';
 import {getSettings} from '../utils/get-settings';
 import {getPort} from '../server/index';
-import {randomFingerprint} from '../services/window-service';
+// import {randomFingerprint} from '../services/window-service';
 import {bridgeMessageToUI, getClientPort, getMainWindow} from '../mainWindow';
 import {Mutex} from 'async-mutex';
-import {presetCookie} from '../puppeteer/helpers';
+// import {presetCookie} from '../puppeteer/helpers';
 import {modifyPageInfo} from '../puppeteer/helpers';
+import {existsSync, mkdirSync} from 'fs';
 const mutex = new Mutex();
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
@@ -36,7 +37,7 @@ async function connectBrowser(
   windowId: number,
   openStartPage: boolean = true,
 ) {
-  const windowData = await WindowDB.getById(windowId);
+  // const windowData = await WindowDB.getById(windowId);
   const settings = getSettings();
   const browserURL = `http://${HOST}:${port}`;
   const {data} = await api.get(browserURL + '/json/version');
@@ -46,9 +47,9 @@ async function connectBrowser(
       defaultViewport: null,
     });
 
-    if (!windowData.opened_at) {
-      await presetCookie(windowId, browser);
-    }
+    // if (!windowData.opened_at) {
+    //   await presetCookie(windowId, browser);
+    // }
     await WindowDB.update(windowId, {
       status: 2,
       port: port,
@@ -127,6 +128,25 @@ export async function openFingerprintWindow(id: number, headless = false) {
       settings.useLocalChrome ? 'chrome' : 'chromium',
       windowData.profile_id,
     );
+
+    // 确保目录存在并设置正确权限
+    if (!existsSync(windowDataDir)) {
+      try {
+        mkdirSync(windowDataDir, { recursive: true, mode: 0o755 });
+      } catch (error) {
+        logger.error(`Failed to create directory: ${error}`);
+        return null;
+      }
+    }
+
+    // 确保目录有正确的权限
+    try {
+      execSync(`chmod -R 755 "${windowDataDir}"`);
+    } catch (error) {
+      logger.error(`Failed to set permissions: ${error}`);
+      return null;
+    }
+
     const driverPath = getDriverPath();
 
     let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
@@ -137,14 +157,14 @@ export async function openFingerprintWindow(id: number, headless = false) {
       }
     }
 
-    const fingerprint =
-      windowData.fingerprint && windowData.fingerprint !== '{}'
-        ? JSON.parse(windowData.fingerprint)
-        : randomFingerprint();
+    // const fingerprint =
+    //   windowData.fingerprint && windowData.fingerprint !== '{}'
+    //     ? JSON.parse(windowData.fingerprint)
+    //     : randomFingerprint();
     if (!windowData.fingerprint || windowData.fingerprint === '{}') {
       await WindowDB.update(id, {
         ...windowData,
-        fingerprint,
+        // fingerprint,
       });
     }
 
@@ -161,8 +181,17 @@ export async function openFingerprintWindow(id: number, headless = false) {
         finalProxy = proxyInstance.proxyUrl;
         proxyServer = proxyInstance.proxyServer;
       }
-      const launchParamter = [
-        `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
+
+      const isMac = process.platform === 'darwin';
+      const launchParamter = settings.useLocalChrome ? [
+        `--remote-debugging-port=${chromePort}`,
+        `--user-data-dir=${windowDataDir}`,
+        '--no-first-run',
+      ] : [
+        // Mac 特定参数
+        ...(isMac ? ['--args'] : []),
+        
+        // `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
         '--force-color-profile=srgb',
         '--no-first-run',
         '--no-default-browser-check',
@@ -172,13 +201,12 @@ export async function openFingerprintWindow(id: number, headless = false) {
         `--user-data-dir=${windowDataDir}`,
         // `--user-agent=${fingerprint?.ua}`,
         '--unhandled-rejections=strict',
-        // below is for debug
-        // '--enable-logging',
-        // '--v=1',
-        // '--enable-blink-features=IdleDetection',
-        // '--no-sandbox',
-        // '--disable-setuid-sandbox',
-        // '--auto-open-devtools-for-tabs',
+        
+        // Mac 特定安全参数
+        ...(isMac ? [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+        ] : []),
       ];
 
       if (finalProxy) {
@@ -189,9 +217,21 @@ export async function openFingerprintWindow(id: number, headless = false) {
         launchParamter.push(`--tz=${ipInfo.timeZone}`);
       }
       if (headless) {
-        launchParamter.push('--headless');
-        launchParamter.push('--disable-gpu');
+        launchParamter.push('--headless=new'); // 使用新版 headless 模式
+        if (!isMac) {
+          launchParamter.push('--disable-gpu'); // 在 Mac 上不需要这个参数
+        }
       }
+
+      // 添加调试参数（如果需要）
+      if (process.env.NODE_ENV === 'development') {
+        // launchParamter.push(
+        //   '--enable-logging',
+        //   '--v=1',
+        //   '--enable-blink-features=IdleDetection',
+        // );
+      }
+
       let chromeInstance;
       try {
         chromeInstance = spawn(driverPath, launchParamter);
@@ -233,14 +273,16 @@ export async function openFingerprintWindow(id: number, headless = false) {
         if (!settings.useLocalChrome || settings.automationConnect) {
           return connectBrowser(chromePort, ipInfo, windowData.id, !!windowData.proxy_id);
         } else {
+          const browserURL = `http://${HOST}:${chromePort}`;
+          const {data} = await api.get(browserURL + '/json/version');
           await WindowDB.update(windowData.id, {
             status: 2,
-            port: undefined,
+            port: chromePort,
             opened_at: db.fn.now() as unknown as string,
           });
           return {
             window: windowData,
-            browser: { message: 'Automation connect is disabled' },
+            browser: data,
           };
         }
       } catch (error) {

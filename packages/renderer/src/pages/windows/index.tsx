@@ -94,11 +94,11 @@ const Windows = () => {
       label: t('window_proxy_setting'),
       icon: <GlobalOutlined />,
     },
-    {
-      key: 'set-cookie',
-      label: t('window_set_cookie'),
-      icon: <UsergroupAddOutlined />,
-    },
+    // {
+    //   key: 'set-cookie',
+    //   label: t('window_set_cookie'),
+    //   icon: <UsergroupAddOutlined />,
+    // },
     {
       type: 'divider',
     },

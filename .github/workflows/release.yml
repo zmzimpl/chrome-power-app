@@ -25,14 +25,14 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ windows-latest ]
+        os: [windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2 # Updated to use the latest stable version
+      - uses: actions/checkout@v2
         with:
-          lfs: true # Enable Git LFS
+          lfs: true
 
       - name: Set up Git LFS
         run: |
@@ -41,18 +41,27 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
+          node-version: 18
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
-      - run: npm ci
+      - name: Clean npm cache
+        run: |
+          npm cache clean --force
+          rm -rf node_modules
+          rm -rf ~/.npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install -g electron-builder@latest
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Create .env.production.local file
         run: |
-          # 创建 .env.production.local 文件
           echo "VITE_APP_API=${{ secrets.VITE_APP_API }}" > .env.production.local
           echo "VITE_START_PAGE_URL=${{ secrets.VITE_START_PAGE_URL }}" >> .env.production.local
-          # 在这里添加任何其他需要的环境变量
 
       - run: npm run build
 
@@ -64,7 +73,6 @@ jobs:
           retry_wait_seconds: 15
           retry_on: error
           shell: 'bash'
-          command: ./node_modules/.bin/electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
+          command: npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
         env:
-          GH_TOKEN: ${{ secrets.github_token }} # GitHub token, automatically provided (No need to define this secret in the repo settings)
-          # Add any other environment variables that are specific to this step, if necessary
+          GH_TOKEN: ${{ secrets.github_token }}

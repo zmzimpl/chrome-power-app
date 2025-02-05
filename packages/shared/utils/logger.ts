@@ -1,5 +1,7 @@
 import {existsSync, mkdirSync} from 'fs';
 import * as winston from 'winston';
+import {join} from 'path';
+import {app} from 'electron';
 
 const colorizer = winston.format.colorize();
 
@@ -12,11 +14,12 @@ export function createLogger(label: string) {
       // 开发环境: 所有日志都输出到控制台
       transport = new winston.transports.Console({level: 'info'});
     } else {
-      if (!existsSync('logs')) {
-        mkdirSync('logs');
+      const logsPath = join(app.getPath('appData'), 'logs');
+      if (!existsSync(logsPath)) {
+        mkdirSync(logsPath, { recursive: true });
       }
-      if (!existsSync(`logs/${label}`)) {
-        mkdirSync(`logs/${label}`);
+      if (!existsSync(join(logsPath, label))) {
+        mkdirSync(join(logsPath, label));
       }
       const date = new Date();
 
@@ -27,7 +30,7 @@ export function createLogger(label: string) {
         .toString()
         .padStart(2, '0')}`;
       // 定义日志文件的位置，每天记录一个日志文件
-      const logFile = `logs/${label}/${formattedDate}.log`;
+      const logFile = join(logsPath, label, `${formattedDate}.log`);
       // 生产环境: 所有日志都输出到文件
       transport = new winston.transports.File({level: 'info', filename: logFile});
     }

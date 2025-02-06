@@ -90,8 +90,8 @@ export const initWindowService = () => {
   ipcMain.handle('window-open', async (_, id: number) => {
     return await openFingerprintWindow(id);
   });
-  ipcMain.handle('window-close', async (_, id: number) => {
-    return await closeFingerprintWindow(id, true);
+  ipcMain.handle('window-close', async (_, id: number, force = false) => {
+    return await closeFingerprintWindow(id, force);
   });
 
   ipcMain.handle('window-set-cookie', async (_, id: number) => {
@@ -99,6 +99,7 @@ export const initWindowService = () => {
       status: 3,
     });
     const {webSocketDebuggerUrl} = await openFingerprintWindow(id, true);
+
     const browser = await puppeteer.connect({
       browserWSEndpoint: webSocketDebuggerUrl,
       defaultViewport: null,

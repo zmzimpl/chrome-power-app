@@ -2,4 +2,3 @@
 scripts/*.js linguist-detectable=false
 *.config.js linguist-detectable=false
 * text=auto eol=lf
-Chrome-bin.zip filter=lfs diff=lfs merge=lfs -text

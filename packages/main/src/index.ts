@@ -6,7 +6,6 @@ import {db, initializeDatabase} from './db';
 import {initServices} from './services';
 import {createLogger} from '../../shared/utils/logger';
 import {MAIN_LOGGER_LABEL} from './constants';
-import {extractChromeBin} from './utils/extract';
 import './server/index';
 
 const logger = createLogger(MAIN_LOGGER_LABEL);
@@ -60,16 +59,16 @@ app
     }
     await initServices();
     await restoreOrCreateWindow();
-    if (!import.meta.env.DEV) {
-      const {result, error, exist} = await extractChromeBin();
-      if (result) {
-        if (!exist) {
-          logger.info('Extracted Chrome-bin.zip');
-        }
-      } else {
-        logger.error('Failed extract Chrome-bin.zip, try to manually extract it', error);
-      }
-    }
+    // if (!import.meta.env.DEV) {
+    //   const {result, error, exist} = await extractChromeBin();
+    //   if (result) {
+    //     if (!exist) {
+    //       logger.info('Extracted Chrome-bin.zip');
+    //     }
+    //   } else {
+    //     logger.error('Failed extract Chrome-bin.zip, try to manually extract it', error);
+    //   }
+    // }
   })
   .catch(e => logger.error('Failed create window:', e));
 

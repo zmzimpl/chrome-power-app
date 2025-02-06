@@ -29,10 +29,6 @@ module.exports = async function () {
         filter: ['*.node'],
       },
       {
-        from: 'Chrome-bin.zip',
-        to: 'Chrome-bin.zip',
-      },
-      {
         from: 'migrations',
         to: 'app/migrations',
       },

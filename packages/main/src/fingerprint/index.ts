@@ -9,86 +9,82 @@ import * as portscanner from 'portscanner';
 import {sleep} from '../utils/sleep';
 import SocksServer from '../proxy-server/socks-server';
 import type {DB} from '../../../shared/types/db';
-import type {IP} from '../../../shared/types/ip';
 import {type IncomingMessage, type Server, type ServerResponse} from 'http';
 import {createLogger} from '../../../shared/utils/logger';
 import {WINDOW_LOGGER_LABEL} from '../constants';
 import {db} from '../db';
 import {getProxyInfo} from './prepare';
 import * as ProxyChain from 'proxy-chain';
-import api from '../../../shared/api/api';
 import {getSettings} from '../utils/get-settings';
-import {getPort} from '../server/index';
 // import {randomFingerprint} from '../services/window-service';
-import {bridgeMessageToUI, getClientPort, getMainWindow} from '../mainWindow';
+import {bridgeMessageToUI, getMainWindow} from '../mainWindow';
 import {Mutex} from 'async-mutex';
 // import {presetCookie} from '../puppeteer/helpers';
-import {modifyPageInfo} from '../puppeteer/helpers';
 import {existsSync, mkdirSync} from 'fs';
+import api from '../../../shared/api/api';
 const mutex = new Mutex();
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
 
 const HOST = '127.0.0.1';
 
-async function connectBrowser(
-  port: number,
-  ipInfo: IP,
-  windowId: number,
-  openStartPage: boolean = true,
-) {
-  // const windowData = await WindowDB.getById(windowId);
-  const settings = getSettings();
-  const browserURL = `http://${HOST}:${port}`;
-  const {data} = await api.get(browserURL + '/json/version');
-  if (data.webSocketDebuggerUrl) {
-    const browser = await puppeteer.connect({
-      browserWSEndpoint: data.webSocketDebuggerUrl,
-      defaultViewport: null,
-    });
+// async function connectBrowser(
+//   port: number,
+//   ipInfo: IP,
+//   windowId: number,
+//   openStartPage: boolean = true,
+// ) {
+//   // const windowData = await WindowDB.getById(windowId);
+//   const settings = getSettings();
+//   const browserURL = `http://${HOST}:${port}`;
+//   const {data} = await api.get(browserURL + '/json/version');
+//   if (data.webSocketDebuggerUrl) {
+//     const browser = await puppeteer.connect({
+//       browserWSEndpoint: data.webSocketDebuggerUrl,
+//       defaultViewport: null,
+//     });
 
-    // if (!windowData.opened_at) {
-    //   await presetCookie(windowId, browser);
-    // }
-    await WindowDB.update(windowId, {
-      status: 2,
-      port: port,
-      opened_at: db.fn.now() as unknown as string,
-    });
+//     // if (!windowData.opened_at) {
+//     //   await presetCookie(windowId, browser);
+//     // }
+//     await WindowDB.update(windowId, {
+//       status: 2,
+//       port: port,
+//       opened_at: db.fn.now() as unknown as string,
+//     });
 
-    browser.on('targetcreated', async target => {
-      const newPage = await target.page();
-      if (newPage) {
-        await newPage.waitForNavigation({waitUntil: 'networkidle0'});
-        if (!settings.useLocalChrome) {
-          await modifyPageInfo(windowId, newPage, ipInfo);
-        }
-      }
-    });
-    const pages = await browser.pages();
-    const page =
-      pages.length &&
-      (pages?.[0]?.url() === 'about:blank' ||
-        !pages?.[0]?.url() ||
-        pages?.[0]?.url() === 'chrome://new-tab-page/')
-        ? pages?.[0]
-        : await browser.newPage();
-    try {
-      if (!settings.useLocalChrome) {
-        await modifyPageInfo(windowId, page, ipInfo);
-      }
-      if (getClientPort() && openStartPage) {
-        await page.goto(
-          `http://localhost:${getClientPort()}/#/start?windowId=${windowId}&serverPort=${getPort()}`,
-        );
-      }
-
-    } catch (error) {
-      logger.error(error);
-    }
-    return data;
-  }
-}
+//     browser.on('targetcreated', async target => {
+//       const newPage = await target.page();
+//       if (newPage) {
+//         await newPage.waitForNavigation({waitUntil: 'networkidle0'});
+//         if (!settings.useLocalChrome) {
+//           await modifyPageInfo(windowId, newPage, ipInfo);
+//         }
+//       }
+//     });
+//     const pages = await browser.pages();
+//     const page =
+//       pages.length &&
+//       (pages?.[0]?.url() === 'about:blank' ||
+//         !pages?.[0]?.url() ||
+//         pages?.[0]?.url() === 'chrome://new-tab-page/')
+//         ? pages?.[0]
+//         : await browser.newPage();
+//     try {
+//       if (!settings.useLocalChrome) {
+//         await modifyPageInfo(windowId, page, ipInfo);
+//       }
+//       if (getClientPort() && openStartPage) {
+//         await page.goto(
+//           `http://localhost:${getClientPort()}/#/start?windowId=${windowId}&serverPort=${getPort()}`,
+//         );
+//       }
+//     } catch (error) {
+//       logger.error(error);
+//     }
+//     return data;
+//   }
+// }
 
 const getDriverPath = () => {
   const settings = getSettings();
@@ -132,7 +128,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
     // 确保目录存在并设置正确权限
     if (!existsSync(windowDataDir)) {
       try {
-        mkdirSync(windowDataDir, { recursive: true, mode: 0o755 });
+        mkdirSync(windowDataDir, {recursive: true, mode: 0o755});
       } catch (error) {
         logger.error(`Failed to create directory: ${error}`);
         return null;
@@ -140,15 +136,17 @@ export async function openFingerprintWindow(id: number, headless = false) {
     }
 
     // 确保目录有正确的权限
-    try {
-      execSync(`chmod -R 755 "${windowDataDir}"`);
-    } catch (error) {
-      logger.error(`Failed to set permissions: ${error}`);
-      return null;
+    const isMac = process.platform === 'darwin';
+    if (isMac) {
+      try {
+        execSync(`chmod -R 755 "${windowDataDir}"`);
+      } catch (error) {
+        logger.error(`Failed to set permissions: ${error}`);
+        return null;
+      }
     }
 
     const driverPath = getDriverPath();
-
     let ipInfo = {timeZone: '', ip: '', ll: [], country: ''};
     if (windowData.proxy_id && proxyData.ip) {
       ipInfo = await getProxyInfo(proxyData);
@@ -183,31 +181,30 @@ export async function openFingerprintWindow(id: number, headless = false) {
       }
 
       const isMac = process.platform === 'darwin';
-      const launchParamter = settings.useLocalChrome ? [
-        `--remote-debugging-port=${chromePort}`,
-        `--user-data-dir=${windowDataDir}`,
-        '--no-first-run',
-      ] : [
-        // Mac 特定参数
-        ...(isMac ? ['--args'] : []),
-        
-        // `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
-        '--force-color-profile=srgb',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--metrics-recording-only',
-        '--disable-background-mode',
-        `--remote-debugging-port=${chromePort}`,
-        `--user-data-dir=${windowDataDir}`,
-        // `--user-agent=${fingerprint?.ua}`,
-        '--unhandled-rejections=strict',
-        
-        // Mac 特定安全参数
-        ...(isMac ? [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-        ] : []),
-      ];
+      const launchParamter = settings.useLocalChrome
+        ? [
+            `--remote-debugging-port=${chromePort}`,
+            `--user-data-dir=${windowDataDir}`,
+            '--no-first-run',
+          ]
+        : [
+            // Mac 特定参数
+            ...(isMac ? ['--args'] : []),
+
+            // `--extended-parameters=${btoa(JSON.stringify(fingerprint))}`,
+            '--force-color-profile=srgb',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--metrics-recording-only',
+            '--disable-background-mode',
+            `--remote-debugging-port=${chromePort}`,
+            `--user-data-dir=${windowDataDir}`,
+            // `--user-agent=${fingerprint?.ua}`,
+            '--unhandled-rejections=strict',
+
+            // Mac 特定安全参数
+            ...(isMac ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
+          ];
 
       if (finalProxy) {
         launchParamter.push(`--proxy-server=${finalProxy}`);
@@ -264,31 +261,26 @@ export async function openFingerprintWindow(id: number, headless = false) {
             logger.info('Http Proxy server was closed.');
           });
         }
-        await closeFingerprintWindow(id, true);
+        await closeFingerprintWindow(id, false);
       });
 
       await sleep(1);
 
       try {
-        if (!settings.useLocalChrome || settings.automationConnect) {
-          return connectBrowser(chromePort, ipInfo, windowData.id, !!windowData.proxy_id);
-        } else {
-          const browserURL = `http://${HOST}:${chromePort}`;
-          const {data} = await api.get(browserURL + '/json/version');
-          await WindowDB.update(windowData.id, {
-            status: 2,
-            port: chromePort,
-            opened_at: db.fn.now() as unknown as string,
-          });
-          return {
-            window: windowData,
-            browser: data,
-          };
-        }
+        const browserURL = `http://${HOST}:${chromePort}`;
+        const {data} = await api.get(browserURL + '/json/version');
+        await WindowDB.update(windowData.id, {
+          status: 2,
+          port: chromePort,
+          opened_at: db.fn.now() as unknown as string,
+        });
+        return {
+          ...data,
+        };
       } catch (error) {
         logger.error(error);
         execSync(`taskkill /PID ${chromeInstance.pid} /F`);
-        await closeFingerprintWindow(id, true);
+        await closeFingerprintWindow(id, false);
         return null;
       }
     } else {

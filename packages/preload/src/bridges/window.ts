@@ -52,7 +52,7 @@ export const WindowBridge = {
   },
 
   async close(id: number) {
-    const result = await ipcRenderer.invoke('window-close', id);
+    const result = await ipcRenderer.invoke('window-close', id, true);
     return result;
   },
 

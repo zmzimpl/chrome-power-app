@@ -38,9 +38,7 @@ export const getSettings = (): SettingOptions => {
   if (!settings.localChromePath) {
     settings.localChromePath = getChromePath() as string;
   }
-  if (settings.useLocalChrome === undefined) {
-    settings.useLocalChrome = true;
-  }
+  settings.useLocalChrome = true;
   if (!settings.chromiumBinPath || settings.chromiumBinPath === 'Chrome-bin\\chrome.exe') {
     if (import.meta.env.DEV) {
       settings.chromiumBinPath = 'Chrome-bin\\chrome.exe';

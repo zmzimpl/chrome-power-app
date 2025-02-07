@@ -199,7 +199,7 @@ const WindowEditForm = ({
         <Input />
       </Form.Item>
 
-      <Form.Item<FieldType>
+      {/* <Form.Item<FieldType>
         name="cookie"
         label="Cookie"
       >
@@ -209,7 +209,7 @@ const WindowEditForm = ({
             'Cookie, eg: [{"name":"O365Consumer","value":"1","domain":"outlook.live.com","path":"","httpOnly":true,"secure":true,"session":true,"expires":1744367913,"sameSite":"no_restriction"}]'
           }
         />
-      </Form.Item>
+      </Form.Item> */}
     </Form>
   );
 };

@@ -40,7 +40,7 @@ const WindowDetailFooter = ({
   const showMessage = (result: OperationResult) => {
     messageApi[result.success ? 'success' : 'error'](
       result.success
-        ? `Saved successfully, will be automatically jumped after ${MESSAGE_CONFIG.duration}s`
+        ? `Saved successfully`
         : result.message,
     ).then(() => {
       setSaving(false);

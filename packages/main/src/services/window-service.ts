@@ -22,16 +22,12 @@ export const initWindowService = () => {
       const workbook = XLSX.readFile(filePath);
       const sheet_name_list = workbook.SheetNames;
       fileData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
-      fileData.forEach(item => {
-        if (typeof item.cookie === 'string' && item.cookie === 'Cookie过长，超出Excel单元格上限') {
-          item.cookie = JSON.stringify([]);
-        }
-      });
     } else {
       const fileContent = readFileSync(filePath, 'utf-8');
       const data = txtToJSON(fileContent);
       fileData = data.filter(f => f.id);
     }
+    console.log(fileData);
     const result = await WindowDB.externalImport(fileData);
     return result;
   });
@@ -45,6 +41,7 @@ export const initWindowService = () => {
       }),
       JSON.stringify(fingerprint),
     );
+    console.log(window);
     return await WindowDB.create(window, fingerprint);
   });
 
@@ -79,7 +76,7 @@ export const initWindowService = () => {
         };
       }
     } else {
-      return randomFingerprint();
+      return {};
     }
   });
 

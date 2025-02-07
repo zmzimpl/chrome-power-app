@@ -42,7 +42,7 @@ const ProxyImportFooter = ({proxies}: {proxies: DB.Proxy[]}) => {
         messageApi
           .open({
             type: 'success',
-            content: `Imported successfully, will be automatically jumped after ${MESSAGE_CONFIG.duration}s`,
+            content: `Imported successfully`,
             key: 'import',
           })
           .then(() => navigate('/proxy'));

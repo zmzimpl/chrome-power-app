@@ -36,7 +36,7 @@ const WindowDetailTabs = ({
             formValue: formValue,
             formChangeCallback: formValueChangeCallback,
           })}
-          {FingerprintInfo({fingerprints})}
+          {/* {FingerprintInfo({fingerprints})} */}
         </div>
       ),
     },

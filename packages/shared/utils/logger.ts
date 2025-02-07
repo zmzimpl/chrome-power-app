@@ -3,17 +3,16 @@ import * as winston from 'winston';
 import {join} from 'path';
 import {app} from 'electron';
 
-const colorizer = winston.format.colorize();
+// const colorizer = winston.format.colorize();
 
 export function createLogger(label: string) {
-  const isDevelopment = import.meta.env.MODE === 'development';
+  // const isDevelopment = import.meta.env.MODE === 'development';
 
   if (!winston.loggers.has(label)) {
-    let transport;
-    if (isDevelopment) {
-      // 开发环境: 所有日志都输出到控制台
-      transport = new winston.transports.Console({level: 'info'});
-    } else {
+    // if (isDevelopment) {
+    //   // 开发环境: 所有日志都输出到控制台
+    //   transport = new winston.transports.Console({level: 'info'});
+    // } else {
       const logsPath = join(app.getPath('appData'), 'logs');
       if (!existsSync(logsPath)) {
         mkdirSync(logsPath, { recursive: true });
@@ -32,8 +31,8 @@ export function createLogger(label: string) {
       // 定义日志文件的位置，每天记录一个日志文件
       const logFile = join(logsPath, label, `${formattedDate}.log`);
       // 生产环境: 所有日志都输出到文件
-      transport = new winston.transports.File({level: 'info', filename: logFile});
-    }
+      const transport = new winston.transports.File({level: 'info', filename: logFile});
+    // }
 
     winston.loggers.add(label, {
       transports: [transport],
@@ -44,9 +43,7 @@ export function createLogger(label: string) {
           const {timestamp, level, message, [Symbol.for('splat')]: splat} = info;
           const metaString = splat && splat.length ? splat.map(JSON.stringify).join(' ') : '';
           const formattedMessage = `${message} ${metaString}`.trim();
-          return isDevelopment
-            ? colorizer.colorize(level, `${label} | ${timestamp} - ${level}: ${formattedMessage}`)
-            : `${label} | ${timestamp} - ${level}: ${formattedMessage}`;
+          return `${label} | ${timestamp} - ${level}: ${formattedMessage}`;
         }),
       ),
     });

@@ -2,9 +2,7 @@ import {db} from '.';
 import type {DB, SafeAny} from '../../../shared/types/db';
 import type {IWindowTemplate} from '../types/window-template';
 import {GroupDB} from './group';
-import {ProxyDB} from './proxy';
 import {randomUniqueProfileId} from '../../../shared/utils/random';
-import {randomFingerprint} from '../services/window-service';
 
 const all = async () => {
   return await db('window')
@@ -192,23 +190,7 @@ const externalImport = async (fileData: IWindowTemplate[]) => {
   const newWindowAdded = [];
   for (let index = 0; index < fileData.length; index++) {
     const row: IWindowTemplate = fileData[index];
-    let newProxyId;
     let newGroupId;
-    if (row.proxyid) {
-      const proxy = {
-        proxy_type: row.proxytype,
-        proxy: row.proxy,
-        ip: row.ip,
-        ip_checker: row.ipchecker,
-      } as DB.Proxy;
-      const existProxy = await ProxyDB.getByProxy(proxy.proxy_type, proxy.proxy);
-      if (existProxy) {
-        newProxyId = existProxy.id;
-      } else {
-        const [id] = await ProxyDB.create(proxy);
-        newProxyId = id;
-      }
-    }
     if (row.group) {
       const group = {
         name: row.group,
@@ -225,13 +207,13 @@ const externalImport = async (fileData: IWindowTemplate[]) => {
       name: row.name,
       group_id: newGroupId,
       profile_id: row.id as string,
-      proxy_id: newProxyId,
+      proxy_id: row.proxyid ? Number(row.proxyid) : null,
       ua: row.ua,
       remark: row.remark,
       cookie: row.cookie,
     };
-    const fingerprint = randomFingerprint();
-    const result = await WindowDB.create(window, fingerprint);
+    // const fingerprint = randomFingerprint();
+    const result = await WindowDB.create(window, {});
     if (result.data?.id) {
       newWindowAdded.push(result.data?.id);
     }

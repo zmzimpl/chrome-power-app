@@ -2,3 +2,7 @@
     height: calc(100% - 64px);
     overflow: auto;
 }
+
+.log-aside {
+    background-color: #052f4a;
+}

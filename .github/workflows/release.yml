@@ -63,7 +63,29 @@ jobs:
           echo "VITE_APP_API=${{ secrets.VITE_APP_API }}" > .env.production.local
           echo "VITE_START_PAGE_URL=${{ secrets.VITE_START_PAGE_URL }}" >> .env.production.local
 
+      - name: Install the Apple certificate and provisioning profile
+        if: matrix.os == 'macos-latest'
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # 创建证书文件
+          echo $BUILD_CERTIFICATE_BASE64 | base64 --decode > certificate.p12
+          
+          # 创建临时钥匙串
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
       - run: npm run build
+
+      - name: Build and Publish
+        env:
+          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+        run: npx electron-builder --config .electron-builder.config.js --publish always
 
       - name: Compile artifacts ${{ inputs.dry-run && '' || 'and upload them to github release' }}
         uses: nick-fields/retry@v2

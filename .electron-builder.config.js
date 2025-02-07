@@ -11,7 +11,7 @@
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
   return {
-    productName: 'chrome-power',
+    productName: 'Chrome Power',
     directories: {
       output: 'dist',
       buildResources: 'buildResources',
@@ -40,10 +40,7 @@ module.exports = async function () {
     extraMetadata: {
       version: getVersion(),
     },
-    asarUnpack: [
-      '**/*.node',
-      'node_modules/sqlite3/**/*',
-    ],
+    asarUnpack: ['**/*.node'],
     
     // Windows 配置
     win: {
@@ -57,22 +54,36 @@ module.exports = async function () {
       allowToChangeInstallationDirectory: true,
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
-      shortcutName: 'chrome-power',
+      shortcutName: 'Chrome Power',
     },
     
     // macOS 配置
     mac: {
-      identity: null,
+      identity: process.env.APPLE_IDENTITY,
       target: ['dmg', 'zip'],
       category: 'public.app-category.developer-tools',
-      icon: 'buildResources/icon.icns',  // 确保此路径存在
+      icon: 'buildResources/icon.icns',
       hardenedRuntime: true,
       gatekeeperAssess: false,
       entitlements: 'buildResources/entitlements.mac.plist',
       entitlementsInherit: 'buildResources/entitlements.mac.plist',
     },
     dmg: {
-      sign: false,
+      sign: true,
     },
+    // 自编译不需要签名也行
+    // mac: {
+    //   identity: null,
+    //   target: ['dmg', 'zip'],
+    //   category: 'public.app-category.developer-tools',
+    //   icon: 'buildResources/icon.icns',
+    //   hardenedRuntime: true,
+    //   gatekeeperAssess: false,
+    //   entitlements: 'buildResources/entitlements.mac.plist',
+    //   entitlementsInherit: 'buildResources/entitlements.mac.plist'
+    // },
+    // dmg: {
+    //   sign: false
+    // },
   };
 };

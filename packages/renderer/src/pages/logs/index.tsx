@@ -56,7 +56,7 @@ const Logs = () => {
           size="small"
           items={items}
         />
-        <aside className="bg-sky-950 text-white p-6 rounded-lg w-full log-container font-mono">
+        <aside className="log-aside text-white p-6 rounded-lg w-full log-container font-mono">
           <div className="flex justify-between items-center">
             <div className="flex space-x-2 text-red-500">
               <div className="w-3 h-3 rounded-full bg-red-500" />
@@ -73,7 +73,7 @@ const Logs = () => {
                   return (
                     <p
                       key={`${logs.name}-${logsIndex}-${index}`}
-                      className="text-red-400"
+                      className="text-amber-400"
                     >
                       {log.message}
                     </p>

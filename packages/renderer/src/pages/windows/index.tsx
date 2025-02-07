@@ -152,8 +152,7 @@ const Windows = () => {
         render: (_, recorder) => (
           <>
             {recorder.tags &&
-              typeof recorder.tags === 'string' &&
-              recorder.tags.split(',').map(tagId => {
+              recorder.tags.toString().split(',').map(tagId => {
                 const tag = tagMap.get(Number(tagId));
                 return (
                   <Tag
@@ -254,6 +253,7 @@ const Windows = () => {
   const fetchWindowData = async () => {
     setLoading(true);
     const data = await WindowBridge?.getAll();
+    console.log(data);
     setWindowData(data);
     setWindowDataCopy(data);
     setLoading(false);
@@ -461,9 +461,11 @@ const Windows = () => {
             containsKeyword(f.id, keyword) ||
             containsKeyword(f.ip, keyword) ||
             containsKeyword(f.profile_id, keyword) ||
+            containsKeyword(f.proxy, keyword) ||
             (f.tags &&
-              f.tags instanceof Array &&
-              f.tags.some(tag => containsKeyword(tag, keyword))), // Changed this line for tag check
+              (f.tags instanceof Array &&
+              f.tags.some(tag => containsKeyword(tagMap.get(tag)?.name, keyword)) ||
+              f.tags.toString().split(',').some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword)))), // Changed this line for tag check
         ),
       );
     } else {

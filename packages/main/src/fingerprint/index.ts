@@ -279,7 +279,12 @@ export async function openFingerprintWindow(id: number, headless = false) {
         };
       } catch (error) {
         logger.error(error);
-        execSync(`taskkill /PID ${chromeInstance.pid} /F`);
+        if (process.platform === 'win32') {
+          execSync(`taskkill /PID ${chromeInstance.pid} /F`);
+        } else {
+          // Mac 和 Linux 系统使用 kill 命令
+          execSync(`kill -9 ${chromeInstance.pid}`);
+        }
         await closeFingerprintWindow(id, false);
         return null;
       }

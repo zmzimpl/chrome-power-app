@@ -16,13 +16,9 @@
 export interface IWindowTemplate {
   name?: string;
   group?: string;
-  proxyid?: string;
+  proxy_id?: string;
   ua?: string;
   remark?: string;
   cookie?: string;
-  proxytype?: string;
-  proxy?: string;
-  ip?: string;
-  ipchecker?: string;
   [key: string]: unknown;
 }

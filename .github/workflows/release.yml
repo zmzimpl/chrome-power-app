@@ -87,6 +87,7 @@ jobs:
 
       - name: Build and Publish
         env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
         run: npx electron-builder --config .electron-builder.config.js --publish always
 
@@ -100,4 +101,4 @@ jobs:
           shell: 'bash'
           command: npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}

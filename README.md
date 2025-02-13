@@ -6,7 +6,7 @@
 
 **Warning: 此项目只有作者一人在维护，指纹启动方式目前已经失效，目前已在代码中注释掉了（有条件请自行修改编译）。目前只单纯作为 Chrome 多开管理工具使用，支持独立窗口，http/socks5 代理，API 管理等。**
 
-首款开源~~指纹浏览器~~(Chrome 多开管理工具)。基于 Puppeteer、Electron、React 开发。
+首款开源~~指纹浏览器~~ Chrome 多开管理工具。基于 Puppeteer、Electron、React 开发。
 
 此软件遵循AGPL协议，因此如果你想对其进行修改发布，请保持开源。
 
@@ -37,7 +37,7 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 - [x] Puppeteer/Playwright/Selenium 接入
 - [x] ~~支持 cookie 导入~~
 - [x] Mac 安装支持
-- [ ] 扩展程序管理
+- [x] 扩展程序管理
 - [ ] 同步操作
 - [ ] 自动化脚本
 
@@ -52,11 +52,6 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 ## API 文档
 
 [Postman API](https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#intro)
-
-## 同类开源工具
-
-- [VirtualBrowser](https://github.com/Virtual-Browser/VirtualBrowser)
-- [toolBoxClient](https://github.com/web3ToolBoxDev/toolBoxClient)
 
 ## FAQ
 

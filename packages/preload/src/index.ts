@@ -11,3 +11,4 @@ export {ProxyBridge} from './bridges/proxy';
 export {TagBridge} from './bridges/tag';
 export {CommonBridge} from './bridges/common';
 export {SyncBridge} from './bridges/sync';
+export {ExtensionBridge} from './bridges/extension';

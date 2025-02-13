@@ -53,7 +53,25 @@ export namespace DB {
   export interface Tag {
     id?: number;
     name?: string;
-    color?: strubg;
+    color?: string;
+  }
+
+  export interface Extension {
+    id?: number;
+    name: string;
+    version: string;
+    path: string;
+    windows?: number[] | string;
+    icon?: string;
+    description?: string;
+    created_at?: string;
+    updated_at?: string;
+  }
+
+  export interface WindowExtension {
+    id?: number;
+    extension_id?: number;
+    window_id?: number;
   }
 }
 

@@ -26,16 +26,16 @@ const Logs = () => {
       key: 'Proxy',
       label: 'Proxy',
     },
-    {
-      key: 'Api',
-      label: 'Api',
-    },
+    // {
+    //   key: 'Api',
+    //   label: 'Api',
+    // },
   ];
   const [logsData, setLogsData] = React.useState<logsDataOptions[]>([]);
 
   const fetchLogs = async (logModule: 'Main' | 'Windows' | 'Proxy' | 'Api') => {
     const logs = await CommonBridge.getLogs(logModule);
-    setLogsData(logs);
+    setLogsData(logs.reverse());
   };
 
   useEffect(() => {
@@ -67,7 +67,6 @@ const Logs = () => {
           <div className="mt-4">
             {logsData.map((logs, logsIndex) => {
               const reversedLogs = [...logs.content].reverse();
-              console.log(reversedLogs);
               return reversedLogs.map((log, index) => {
                 if (log.level === 'error') {
                   return (

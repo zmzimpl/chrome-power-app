@@ -1,4 +1,4 @@
-import {Button, Card, Form, Input, Space, Switch} from 'antd';
+import {Button, Card, Form, Input, Space} from 'antd';
 import {CommonBridge} from '#preload';
 import {useEffect, useState} from 'react';
 import type {SettingOptions} from '../../../../shared/types/common';
@@ -139,12 +139,12 @@ const Settings = () => {
               </Space.Compact>
             </Form.Item>
           )}
-          <Form.Item<FieldType>
+          {/* <Form.Item<FieldType>
             label={t('settings_automation_connect')}
             name="automationConnect"
             >
               <Switch value={formValue.automationConnect} />
-          </Form.Item>
+          </Form.Item> */}
         </Form>
       </Card>
       {/* <div className="content-footer pl-24">

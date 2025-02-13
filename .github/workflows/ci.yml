@@ -35,10 +35,9 @@ concurrency:
 jobs:
   draft_release:
     permissions:
-      contents: write # Allows this job to create releases
+      contents: write
+    uses: ./.github/workflows/release.yml
     with:
       dry-run: ${{ github.event_name != 'push' || (github.ref_type != 'tag' && github.ref_name != 'main') }}
-    secrets: inherit
-    needs: []
-    uses: ./.github/workflows/release.yml
-
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

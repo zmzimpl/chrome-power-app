@@ -22,6 +22,8 @@ import {Mutex} from 'async-mutex';
 // import {presetCookie} from '../puppeteer/helpers';
 import {existsSync, mkdirSync} from 'fs';
 import api from '../../../shared/api/api';
+import {ExtensionDB} from '../db/extension';
+
 const mutex = new Mutex();
 
 const logger = createLogger(WINDOW_LOGGER_LABEL);
@@ -112,6 +114,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
   const release = await mutex.acquire();
   try {
     const windowData = await WindowDB.getById(id);
+    const extensionData = await ExtensionDB.getExtensionsByWindowId(id);
     const proxyData = await ProxyDB.getById(windowData.proxy_id);
     const proxyType = proxyData?.proxy_type?.toLowerCase();
     const settings = getSettings();
@@ -213,6 +216,8 @@ export async function openFingerprintWindow(id: number, headless = false) {
         launchParamter.push(`--timezone=${ipInfo.timeZone}`);
         launchParamter.push(`--tz=${ipInfo.timeZone}`);
       }
+
+      launchParamter.push(`--load-extension=${extensionData.map(e => e.path).join(',')}`);
       if (headless) {
         launchParamter.push('--headless=new'); // 使用新版 headless 模式
         if (!isMac) {
@@ -279,13 +284,49 @@ export async function openFingerprintWindow(id: number, headless = false) {
         };
       } catch (error) {
         logger.error(error);
-        if (process.platform === 'win32') {
-          execSync(`taskkill /PID ${chromeInstance.pid} /F`);
-        } else {
-          // Mac 和 Linux 系统使用 kill 命令
-          execSync(`kill -9 ${chromeInstance.pid}`);
+
+        // 检查进程是否存在并终止
+        if (chromeInstance.pid) {
+          try {
+            if (process.platform === 'win32') {
+              try {
+                // 使用 chcp 65001 设置控制台代码页为 UTF-8
+                execSync('chcp 65001', {stdio: 'ignore'});
+
+                // 检查进程是否存在
+                execSync(`tasklist /FI "PID eq ${chromeInstance.pid}" /NH /FO CSV`, {
+                  encoding: 'utf8',
+                  stdio: ['ignore', 'pipe', 'ignore'],
+                });
+
+                // 进程存在，终止它
+                execSync(`taskkill /PID ${chromeInstance.pid} /F /T`, {
+                  encoding: 'utf8',
+                  stdio: ['ignore', 'pipe', 'ignore'],
+                });
+
+                logger.info(`Successfully terminated process ${chromeInstance.pid}`);
+              } catch (err) {
+                if ((err as {status: number}).status === 128) {
+                  logger.info(`Process ${chromeInstance.pid} does not exist`);
+                } else {
+                  throw err;
+                }
+              }
+            } else {
+              // Unix系统的处理保持不变
+              try {
+                process.kill(chromeInstance.pid, 0);
+                execSync(`kill -9 ${chromeInstance.pid}`);
+              } catch (err) {
+                logger.info(`Process ${chromeInstance.pid} does not exist`);
+              }
+            }
+          } catch (killError) {
+            logger.error(`Failed to kill process ${chromeInstance.pid}:`, killError);
+          }
         }
-        await closeFingerprintWindow(id, false);
+        await closeFingerprintWindow(id, true);
         return null;
       }
     } else {
@@ -354,23 +395,20 @@ export async function resetWindowStatus(id: number) {
 export async function closeFingerprintWindow(id: number, force = false) {
   const window = await WindowDB.getById(id);
   const port = window.port;
-  const status = window.status;
-  if (status > 1) {
-    if (force && port) {
-      try {
-        const browserURL = `http://${HOST}:${port}`;
-        const browser = await puppeteer.connect({browserURL, defaultViewport: null});
-        logger.info('close browser', browserURL);
-        await browser?.close();
-      } catch (error) {
-        logger.error(error);
-      }
+  if (force && port) {
+    try {
+      const browserURL = `http://${HOST}:${port}`;
+      const browser = await puppeteer.connect({browserURL, defaultViewport: null});
+      logger.info('close browser', browserURL);
+      await browser?.close();
+    } catch (error) {
+      logger.error(error);
     }
-    await WindowDB.update(id, {status: 1, port: undefined});
-    const win = getMainWindow();
-    if (win) {
-      win.webContents.send('window-closed', id);
-    }
+  }
+  await WindowDB.update(id, {status: 1, port: undefined});
+  const win = getMainWindow();
+  if (win) {
+    win.webContents.send('window-closed', id);
   }
 }
 

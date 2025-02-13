@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import Logs from '../pages/logs';
 import Start from '../pages/start';
 import Api from '../pages/api';
-
+import Extensions from '../pages/extensions';
 interface RouteOption {
   path: string;
   name?: string;
@@ -54,6 +54,12 @@ export const useRoutes = () => {
         name: t('new_proxy'),
         component: ProxyImport,
         invisible: true,
+      },
+      {
+        path: '/extensions',
+        name: t('menu_extensions'),
+        icon: <Icon icon="solar:global-outline" />,
+        component: Extensions,
       },
       // {
       //   path: '/sync',

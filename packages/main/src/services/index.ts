@@ -4,6 +4,7 @@ import {initProxyService} from './proxy-service';
 import {initSyncService} from './sync-service';
 import {initTagService} from './tag-service';
 import {initWindowService} from './window-service';
+import {initExtensionService} from './extension-service';
 
 export async function initServices() {
   initCommonService();
@@ -12,4 +13,5 @@ export async function initServices() {
   initProxyService();
   initTagService();
   initSyncService();
+  initExtensionService();
 }

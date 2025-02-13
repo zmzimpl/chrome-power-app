@@ -29,7 +29,6 @@ import {
   GlobalOutlined,
   DeleteOutlined,
   SyncOutlined,
-  UsergroupAddOutlined,
   // ExportOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
@@ -512,13 +511,14 @@ const Windows = () => {
           />
           <Button
             type="default"
-            className="font-black"
             onClick={async () => {
               await fetchWindowData();
               messageApi.success('Refreshed successfully');
             }}
             icon={<SyncOutlined />}
-          ></Button>
+          >
+            {t('refresh')}
+          </Button>
         </Space>
         <Space
           size={8}

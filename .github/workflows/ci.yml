@@ -39,4 +39,5 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       dry-run: ${{ github.event_name != 'push' || (github.ref_type != 'tag' && github.ref_name != 'main') }}
-    secrets: { inherit: true, GH_TOKEN: "${{ secrets.GH_TOKEN }}" }
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}

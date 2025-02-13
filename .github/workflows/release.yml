@@ -8,6 +8,9 @@ on:
         default: false
         required: false
         type: boolean
+    secrets:
+      GH_TOKEN:
+        required: true
 
 concurrency:
   group: release-${{ github.ref }}

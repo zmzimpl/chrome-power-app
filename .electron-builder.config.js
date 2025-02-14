@@ -94,6 +94,7 @@ module.exports = async function () {
     dmg: {
       sign: false,
       writeUpdateInfo: false,
+      format: 'ULFO',
     },
     // 自编译不需要签名也行
     // mac: {

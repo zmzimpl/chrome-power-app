@@ -39,7 +39,9 @@ module.exports = async function () {
     ],
     extraMetadata: {
       version: getVersion(),
+      main: 'packages/main/dist/index.cjs',
     },
+    asar: true,
     asarUnpack: ['**/*.node'],
 
     // Windows 配置

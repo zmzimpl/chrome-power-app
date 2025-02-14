@@ -32,6 +32,8 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    timeout-minutes: 60  # 设置整个 job 的超时时间为 60 分钟
+
     steps:
       - uses: actions/checkout@v2
         with:
@@ -48,18 +50,23 @@ jobs:
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
-      - name: Clean npm cache
-        run: |
-          npm cache clean --force
-          rm -rf node_modules
-          rm -rf ~/.npm
-
       - name: Install dependencies
+        timeout-minutes: 30  # 为该步骤单独设置超时
         run: |
-          npm ci
+          npm ci --prefer-offline --no-audit
           npm install -g electron-builder@latest
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
       - name: Create .env.production.local file
         run: |

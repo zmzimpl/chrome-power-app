@@ -10,7 +10,7 @@
  */
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
-  return {
+  const config = {
     productName: 'Chrome Power',
     directories: {
       output: 'dist',
@@ -125,4 +125,33 @@ module.exports = async function () {
       releaseType: 'release',
     },
   };
+
+  // 根据平台添加特定配置
+  if (process.platform === 'darwin') {
+    config.mac = {
+      icon: 'buildResources/icon.icns',
+      identity: process.env.APPLE_IDENTITY,
+      target: ['dmg', 'zip'],
+      category: 'public.app-category.developer-tools',
+      hardenedRuntime: true,
+      gatekeeperAssess: false,
+      entitlements: 'buildResources/entitlements.mac.plist',
+      entitlementsInherit: 'buildResources/entitlements.mac.plist',
+      signIgnore: [
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+      ],
+      artifactName: '${productName}-${version}-${arch}.${ext}',
+      compression: 'store',
+      darkModeSupport: true,
+    };
+    
+    config.dmg = {
+      sign: false,
+      writeUpdateInfo: false,
+      format: 'ULFO',
+    };
+  }
+
+  return config;
 };

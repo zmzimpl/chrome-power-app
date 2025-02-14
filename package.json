@@ -46,7 +46,6 @@
     "@typescript-eslint/eslint-plugin": "6.7.2",
     "autoprefixer": "^10.4.16",
     "cross-env": "7.0.3",
-    "dmg-license": "^1.0.11",
     "electron": "27.0.0",
     "electron-builder": "^24.13.3",
     "electron-devtools-installer": "^3.2.0",
@@ -115,5 +114,8 @@
     "directories": {
       "buildResources": "buildResources"
     }
+  },
+  "optionalDependencies": {
+    "dmg-license": "^1.0.11"
   }
 }

@@ -53,7 +53,11 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 60  
         run: |
-          npm install --prefer-offline --no-audit --no-fund
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            npm install --prefer-offline --no-audit --no-fund --no-optional
+          else
+            npm install --prefer-offline --no-audit --no-fund
+          fi
           npm install -g electron-builder@latest --no-audit --no-fund
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1

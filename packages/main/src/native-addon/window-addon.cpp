@@ -1,6 +1,7 @@
 #include <napi.h>
 #include <windows.h>
 #include <vector>
+#include <iostream>
 
 std::vector<HWND> chromeWindows;
 int screenWidth, screenHeight;
@@ -94,8 +95,7 @@ void CallControlActionCallback(const std::string &action)
             delete data;
         });
     } catch (const std::exception& e) {
-        // 处理或记录异常
-        std::cerr << "Exception in CallControlActionCallback: " << e.what() << std::endl;
+        Napi::Error::New(env, e.what()).ThrowAsJavaScript();
     }
 }
 

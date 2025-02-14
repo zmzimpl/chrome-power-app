@@ -47,7 +47,12 @@ module.exports = async function () {
       target: ['nsis'],
       requestedExecutionLevel: 'requireAdministrator',
       icon: 'buildResources/icon.ico',
+      publisherName: 'Chrome Power',
+      sign: null,
       signAndEditExecutable: false,
+      verifyUpdateCodeSignature: false,
+      certificateFile: undefined,
+      certificatePassword: undefined,
     },
     nsis: {
       oneClick: false,
@@ -104,6 +109,13 @@ module.exports = async function () {
         console.log('Signing completed for macOS');
         console.log('Output directory:', appOutDir);
       }
+    },
+
+    // 添加 GitHub 发布配置
+    publish: {
+      provider: 'github',
+      private: false,
+      releaseType: 'release',
     },
   };
 };

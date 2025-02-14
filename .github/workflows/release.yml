@@ -106,21 +106,19 @@ jobs:
       - name: Build and Publish
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          # macOS 签名配置（仅在 macOS 构建时使用）
-          APPLE_IDENTITY: ${{ matrix.os == 'macos-latest' && secrets.APPLE_IDENTITY || '' }}
-          CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.BUILD_CERTIFICATE_BASE64 || '' }}
-          CSC_KEY_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.P12_PASSWORD || '' }}
         run: |
-          # 设置更长的超时时间
-          export ELECTRON_BUILD_TIMEOUT=3600
-          # 显示更多构建信息
-          export DEBUG=electron-builder
-          
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows 构建不签名
-            npx electron-builder --config .electron-builder.config.js --publish always --config.win.certificateFile= --config.win.signAndEditExecutable=false
+            # Windows 构建，完全禁用签名
+            npx electron-builder --config .electron-builder.config.js \
+              --publish always \
+              --win \
+              --config.win.sign=false \
+              --config.win.signAndEditExecutable=false \
+              --config.win.verifyUpdateCodeSignature=false \
+              --config.win.certificateFile= \
+              --config.win.certificatePassword=
           else
-            # macOS 构建使用证书签名
+            # macOS 构建
             npx electron-builder --config .electron-builder.config.js --publish always
           fi
         shell: bash

@@ -106,7 +106,7 @@ jobs:
       - name: Build Project
         run: |
           # 构建原生模块
-          npm run build:native-addon
+          # npm run build:native-addon
           # 构建主进程、预加载脚本和渲染进程
           npm run build
           # 验证构建输出

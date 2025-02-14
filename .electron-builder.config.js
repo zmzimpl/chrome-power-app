@@ -26,11 +26,11 @@ module.exports = async function () {
       '!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}',
     ],
     extraResources: [
-      {
-        from: 'packages/main/src/native-addon/build/Release/',
-        to: 'app.asar.unpacked/node_modules/window-addon/',
-        filter: ['*.node'],
-      },
+      // {
+      //   from: 'packages/main/src/native-addon/build/Release/',
+      //   to: 'app.asar.unpacked/node_modules/window-addon/',
+      //   filter: ['*.node'],
+      // },
       {
         from: 'migrations',
         to: 'app/migrations',
@@ -56,6 +56,8 @@ module.exports = async function () {
     win: {
       icon: 'buildResources/icon.ico',
       requestedExecutionLevel: 'requireAdministrator',
+      signAndEditExecutable: false,
+      verifyUpdateCodeSignature: false,
     },
     nsis: {
       oneClick: false,
@@ -69,6 +71,7 @@ module.exports = async function () {
       installerHeaderIcon: 'buildResources/icon.ico',
       menuCategory: true,
       artifactName: '${productName}-Setup-${version}.${ext}',
+      signDlls: false,
     },
 
     // macOS 配置

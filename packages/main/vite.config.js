@@ -33,7 +33,7 @@ const config = {
       output: {
         entryFileNames: '[name].cjs',
       },
-      external: ['src/native-addon/build/Release/window-addon'],
+      // external: ['src/native-addon/build/Release/window-addon'],
     },
     emptyOutDir: true,
     reportCompressedSize: false,

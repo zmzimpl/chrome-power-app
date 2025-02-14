@@ -10,9 +10,11 @@ export const getRequestProxy = (
     protocol: proxy_type.toLocaleLowerCase(),
     host,
     port: +port,
-    auth: username ? {
-      username,
-      password,
-    } : undefined,
+    auth: username
+      ? {
+          username,
+          password,
+        }
+      : undefined,
   };
 };

@@ -6,7 +6,6 @@ import {startGroupControl, tileWindows} from '../sync';
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 
 export const initSyncService = () => {
-
   ipcMain.handle('tile-windows', async () => {
     tileWindows();
   });

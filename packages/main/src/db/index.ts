@@ -31,21 +31,19 @@ const initWindowStatus = async () => {
 
 const initializeDatabase = async () => {
   const userDataPath = app.getPath('userData');
-  
+
   // 确保目录存在
   if (!existsSync(userDataPath)) {
-    mkdirSync(userDataPath, { recursive: true });
+    mkdirSync(userDataPath, {recursive: true});
   }
 
   try {
     // 初始化数据库连接
     await db.raw('SELECT 1');
-    
+
     // 运行迁移
     await db.migrate.latest({
-      directory: app.isPackaged 
-        ? join(process.resourcesPath, 'app/migrations')
-        : './migrations',
+      directory: app.isPackaged ? join(process.resourcesPath, 'app/migrations') : './migrations',
     });
 
     // 初始化窗口状态

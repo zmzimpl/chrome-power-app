@@ -131,7 +131,7 @@ const create = async (windowData: DB.Window, fingerprint?: SafeAny) => {
   if (fingerprint) {
     windowData.ua = fingerprint.ua;
     windowData.fingerprint = JSON.stringify(fingerprint);
-  } 
+  }
   // else {
   //   const randFingerprint = randomFingerprint();
   //   windowData.ua = randFingerprint.ua;

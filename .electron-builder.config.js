@@ -21,6 +21,9 @@ module.exports = async function () {
       'packages/**/assets/**',
       'migrations',
       'node_modules/sqlite3/**/*',
+      'buildResources/**/*',
+      '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}',
+      '!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}',
     ],
     extraResources: [
       {
@@ -36,19 +39,24 @@ module.exports = async function () {
         from: 'assets',
         to: 'app/assets',
       },
+      {
+        from: 'buildResources',
+        to: 'buildResources',
+        filter: ['*.ico', '*.png', '*.icns'],
+      },
     ],
     extraMetadata: {
       version: getVersion(),
-      main: 'packages/main/dist/index.cjs',
+      main: './packages/main/dist/index.cjs',
     },
     asar: true,
-    asarUnpack: ['**/*.node'],
+    asarUnpack: ['node_modules/sqlite3/**/*', '**/*.node'],
 
     // Windows 配置
     win: {
+      icon: 'buildResources/icon.ico',
       target: ['nsis'],
       requestedExecutionLevel: 'requireAdministrator',
-      icon: 'buildResources/icon.ico',
       publisherName: 'Chrome Power',
       sign: null,
       signAndEditExecutable: false,
@@ -66,15 +74,16 @@ module.exports = async function () {
       installerIcon: 'buildResources/icon.ico',
       uninstallerIcon: 'buildResources/icon.ico',
       installerHeaderIcon: 'buildResources/icon.ico',
+      menuCategory: true,
       artifactName: '${productName}-Setup-${version}.${ext}',
     },
 
     // macOS 配置
     mac: {
+      icon: 'buildResources/icon.icns',
       identity: process.env.APPLE_IDENTITY,
       target: ['dmg', 'zip'],
       category: 'public.app-category.developer-tools',
-      icon: 'buildResources/icon.icns',
       hardenedRuntime: true,
       gatekeeperAssess: false,
       entitlements: 'buildResources/entitlements.mac.plist',

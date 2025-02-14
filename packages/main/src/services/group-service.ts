@@ -2,7 +2,6 @@ import {ipcMain} from 'electron';
 import type {DB} from '../../../shared/types/db';
 import {GroupDB} from '../db/group';
 
-
 export const initGroupService = () => {
   ipcMain.handle('group-create', async (_, group: DB.Group) => {
     return await GroupDB.create(group);

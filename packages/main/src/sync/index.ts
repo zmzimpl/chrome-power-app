@@ -7,7 +7,7 @@ if (process.env.MODE === 'development') {
   // const isMac = process.platform === 'darwin';
   // windowAddon = require(path.join(
   //   __dirname,
-  //   isMac 
+  //   isMac
   //     ? '../src/native-addon/build/Release/window-addon.node'
   //     : '../src/native-addon/build/Release/window-addon.node',
   // ));

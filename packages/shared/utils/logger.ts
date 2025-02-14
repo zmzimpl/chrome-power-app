@@ -13,25 +13,25 @@ export function createLogger(label: string) {
     //   // 开发环境: 所有日志都输出到控制台
     //   transport = new winston.transports.Console({level: 'info'});
     // } else {
-      const logsPath = join(app.getPath('appData'), 'logs');
-      if (!existsSync(logsPath)) {
-        mkdirSync(logsPath, { recursive: true });
-      }
-      if (!existsSync(join(logsPath, label))) {
-        mkdirSync(join(logsPath, label));
-      }
-      const date = new Date();
+    const logsPath = join(app.getPath('appData'), 'logs');
+    if (!existsSync(logsPath)) {
+      mkdirSync(logsPath, {recursive: true});
+    }
+    if (!existsSync(join(logsPath, label))) {
+      mkdirSync(join(logsPath, label));
+    }
+    const date = new Date();
 
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day
-        .toString()
-        .padStart(2, '0')}`;
-      // 定义日志文件的位置，每天记录一个日志文件
-      const logFile = join(logsPath, label, `${formattedDate}.log`);
-      // 生产环境: 所有日志都输出到文件
-      const transport = new winston.transports.File({level: 'info', filename: logFile});
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day
+      .toString()
+      .padStart(2, '0')}`;
+    // 定义日志文件的位置，每天记录一个日志文件
+    const logFile = join(logsPath, label, `${formattedDate}.log`);
+    // 生产环境: 所有日志都输出到文件
+    const transport = new winston.transports.File({level: 'info', filename: logFile});
     // }
 
     winston.loggers.add(label, {
@@ -41,7 +41,10 @@ export function createLogger(label: string) {
         winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
         winston.format.printf(info => {
           const {timestamp, level, message, [Symbol.for('splat')]: splat} = info;
-          const metaString = splat && Array.isArray(splat) && splat.length ? splat.map((item) => JSON.stringify(item)).join(' ') : '';
+          const metaString =
+            splat && Array.isArray(splat) && splat.length
+              ? splat.map(item => JSON.stringify(item)).join(' ')
+              : '';
           const formattedMessage = `${message} ${metaString}`.trim();
           return `${label} | ${timestamp} - ${level}: ${formattedMessage}`;
         }),

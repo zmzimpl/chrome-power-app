@@ -4,7 +4,6 @@ import {ProxyDB} from '../db/proxy';
 import {testProxy} from '../fingerprint/prepare';
 
 export const initProxyService = () => {
-
   ipcMain.handle('proxy-create', async (_, proxy: DB.Proxy) => {
     return await ProxyDB.create(proxy);
   });

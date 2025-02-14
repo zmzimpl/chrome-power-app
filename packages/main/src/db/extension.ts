@@ -34,8 +34,13 @@ const insertExtensionWindows = async (id: number, windows: number[]) => {
 };
 
 const getExtensionsByWindowId = async (windowId: number) => {
-  const extensionIds = await db('window_extension').where({window_id: windowId}).select('extension_id');
-  return await db('extension').whereIn('id', extensionIds.map(e => e.extension_id));
+  const extensionIds = await db('window_extension')
+    .where({window_id: windowId})
+    .select('extension_id');
+  return await db('extension').whereIn(
+    'id',
+    extensionIds.map(e => e.extension_id),
+  );
 };
 
 const deleteExtensionWindows = async (id: number, windowIds: number[]) => {

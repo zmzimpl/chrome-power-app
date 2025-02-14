@@ -1,5 +1,5 @@
 import type {IpcRendererEvent} from 'electron';
-import { ipcRenderer} from 'electron';
+import {ipcRenderer} from 'electron';
 
 export const SyncBridge = {
   async tileWindows() {
@@ -9,5 +9,5 @@ export const SyncBridge = {
     ipcRenderer.invoke('start-group-control', masterProcessId, slaveProcessIds);
   },
   onGroupControlAction: (callback: (event: IpcRendererEvent, id: number) => void) =>
-  ipcRenderer.on('control-action', callback),
+    ipcRenderer.on('control-action', callback),
 };

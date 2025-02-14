@@ -108,5 +108,10 @@
     "user-agents": "^1.1.148",
     "winston": "^3.11.0",
     "xlsx": "^0.18.5"
+  },
+  "build": {
+    "directories": {
+      "buildResources": "buildResources"
+    }
   }
 }

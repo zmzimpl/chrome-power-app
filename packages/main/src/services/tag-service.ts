@@ -2,7 +2,6 @@ import {ipcMain} from 'electron';
 import type {DB} from '../../../shared/types/db';
 import {TagDB} from '../db/tag';
 
-
 export const initTagService = () => {
   ipcMain.handle('tag-create', async (_, tag: DB.Tag) => {
     return await TagDB.create(tag);

@@ -103,12 +103,24 @@ jobs:
           # 显示导入的证书信息以便调试
           security find-identity -v -p codesigning build.keychain
 
+      - name: Build Project
+        run: |
+          # 构建原生模块
+          npm run build:native-addon
+          # 构建主进程、预加载脚本和渲染进程
+          npm run build
+          # 验证构建输出
+          ls -la packages/main/dist/
+          ls -la packages/preload/dist/
+          ls -la packages/renderer/dist/
+        shell: bash
+
       - name: Build and Publish
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows 构建，完全禁用签名
+            # Windows 构建
             npx electron-builder --config .electron-builder.config.js \
               --publish always \
               --win \
@@ -118,7 +130,6 @@ jobs:
               --config.win.certificateFile= \
               --config.win.certificatePassword=
           else
-            # macOS 构建
             npx electron-builder --config .electron-builder.config.js --publish always
           fi
         shell: bash

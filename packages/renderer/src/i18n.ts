@@ -163,7 +163,8 @@ i18n
           extension_delete_failed: 'Delete failed',
           extension_update2: 'Update Extension',
           extension_delete_confirm_title: 'Delete confirm',
-          extension_delete_confirm_content: 'Are you sure you want to delete this extension? This operation cannot be recovered.',
+          extension_delete_confirm_content:
+            'Are you sure you want to delete this extension? This operation cannot be recovered.',
           extension_current_version: 'Current version',
         },
       },

@@ -1,5 +1,5 @@
-import type { Express } from 'express';
-import { type Server } from 'http';
+import type {Express} from 'express';
+import {type Server} from 'http';
 import express from 'express';
 import cors from 'cors';
 import IPRouter from './routes/ip';
@@ -19,7 +19,6 @@ app.use('/profiles', ProfilesRouter);
 app.use('/proxy', ProxyRouter);
 
 app.get('/status', async (req, res) => {
-
   res.send({
     status: 'ok',
     port,

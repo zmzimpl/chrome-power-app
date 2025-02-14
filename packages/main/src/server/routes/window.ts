@@ -1,15 +1,15 @@
 import express from 'express';
-import type { DB } from '../../../../shared/types/db';
-import { WindowDB } from '/@/db/window';
-import { ProxyDB } from '/@/db/proxy';
-import { getProxyInfo } from '../../fingerprint/prepare';
+import type {DB} from '../../../../shared/types/db';
+import {WindowDB} from '/@/db/window';
+import {ProxyDB} from '/@/db/proxy';
+import {getProxyInfo} from '../../fingerprint/prepare';
 
 const router = express.Router();
 
 router.get('/info', async (req, res) => {
-  const { windowId } = req.query;
+  const {windowId} = req.query;
   if (!windowId) {
-    res.send({ success: false, message: 'windowId is required.', windowData: {}, ipInfo: {} });
+    res.send({success: false, message: 'windowId is required.', windowData: {}, ipInfo: {}});
     return;
   }
   let windowData: DB.Window = {};
@@ -25,13 +25,13 @@ router.get('/info', async (req, res) => {
   } catch (error) {
     console.error(error);
   }
-  res.send({ windowData, ipInfo });
+  res.send({windowData, ipInfo});
 });
 
 router.delete('/delete', async (req, res) => {
-  const { windowId } = req.query;
+  const {windowId} = req.query;
   if (!windowId) {
-    res.send({ success: false, message: 'windowId is required.' });
+    res.send({success: false, message: 'windowId is required.'});
     return;
   }
   const result = await WindowDB.remove(Number(windowId));
@@ -52,7 +52,7 @@ router.get('/opened', async (_, res) => {
 
 router.post('/create', async (req, res) => {
   if (!req.body) {
-    res.send({ success: false, message: 'window is required.' });
+    res.send({success: false, message: 'window is required.'});
     return;
   }
   const window = req.body as DB.Window;
@@ -61,9 +61,9 @@ router.post('/create', async (req, res) => {
 });
 
 router.put('/update', async (req, res) => {
-  const { id, window } = req.body;
+  const {id, window} = req.body;
   if (!id || !window) {
-    res.send({ success: false, message: 'id and window is required.' });
+    res.send({success: false, message: 'id and window is required.'});
     return;
   }
   const result = await WindowDB.update(id, window);

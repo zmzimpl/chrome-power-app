@@ -7,7 +7,9 @@ import {app} from 'electron';
 export const getSettings = (): SettingOptions => {
   const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
   const isMac = process.platform === 'darwin';
-  const defaultCachePath = isMac ? `${app.getPath('documents')}/ChromePowerCache` : join(app.getPath('appData'), 'ChromePowerCache');
+  const defaultCachePath = isMac
+    ? `${app.getPath('documents')}/ChromePowerCache`
+    : join(app.getPath('appData'), 'ChromePowerCache');
 
   let settings = {
     profileCachePath: defaultCachePath,
@@ -23,13 +25,13 @@ export const getSettings = (): SettingOptions => {
       settings = JSON.parse(fileContent);
     } else {
       if (!existsSync(defaultCachePath)) {
-        mkdirSync(defaultCachePath, { recursive: true, mode: 0o755 });
+        mkdirSync(defaultCachePath, {recursive: true, mode: 0o755});
       }
       writeFileSync(configFilePath, JSON.stringify(settings), 'utf8');
     }
 
     if (!existsSync(settings.profileCachePath)) {
-      mkdirSync(settings.profileCachePath, { recursive: true, mode: 0o755 });
+      mkdirSync(settings.profileCachePath, {recursive: true, mode: 0o755});
     }
   } catch (error) {
     console.error('Error handling the settings file:', error);

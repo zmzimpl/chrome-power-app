@@ -17,7 +17,11 @@ import type {AxiosProxyConfig} from 'axios';
 const logger = createLogger(API_LOGGER_LABEL);
 
 const getRealIP = async (proxy: DB.Proxy) => {
-  let agent: SocksProxyAgent | HttpProxyAgent<`http://${string}:${string}`> | HttpsProxyAgent<`http://${string}:${string}`> | undefined = undefined;
+  let agent:
+    | SocksProxyAgent
+    | HttpProxyAgent<`http://${string}:${string}`>
+    | HttpsProxyAgent<`http://${string}:${string}`>
+    | undefined = undefined;
   let requestProxy: AxiosProxyConfig | undefined = undefined;
   if (proxy.proxy_type?.toLowerCase() === 'socks5') {
     const agentInfo = getAgent(proxy);
@@ -123,7 +127,11 @@ export async function testProxy(proxy: DB.Proxy) {
     connectivity: {name: string; elapsedTime: number; status: string; reason?: string}[];
   } = {connectivity: []};
 
-  let agent: SocksProxyAgent | HttpProxyAgent<`http://${string}:${string}`> | HttpsProxyAgent<`http://${string}:${string}`> | undefined = undefined;
+  let agent:
+    | SocksProxyAgent
+    | HttpProxyAgent<`http://${string}:${string}`>
+    | HttpsProxyAgent<`http://${string}:${string}`>
+    | undefined = undefined;
   let requestProxy: AxiosProxyConfig | undefined = undefined;
   if (proxy.proxy_type?.toLowerCase() === 'socks5') {
     const agentInfo = getAgent(proxy);
@@ -141,7 +149,10 @@ export async function testProxy(proxy: DB.Proxy) {
     const startTime = Date.now();
     try {
       const response = await axios.get(pin.url, {
-        proxy: proxy.proxy && proxy.proxy_type?.toLocaleLowerCase() !== 'socks5' ? requestProxy : undefined,
+        proxy:
+          proxy.proxy && proxy.proxy_type?.toLocaleLowerCase() !== 'socks5'
+            ? requestProxy
+            : undefined,
         timeout: 5_000,
         httpAgent: agent,
         httpsAgent: agent,

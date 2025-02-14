@@ -11,11 +11,11 @@ export const ExtensionBridge = {
   getExtensionWindows: (extensionId: number) =>
     ipcRenderer.invoke('extension-get-windows', extensionId),
   createExtension: (extension: DB.Extension) => ipcRenderer.invoke('extension-create', extension),
-  uploadPackage: (filePath: string, extensionId?: number) => ipcRenderer.invoke('extension-upload-package', filePath, extensionId),
+  uploadPackage: (filePath: string, extensionId?: number) =>
+    ipcRenderer.invoke('extension-upload-package', filePath, extensionId),
   updateExtension: (extensionId: number, extension: Partial<DB.Extension>) =>
     ipcRenderer.invoke('extension-update', extensionId, extension),
-  deleteExtension: (extensionId: number) =>
-    ipcRenderer.invoke('extension-delete', extensionId),
+  deleteExtension: (extensionId: number) => ipcRenderer.invoke('extension-delete', extensionId),
   syncWindowExtensions: (extensionId: number, windowIds: number[]) =>
     ipcRenderer.invoke('extension-sync-windows', extensionId, windowIds),
 };

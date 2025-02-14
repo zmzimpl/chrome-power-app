@@ -56,7 +56,7 @@ export function getChromePath() {
               .split('\n')
               .filter(path => path.endsWith('/Google Chrome.app'))
               .map(path => `${path}/Contents/MacOS/Google Chrome`);
-            
+
             if (paths.length > 0 && existsSync(paths[0])) {
               chromePath = paths[0];
             } else {

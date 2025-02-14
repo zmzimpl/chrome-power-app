@@ -3,9 +3,9 @@ import {IP2Location} from 'ip2location-nodejs';
 import geoip from 'geoip-lite';
 import {find} from 'geo-tz';
 import path from 'path';
-import type { DB } from '../../../../shared/types/db';
-import { WindowDB } from '/@/db/window';
-import { ProxyDB } from '/@/db/proxy';
+import type {DB} from '../../../../shared/types/db';
+import {WindowDB} from '/@/db/window';
+import {ProxyDB} from '/@/db/proxy';
 import {testProxy} from '../../fingerprint/prepare';
 
 const router = express.Router();
@@ -18,7 +18,10 @@ const getIPInfo = async (ip: string, gateway: 'ip2location' | 'geoip') => {
   }
   if (gateway === 'ip2location') {
     const ip2location = new IP2Location();
-    const filePath = path.join(import.meta.env.MODE === 'development' ? 'assets' : 'resources/app/assets', 'IP2LOCATION-LITE-DB11.BIN');
+    const filePath = path.join(
+      import.meta.env.MODE === 'development' ? 'assets' : 'resources/app/assets',
+      'IP2LOCATION-LITE-DB11.BIN',
+    );
     ip2location.open(filePath);
     const ipInfo = ip2location.getAll(ip);
     const {latitude, longitude, countryShort} = ipInfo;
@@ -62,27 +65,27 @@ router.get('/ip2location', async (req, res) => {
 });
 
 router.get('/ping', async (req, res) => {
-    const {windowId} = req.query;
-    let windowData: DB.Window = {};
-    let pings: {
-      connectivity: {name: string; elapsedTime: number; status: string; reason?: string}[];
-    } = {connectivity: []};
-  
-    try {
-      windowData = await WindowDB.getById(Number(windowId));
-      let proxyData: DB.Proxy = {};
-      if (windowData.proxy_id) {
-        proxyData = await ProxyDB.getById(windowData.proxy_id);
-        pings = await testProxy(proxyData);
-      } else {
-        pings = await testProxy(proxyData);
-      }
-    } catch (error) {
-      console.error(error);
+  const {windowId} = req.query;
+  let windowData: DB.Window = {};
+  let pings: {
+    connectivity: {name: string; elapsedTime: number; status: string; reason?: string}[];
+  } = {connectivity: []};
+
+  try {
+    windowData = await WindowDB.getById(Number(windowId));
+    let proxyData: DB.Proxy = {};
+    if (windowData.proxy_id) {
+      proxyData = await ProxyDB.getById(windowData.proxy_id);
+      pings = await testProxy(proxyData);
+    } else {
+      pings = await testProxy(proxyData);
     }
-    res.send({
-      pings: pings.connectivity,
-    });
+  } catch (error) {
+    console.error(error);
+  }
+  res.send({
+    pings: pings.connectivity,
+  });
 });
 
 export default router;

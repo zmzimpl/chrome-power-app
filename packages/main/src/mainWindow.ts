@@ -1,9 +1,14 @@
-import {app, BrowserWindow, ipcMain, shell} from 'electron';
+import {app, BrowserWindow, ipcMain, nativeImage, shell} from 'electron';
 import {join, resolve} from 'node:path';
 import express from 'express';
 import * as portscanner from 'portscanner';
-import type { BridgeMessage } from '../../shared/types/common';
+import type {BridgeMessage} from '../../shared/types/common';
+import {createLogger} from '../../shared/utils/logger';
+import {MAIN_LOGGER_LABEL} from './constants';
+import {existsSync} from 'fs';
 
+
+const logger = createLogger(MAIN_LOGGER_LABEL);
 const server = express();
 const isDev = import.meta.env.DEV;
 let serverStarted = false;
@@ -22,7 +27,40 @@ async function findAvailablePortAndStartServer() {
 }
 
 async function createWindow() {
+  // 区分安装版和免安装版的图标路径
+  // 获取图标路径
+  const getIconPath = () => {
+    if (app.isPackaged) {
+      const paths = [
+        // 安装版路径
+        join(app.getPath('exe'), '..', 'resources', 'buildResources', 'icon.ico'),
+        // 备选路径
+        join(process.resourcesPath, 'buildResources', 'icon.ico'),
+        join(app.getAppPath(), 'buildResources', 'icon.ico'),
+      ];
+
+      // 使用第一个存在的图标路径
+      for (const path of paths) {
+        if (existsSync(path)) {
+          return path;
+        }
+      }
+    }
+    // 开发环境路径
+    return join(process.cwd(), 'buildResources', 'icon.ico');
+  };
+
+  const iconPath = getIconPath();
+  logger.info('Icon path:', iconPath);
+
+  // 确保图标文件存在
+  if (!existsSync(iconPath)) {
+    logger.error('Icon file not found:', iconPath);
+  }
+
+  const icon = nativeImage.createFromPath(iconPath);
   const browserWindow = new BrowserWindow({
+    icon, // Windows
     width: import.meta.env.DEV ? 1600 : 1400,
     height: 930,
     minWidth: 920,
@@ -40,6 +78,24 @@ async function createWindow() {
       preload: join(app.getAppPath(), 'packages/preload/dist/index.cjs'),
     },
   });
+
+  if (process.platform === 'win32') {
+    // 设置任务栏图标
+    browserWindow.setIcon(icon);
+    // 设置应用 ID，这对任务栏图标很重要
+    // 设置应用 ID
+    const appId = app.isPackaged 
+      ? 'com.chromepower.app'
+      : process.execPath;
+    app.setAppUserModelId(appId);
+
+    browserWindow.setThumbarButtons([]);
+  }
+
+  // macOS 特定设置
+  if (process.platform === 'darwin') {
+    app.dock.setIcon(icon);
+  }
 
   /**
    * If the 'show' property of the BrowserWindow's constructor is omitted from the initialization options,

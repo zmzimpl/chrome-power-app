@@ -53,10 +53,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 30  
         run: |
-          # 设置 registry 为淘宝镜像加速下载
-          npm config set registry https://registry.npmmirror.com
-          # 使用 prefer-offline 替代 cache-min
-          npm ci --prefer-offline --no-audit
+          npm install
           npm install -g electron-builder@latest
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1

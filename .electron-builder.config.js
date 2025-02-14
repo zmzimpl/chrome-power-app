@@ -71,7 +71,6 @@ module.exports = async function () {
       installerHeaderIcon: 'buildResources/icon.ico',
       menuCategory: true,
       artifactName: '${productName}-Setup-${version}.${ext}',
-      signDlls: false,
     },
 
     // macOS 配置

@@ -46,7 +46,8 @@ module.exports = async function () {
     win: {
       target: ['nsis'],
       requestedExecutionLevel: 'requireAdministrator',
-      icon: 'buildResources/icon.ico', // 确保此路径存在
+      icon: 'buildResources/icon.ico',
+      signAndEditExecutable: false,
     },
     nsis: {
       oneClick: false,
@@ -55,6 +56,10 @@ module.exports = async function () {
       createDesktopShortcut: true,
       createStartMenuShortcut: true,
       shortcutName: 'Chrome Power',
+      installerIcon: 'buildResources/icon.ico',
+      uninstallerIcon: 'buildResources/icon.ico',
+      installerHeaderIcon: 'buildResources/icon.ico',
+      artifactName: '${productName}-Setup-${version}.${ext}',
     },
 
     // macOS 配置

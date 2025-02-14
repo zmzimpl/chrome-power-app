@@ -123,10 +123,7 @@ jobs:
             # Windows 构建
             npx electron-builder --config .electron-builder.config.js \
               --publish always \
-              --win \
-              --config.win.sign=false \
-              --config.win.signDlls=false \
-              --config.nsis.sign=false
+              --win
           else
             npx electron-builder --config .electron-builder.config.js --publish always
           fi

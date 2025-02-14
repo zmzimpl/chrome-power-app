@@ -41,7 +41,7 @@ export function createLogger(label: string) {
         winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
         winston.format.printf(info => {
           const {timestamp, level, message, [Symbol.for('splat')]: splat} = info;
-          const metaString = splat && splat.length ? splat.map(JSON.stringify).join(' ') : '';
+          const metaString = splat && Array.isArray(splat) && splat.length ? splat.map((item) => JSON.stringify(item)).join(' ') : '';
           const formattedMessage = `${message} ${metaString}`.trim();
           return `${label} | ${timestamp} - ${level}: ${formattedMessage}`;
         }),

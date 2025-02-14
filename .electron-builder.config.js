@@ -17,8 +17,8 @@ module.exports = async function () {
       buildResources: 'buildResources',
     },
     files: [
-      'packages/**/dist/**', 
-      'packages/**/assets/**', 
+      'packages/**/dist/**',
+      'packages/**/assets/**',
       'migrations',
       'node_modules/sqlite3/**/*',
     ],
@@ -41,12 +41,12 @@ module.exports = async function () {
       version: getVersion(),
     },
     asarUnpack: ['**/*.node'],
-    
+
     // Windows 配置
     win: {
       target: ['nsis'],
       requestedExecutionLevel: 'requireAdministrator',
-      icon: 'buildResources/icon.ico',  // 确保此路径存在
+      icon: 'buildResources/icon.ico', // 确保此路径存在
     },
     nsis: {
       oneClick: false,
@@ -56,7 +56,7 @@ module.exports = async function () {
       createStartMenuShortcut: true,
       shortcutName: 'Chrome Power',
     },
-    
+
     // macOS 配置
     mac: {
       identity: process.env.APPLE_IDENTITY,
@@ -67,9 +67,17 @@ module.exports = async function () {
       gatekeeperAssess: false,
       entitlements: 'buildResources/entitlements.mac.plist',
       entitlementsInherit: 'buildResources/entitlements.mac.plist',
+      signIgnore: [
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+      ],
+      artifactName: '${productName}-${version}-${arch}.${ext}',
+      compression: 'store',
+      darkModeSupport: true,
     },
     dmg: {
-      sign: true,
+      sign: false,
+      writeUpdateInfo: false,
     },
     // 自编译不需要签名也行
     // mac: {
@@ -85,5 +93,12 @@ module.exports = async function () {
     // dmg: {
     //   sign: false
     // },
+    afterSign: async context => {
+      const {electronPlatformName, appOutDir} = context;
+      if (electronPlatformName === 'darwin') {
+        console.log('Signing completed for macOS');
+        console.log('Output directory:', appOutDir);
+      }
+    },
   };
 };

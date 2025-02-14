@@ -52,3 +52,9 @@ export const getPort = () => port;
 export const getOrigin = () => `http://localhost:${port}`;
 
 // ... 其他的 Express 配置和路由 ...
+
+export function createServer() {
+  // ... existing code ...
+  // 移除任何使用 getNativeAddon 的代码
+  // ... existing code ...
+}

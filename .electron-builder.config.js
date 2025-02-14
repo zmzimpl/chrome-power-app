@@ -55,14 +55,7 @@ module.exports = async function () {
     // Windows 配置
     win: {
       icon: 'buildResources/icon.ico',
-      target: ['nsis'],
       requestedExecutionLevel: 'requireAdministrator',
-      publisherName: 'Chrome Power',
-      sign: null,
-      signAndEditExecutable: false,
-      verifyUpdateCodeSignature: false,
-      certificateFile: undefined,
-      certificatePassword: undefined,
     },
     nsis: {
       oneClick: false,

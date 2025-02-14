@@ -53,8 +53,9 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 30  
         run: |
-          npm install
-          npm install -g electron-builder@latest
+          npm config set registry https://registry.npmmirror.com
+          npm install --prefer-offline --no-audit --no-fund
+          npm install -g electron-builder@latest --no-audit --no-fund
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 

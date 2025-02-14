@@ -53,10 +53,9 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 30  
         run: |
-          # 使用 npm cache 加速安装
-          npm config set cache-min 9999999
           # 设置 registry 为淘宝镜像加速下载
           npm config set registry https://registry.npmmirror.com
+          # 使用 prefer-offline 替代 cache-min
           npm ci --prefer-offline --no-audit
           npm install -g electron-builder@latest
         env:

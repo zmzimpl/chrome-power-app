@@ -51,12 +51,16 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        timeout-minutes: 60  
+        timeout-minutes: 60
         run: |
+          # 移除 npmmirror 镜像源设置，使用默认 npm 源
+          # npm config set registry https://registry.npmmirror.com
+
+          # 移除 --prefer-offline 参数，强制在线安装
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            npm install --prefer-offline --no-audit --no-fund --no-optional
+            npm install --no-audit --no-fund --no-optional
           else
-            npm install --prefer-offline --no-audit --no-fund
+            npm install --no-audit --no-fund
           fi
           npm install -g electron-builder@latest --no-audit --no-fund
         env:
@@ -88,22 +92,22 @@ jobs:
           mkdir -p ~/certificates
           # 解码证书
           echo $BUILD_CERTIFICATE_BASE64 | base64 --decode > ~/certificates/certificate.p12
-          
+
           # 创建临时钥匙串
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           # 设置钥匙串超时时间，避免过早锁定
           security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
-          
+
           # 解锁钥匙串
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
-          
+
           # 导入证书到钥匙串
           security import ~/certificates/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
-          
+
           # 允许 codesign 访问证书
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          
+
           # 显示导入的证书信息以便调试
           security find-identity -v -p codesigning build.keychain
 

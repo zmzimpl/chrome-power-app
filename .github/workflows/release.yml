@@ -18,7 +18,7 @@ concurrency:
 
 defaults:
   run:
-    shell: 'bash'
+    shell: bash
 
 jobs:
   draft_release:
@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           lfs: true
 
@@ -45,43 +45,86 @@ jobs:
           git lfs install
           git lfs pull
 
-      # 先设置缓存（在安装依赖之前）
+      # 全局环境配置
+      - name: Configure global settings
+        run: |
+          # 强制所有平台跳过 Chromium 下载
+          npm config set puppeteer_skip_chromium_download true
+          
+          # 设置 Electron 镜像源
+          npm config set electron_mirror "https://npmmirror.com/mirrors/electron/"
+          
+          # 设置 node-pre-gyp 镜像源
+          npm config set node_pre_gyp_mirror "https://npmmirror.com/mirrors/node-pre-gyp/"
+
+      # 跨平台缓存配置
       - name: Cache npm dependencies
         uses: actions/cache@v3
         with:
-          path: ~/.npm
+          path: |
+            ~/.npm
+            ~/.cache/electron
+            ~/.cache/node-gyp
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
+
+      # macOS 专用环境配置
+      - name: Setup macOS build tools
+        if: matrix.os == 'macos-latest'
+        run: |
+          # 安装 Xcode 工具链
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          sudo xcodebuild -license accept
+          
+          # 安装编译依赖
+          brew install python3 make gcc
+          
+          # 配置 node-gyp 使用 Python3
+          npm config set python $(which python3)
+          
+          # 强制 IPv4 网络
+          echo "network=inet" > ~/.curlrc
+
+      # Windows 专用环境配置
+      - name: Setup Windows build tools
+        if: matrix.os == 'windows-latest'
+        run: |
+          # 安装 Python 3 和 Visual Studio Build Tools
+          choco install python --version=3.11.0
+          npm install --global windows-build-tools
 
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: '**/package-lock.json'
 
-      # macOS 专用修复步骤
-      - name: Setup macOS Build Environment
-        if: matrix.os == 'macos-latest'
+      # 分步安装依赖
+      - name: Install native modules (pre-cache)
         run: |
-          # 安装 Xcode 命令行工具
-          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-          sudo xcodebuild -license accept
-          # 强制使用 IPv4 网络
-          echo "network=inet" > ~/.curlrc
+          npm install --ignore-scripts \
+            active-win \
+            sqlite3 \
+            electron \
+            node-addon-api
 
-      - name: Install Dependencies
-        timeout-minutes: 60
-        run: npm ci --verbose  # 添加详细日志输出
+      - name: Install dependencies with retry
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: npm ci --verbose
 
-      - name: Create .env.production.local file
+      # 后续构建步骤保持不变...
+      - name: Create .env.production.local
         run: |
           echo "VITE_APP_API=${{ secrets.VITE_APP_API }}" > .env.production.local
           echo "VITE_START_PAGE_URL=${{ secrets.VITE_START_PAGE_URL }}" >> .env.production.local
 
-      # 后续步骤保持不变...
-      - name: Install the Apple certificate and provisioning profile
+      - name: Install Apple certificates
         if: matrix.os == 'macos-latest'
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
@@ -96,7 +139,6 @@ jobs:
           security default-keychain -s build.keychain
           security import ~/certificates/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          security find-identity -v -p codesigning build.keychain
 
       - name: Build Project
         run: |
@@ -110,21 +152,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            npx electron-builder --config .electron-builder.config.js \
-              --publish always \
-              --win
+            npx electron-builder --config .electron-builder.config.js --publish always --win
           else
             npx electron-builder --config .electron-builder.config.js --publish always
           fi
 
-      - name: Compile artifacts ${{ inputs.dry-run && '' || 'and upload them to github release' }}
+      - name: Retry artifacts upload
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 15
           max_attempts: 6
           retry_wait_seconds: 15
-          retry_on: error
-          shell: 'bash'
           command: npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}

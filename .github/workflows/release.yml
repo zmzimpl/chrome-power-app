@@ -85,6 +85,11 @@ jobs:
       - name: Install native modules
         run: npm install --ignore-scripts active-win sqlite3 electron
 
+      - name: Rebuild native modules
+        if: matrix.os == 'macos-latest'
+        run: |
+          npm rebuild sqlite3 --build-from-source
+
       - name: Install dependencies
         uses: nick-fields/retry@v2
         with:

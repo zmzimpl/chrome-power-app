@@ -216,8 +216,9 @@ export async function openFingerprintWindow(id: number, headless = false) {
         launchParamter.push(`--timezone=${ipInfo.timeZone}`);
         launchParamter.push(`--tz=${ipInfo.timeZone}`);
       }
-
-      launchParamter.push(`--load-extension=${extensionData.map(e => e.path).join(',')}`);
+      if (extensionData.length > 0) {
+        launchParamter.push(`--load-extension=${extensionData.map(e => e.path).join(',')}`);
+      }
       if (headless) {
         launchParamter.push('--headless=new'); // 使用新版 headless 模式
         if (!isMac) {
@@ -283,7 +284,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
           ...data,
         };
       } catch (error) {
-        logger.error(error);
+        logger.error('open window failed', error);
 
         // 检查进程是否存在并终止
         if (chromeInstance.pid) {

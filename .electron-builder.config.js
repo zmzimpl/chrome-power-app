@@ -87,6 +87,13 @@ module.exports = async function () {
         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
       ],
+      extraFiles: [
+        {
+          from: 'node_modules/sqlite3/lib/binding',
+          to: 'Resources/app.asar.unpacked/node_modules/sqlite3/lib/binding',
+          filter: ['*.node'],
+        },
+      ],
       artifactName: '${productName}-${version}-${arch}.${ext}',
       compression: 'store',
       darkModeSupport: true,

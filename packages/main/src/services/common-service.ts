@@ -87,6 +87,9 @@ export const initCommonService = () => {
   );
 
   ipcMain.handle('common-save-settings', async (_, values: SettingOptions) => {
+    if (values.localChromePath === '/Applications/Google Chrome.app') {
+      values.localChromePath = values.localChromePath + '/Contents/MacOS/Google Chrome';
+    }
     const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
 
     try {

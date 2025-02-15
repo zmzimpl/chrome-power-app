@@ -90,6 +90,7 @@ export function getChromePath() {
     default:
       break;
   }
+  console.log('chromePath', chromePath);
   return chromePath;
 }
 

@@ -51,7 +51,6 @@ async function createWindow() {
   };
 
   const iconPath = getIconPath();
-  logger.info('Icon path:', iconPath);
 
   // 确保图标文件存在
   if (!existsSync(iconPath)) {

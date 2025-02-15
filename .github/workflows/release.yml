@@ -166,21 +166,16 @@ jobs:
           ls -la packages/renderer/dist/
 
       - name: Build and Publish
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            npx electron-builder --config .electron-builder.config.js --publish always --win
-          else
-            npx electron-builder --config .electron-builder.config.js --publish always
-          fi
-
-      - name: Retry artifacts upload
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 15
           max_attempts: 6
           retry_wait_seconds: 15
-          command: npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
+          command: |
+            if [ "${{ matrix.os }}" = "windows-latest" ]; then
+              npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }} --win
+            else
+              npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
+            fi
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}

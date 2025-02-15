@@ -41,3 +41,9 @@ jobs:
       dry-run: ${{ github.event_name != 'push' || (github.ref_type != 'tag' && github.ref_name != 'main') }}
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+      P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+      VITE_APP_API: ${{ secrets.VITE_APP_API }}
+      VITE_START_PAGE_URL: ${{ secrets.VITE_START_PAGE_URL }}

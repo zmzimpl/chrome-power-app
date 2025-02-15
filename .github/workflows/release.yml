@@ -11,6 +11,18 @@ on:
     secrets:
       GH_TOKEN:
         required: true
+      BUILD_CERTIFICATE_BASE64:
+        required: true
+      P12_PASSWORD:
+        required: true
+      KEYCHAIN_PASSWORD:
+        required: true
+      APPLE_IDENTITY:
+        required: true
+      VITE_APP_API:
+        required: true
+      VITE_START_PAGE_URL:
+        required: true
 
 concurrency:
   group: release-${{ github.ref }}

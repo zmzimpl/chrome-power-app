@@ -171,11 +171,9 @@ jobs:
           timeout_minutes: 15
           max_attempts: 6
           retry_wait_seconds: 15
-          command: |
-            if [ "${{ matrix.os }}" = "windows-latest" ]; then
-              npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }} --win
-            else
-              npx electron-builder --config .electron-builder.config.js --publish ${{ inputs.dry-run && 'never' || 'always' }}
-            fi
+          command: >
+            npx electron-builder --config .electron-builder.config.js 
+            --publish ${{ inputs.dry-run && 'never' || 'always' }}
+            ${{ matrix.os == 'windows-latest' && '--win' || '' }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}

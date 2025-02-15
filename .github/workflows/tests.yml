@@ -22,8 +22,6 @@ jobs:
         with:
           cache: 'npm'
       - run: npm ci
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
       - run: npm run test:main --if-present
       - run: npm run test:preload --if-present
       - run: npm run test:renderer --if-present

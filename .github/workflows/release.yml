@@ -29,7 +29,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [windows-latest, macos-latest]
-        node_version: [20]
+        node_version: [22]
 
     runs-on: ${{ matrix.os }}
 
@@ -54,11 +54,8 @@ jobs:
 
       - name: Install Dependencies
         timeout-minutes: 60
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         run: |
           npm ci
-          npm install -g electron-builder@latest --no-audit --no-fund
 
       - name: Cache npm dependencies
         uses: actions/cache@v3

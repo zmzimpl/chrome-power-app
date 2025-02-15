@@ -112,16 +112,38 @@ jobs:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
         run: |
-          mkdir -p ~/certificates
-          echo $BUILD_CERTIFICATE_BASE64 | base64 --decode > ~/certificates/certificate.p12
+          # 创建证书目录
+          CERTIFICATE_PATH=$HOME/certificates
+          KEYCHAIN_PATH=$HOME/Library/Keychains/build.keychain-db
+          
+          mkdir -p $CERTIFICATE_PATH
+          
+          # 解码证书
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode > $CERTIFICATE_PATH/certificate.p12
+          
+          # 创建临时钥匙串
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          
+          # 解锁钥匙串
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          
+          # 导入证书到钥匙串
+          security import $CERTIFICATE_PATH/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          
+          # 设置钥匙串搜索列表
+          security list-keychains -d user -s build.keychain
           security default-keychain -s build.keychain
-          security import ~/certificates/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          
+          # 设置钥匙串访问权限
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          
+          # 验证证书
           echo "Verifying certificate..."
           security find-identity -v -p codesigning build.keychain
+          
+          # 显示证书信息
+          security find-certificate -a -c "$APPLE_IDENTITY" -Z build.keychain || true
 
       - name: Build Project
         run: |

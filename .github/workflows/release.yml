@@ -23,7 +23,7 @@ defaults:
 jobs:
   draft_release:
     permissions:
-      contents: write # Allows this job to create releases
+      contents: write
 
     strategy:
       fail-fast: true
@@ -33,7 +33,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    timeout-minutes: 60  # 设置整个 job 的超时时间为 60 分钟
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v2
@@ -45,6 +45,15 @@ jobs:
           git lfs install
           git lfs pull
 
+      # 先设置缓存（在安装依赖之前）
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
         with:
@@ -52,26 +61,26 @@ jobs:
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
+      # macOS 专用修复步骤
+      - name: Setup macOS Build Environment
+        if: matrix.os == 'macos-latest'
+        run: |
+          # 安装 Xcode 命令行工具
+          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+          sudo xcodebuild -license accept
+          # 强制使用 IPv4 网络
+          echo "network=inet" > ~/.curlrc
+
       - name: Install Dependencies
         timeout-minutes: 60
-        run: |
-          npm ci
-
-      - name: Cache npm dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+        run: npm ci --verbose  # 添加详细日志输出
 
       - name: Create .env.production.local file
         run: |
           echo "VITE_APP_API=${{ secrets.VITE_APP_API }}" > .env.production.local
           echo "VITE_START_PAGE_URL=${{ secrets.VITE_START_PAGE_URL }}" >> .env.production.local
 
+      # 后续步骤保持不变...
       - name: Install the Apple certificate and provisioning profile
         if: matrix.os == 'macos-latest'
         env:
@@ -79,54 +88,34 @@ jobs:
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # 创建临时目录存放证书
           mkdir -p ~/certificates
-          # 解码证书
           echo $BUILD_CERTIFICATE_BASE64 | base64 --decode > ~/certificates/certificate.p12
-
-          # 创建临时钥匙串
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          # 设置钥匙串超时时间，避免过早锁定
           security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
-
-          # 解锁钥匙串
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
-
-          # 导入证书到钥匙串
           security import ~/certificates/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
-
-          # 允许 codesign 访问证书
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-
-          # 显示导入的证书信息以便调试
           security find-identity -v -p codesigning build.keychain
 
       - name: Build Project
         run: |
-          # 构建原生模块
-          # npm run build:native-addon
-          # 构建主进程、预加载脚本和渲染进程
           npm run build
-          # 验证构建输出
           ls -la packages/main/dist/
           ls -la packages/preload/dist/
           ls -la packages/renderer/dist/
-        shell: bash
 
       - name: Build and Publish
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            # Windows 构建
             npx electron-builder --config .electron-builder.config.js \
               --publish always \
               --win
           else
             npx electron-builder --config .electron-builder.config.js --publish always
           fi
-        shell: bash
 
       - name: Compile artifacts ${{ inputs.dry-run && '' || 'and upload them to github release' }}
         uses: nick-fields/retry@v2

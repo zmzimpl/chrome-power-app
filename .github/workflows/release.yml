@@ -110,6 +110,7 @@ jobs:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
         run: |
           mkdir -p ~/certificates
           echo $BUILD_CERTIFICATE_BASE64 | base64 --decode > ~/certificates/certificate.p12
@@ -119,6 +120,8 @@ jobs:
           security default-keychain -s build.keychain
           security import ~/certificates/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          echo "Verifying certificate..."
+          security find-identity -v -p codesigning build.keychain
 
       - name: Build Project
         run: |

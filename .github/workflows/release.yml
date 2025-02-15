@@ -45,19 +45,17 @@ jobs:
           git lfs install
           git lfs pull
 
-      # 全局环境配置
-      - name: Configure global settings
+      # 修复点：使用环境变量代替 npm config
+      - name: Configure environment
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 1  # 正确配置方式
+          ELECTRON_MIRROR: "https://npmmirror.com/mirrors/electron/"
+          NODE_PRE_GYP_MIRROR: "https://npmmirror.com/mirrors/node-pre-gyp/"
         run: |
-          # 强制所有平台跳过 Chromium 下载
-          npm config set puppeteer_skip_chromium_download true
-          
-          # 设置 Electron 镜像源
-          npm config set electron_mirror "https://npmmirror.com/mirrors/electron/"
-          
-          # 设置 node-pre-gyp 镜像源
-          npm config set node_pre_gyp_mirror "https://npmmirror.com/mirrors/node-pre-gyp/"
+          echo "Environment configured:"
+          echo "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=$PUPPETEER_SKIP_CHROMIUM_DOWNLOAD"
+          echo "ELECTRON_MIRROR=$ELECTRON_MIRROR"
 
-      # 跨平台缓存配置
       - name: Cache npm dependencies
         uses: actions/cache@v3
         with:
@@ -69,30 +67,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
-      # macOS 专用环境配置
       - name: Setup macOS build tools
         if: matrix.os == 'macos-latest'
         run: |
-          # 安装 Xcode 工具链
           sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
           sudo xcodebuild -license accept
-          
-          # 安装编译依赖
           brew install python3 make gcc
-          
-          # 配置 node-gyp 使用 Python3
           npm config set python $(which python3)
-          
-          # 强制 IPv4 网络
           echo "network=inet" > ~/.curlrc
-
-      # Windows 专用环境配置
-      - name: Setup Windows build tools
-        if: matrix.os == 'windows-latest'
-        run: |
-          # 安装 Python 3 和 Visual Studio Build Tools
-          choco install python --version=3.11.0
-          npm install --global windows-build-tools
 
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
@@ -101,16 +83,10 @@ jobs:
           cache: npm
           cache-dependency-path: '**/package-lock.json'
 
-      # 分步安装依赖
-      - name: Install native modules (pre-cache)
-        run: |
-          npm install --ignore-scripts \
-            active-win \
-            sqlite3 \
-            electron \
-            node-addon-api
+      - name: Install native modules
+        run: npm install --ignore-scripts active-win sqlite3 electron
 
-      - name: Install dependencies with retry
+      - name: Install dependencies
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 20
@@ -118,7 +94,7 @@ jobs:
           retry_wait_seconds: 30
           command: npm ci --verbose
 
-      # 后续构建步骤保持不变...
+      # 后续步骤保持不变...
       - name: Create .env.production.local
         run: |
           echo "VITE_APP_API=${{ secrets.VITE_APP_API }}" > .env.production.local

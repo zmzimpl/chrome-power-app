@@ -29,6 +29,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [windows-latest, macos-latest]
+        node_version: [20]
 
     runs-on: ${{ matrix.os }}
 
@@ -44,27 +45,20 @@ jobs:
           git lfs install
           git lfs pull
 
-      - uses: actions/setup-node@v3
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: ${{ matrix.node_version }}
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         timeout-minutes: 60
-        run: |
-          # 移除 npmmirror 镜像源设置，使用默认 npm 源
-          # npm config set registry https://registry.npmmirror.com
-
-          # 移除 --prefer-offline 参数，强制在线安装
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            npm install --no-audit --no-fund --no-optional
-          else
-            npm install --no-audit --no-fund
-          fi
-          npm install -g electron-builder@latest --no-audit --no-fund
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        run: |
+          npm ci
+          npm install -g electron-builder@latest --no-audit --no-fund
 
       - name: Cache npm dependencies
         uses: actions/cache@v3

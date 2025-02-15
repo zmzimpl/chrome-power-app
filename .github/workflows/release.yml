@@ -175,5 +175,8 @@ jobs:
             npx electron-builder --config .electron-builder.config.js 
             --publish ${{ inputs.dry-run && 'never' || 'always' }}
             ${{ matrix.os == 'windows-latest' && '--win' || '' }}
+            --config.artifactName='${name}-${version}-${arch}-${os}-${buildTime}.${ext}'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          BUILD_TIME: ${{ github.run_number }}
+

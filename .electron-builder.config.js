@@ -10,12 +10,6 @@
  */
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
-  
-  // 添加时间戳函数
-  const getBuildTime = () => {
-    return new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-  };
-
   const config = {
     productName: 'Chrome Power',
     directories: {
@@ -54,7 +48,6 @@ module.exports = async function () {
     extraMetadata: {
       version: getVersion(),
       main: './packages/main/dist/index.cjs',
-      buildTime: getBuildTime(),
     },
     asar: true,
     asarUnpack: ['node_modules/sqlite3/**/*', '**/*.node'],
@@ -77,7 +70,7 @@ module.exports = async function () {
       uninstallerIcon: 'buildResources/icon.ico',
       installerHeaderIcon: 'buildResources/icon.ico',
       menuCategory: true,
-      artifactName: '${productName}-${version}-${arch}-win-${buildTime}.${ext}',
+      artifactName: '${productName}-Setup-${version}.${ext}',
     },
 
     // macOS 配置
@@ -101,7 +94,7 @@ module.exports = async function () {
           filter: ['*.node'],
         },
       ],
-      artifactName: '${productName}-${version}-${arch}-mac-${buildTime}.${ext}',
+      artifactName: '${productName}-${version}-${arch}.${ext}',
       compression: 'store',
       darkModeSupport: true,
     },
@@ -155,7 +148,7 @@ module.exports = async function () {
         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
       ],
-      artifactName: '${productName}-${version}-${arch}-mac-${buildTime}.${ext}',
+      artifactName: '${productName}-${version}-${arch}.${ext}',
       compression: 'store',
       darkModeSupport: true,
     };

@@ -55,7 +55,15 @@ const getExtensionWindows = async (id: number) => {
 };
 
 const deleteExtension = async (id: number) => {
-  return await db('extension').where({id}).delete();
+  const relatedWindows = await getExtensionWindows(id);
+  if (relatedWindows.length > 0) {
+    return {
+      success: false,
+      message: 'Extension is still in use',
+    };
+  } else {
+    return await db('extension').where({id}).delete();
+  }
 };
 
 export const ExtensionDB = {

@@ -104,9 +104,13 @@ const Extensions = () => {
                     cancelText: t('footer_cancel'),
                     onOk: async () => {
                         try {
-                            await ExtensionBridge.deleteExtension(extension.id!);
-                            await fetchExtensions();
-                            messageApi.success(t('extension_delete_success'));
+                            const result = await ExtensionBridge.deleteExtension(extension.id!);
+                            if (result instanceof Object && !result?.success) {
+                                messageApi.error(result.message);
+                            } else {
+                                await fetchExtensions();
+                                messageApi.success(t('extension_delete_success'));
+                            }
                         } catch (error) {
                             messageApi.error(t('extension_delete_failed'));
                         }
@@ -442,7 +446,10 @@ const Extensions = () => {
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
-                    onClick={() => setUploadVisible(true)}
+                    onClick={() => {
+                        setSelectedExtension(undefined);
+                        setUploadVisible(true);
+                    }}
                 >
                     {t('extension_upload')}
                 </Button>

@@ -1,7 +1,7 @@
 {
   "name": "chrome-power",
   "description": "The first open source multi-chrome manager tool.",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "private": true,
   "author": {
     "email": "zmzimpl@gmail.com",
@@ -31,7 +31,7 @@
     "typecheck": "npm run typecheck:main && npm run typecheck:preload && npm run typecheck:renderer",
     "postinstall": "electron-builder install-app-deps && cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs",
     "format": "npx prettier --write \"**/*.{js,mjs,cjs,ts,mts,cts,vue,json}\"",
-    "rebuild-deps": "npm rebuild sqlite3 active-win --build-from-source"
+    "rebuild-deps": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64"
   },
   "devDependencies": {
     "@iconify/react": "^4.1.1",

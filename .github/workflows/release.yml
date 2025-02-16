@@ -42,6 +42,7 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
         node_version: [22]
+        arch: [x64, arm64]
 
     runs-on: ${{ matrix.os }}
 

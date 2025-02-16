@@ -77,7 +77,16 @@ module.exports = async function () {
     mac: {
       icon: 'buildResources/icon.icns',
       identity: process.env.APPLE_IDENTITY,
-      target: ['dmg', 'zip'],
+      target: [
+        {
+          target: 'dmg',
+          arch: ['x64', 'arm64'],
+        },
+        {
+          target: 'zip',
+          arch: ['x64', 'arm64'],
+        },
+      ],
       category: 'public.app-category.developer-tools',
       hardenedRuntime: true,
       gatekeeperAssess: false,

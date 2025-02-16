@@ -455,7 +455,7 @@ const Extensions = () => {
                 </Button>
             </div>
 
-            <Row gutter={[16, 16]} className="mt-4">
+            <Row gutter={[16, 16]} className="mt-4 overflow-y-auto max-h-[calc(100vh-200px)]">
                 {loading ? <Spin /> : (
                     extensions.map(ext => (
                         <Col span={6} key={ext.id}>

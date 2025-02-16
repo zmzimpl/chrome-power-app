@@ -61,6 +61,10 @@ const getOpenedWindows = async () => {
     .orderBy('window.created_at', 'desc');
 };
 
+const find = async (params: DB.Window) => {
+  return await db('window').where(params);
+};
+
 const getById = async (id: number) => {
   // 获取 window 记录及其关联数据
   const windowData = await db('window')
@@ -100,6 +104,12 @@ const update = async (id: number, updatedData: DB.Window) => {
   delete updatedData.ip_checker;
   delete updatedData.ip;
   delete updatedData.tags_name;
+  if (updatedData.group_id === undefined) {
+    updatedData.group_id = null;
+  }
+  if (updatedData.tags === undefined) {
+    updatedData.tags = null;
+  }
   try {
     await db('window')
       .where({id})
@@ -227,6 +237,7 @@ const externalImport = async (fileData: IWindowTemplate[]) => {
 
 export const WindowDB = {
   all,
+  find,
   getById,
   getOpenedWindows,
   update,

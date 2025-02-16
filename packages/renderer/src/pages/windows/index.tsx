@@ -241,6 +241,8 @@ const Windows = () => {
     ];
   }, [tagMap, i18n.language]);
 
+  const [pageSize, setPageSize] = useState(20);
+
   const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
     setSelectedRowKeys(newSelectedRowKeys as number[]);
   };
@@ -564,7 +566,15 @@ const Windows = () => {
           rowSelection={rowSelection}
           dataSource={windowData}
           scroll={{x: 1500, y: tableScrollY}}
-          pagination={{rootClassName: 'pagination-wrapper'}}
+          pagination={{
+            rootClassName: 'pagination-wrapper',
+            pageSize: pageSize,
+            pageSizeOptions: [20, 50, 100],
+            showSizeChanger: true,
+            onChange: (page, pageSize) => {
+              setPageSize(pageSize);
+            },
+          }}
         />
       </Card>
       <Modal

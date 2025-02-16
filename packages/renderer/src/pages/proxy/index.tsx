@@ -101,6 +101,8 @@ const Proxy = () => {
     },
   ];
 
+  const [pageSize, setPageSize] = useState(20);
+
   function getStatus(checking: boolean, check_result: string, index: number) {
     if (checking) return 'processing';
     const connectivity = (check_result && JSON.parse(check_result)?.connectivity) || [];
@@ -491,7 +493,15 @@ const Proxy = () => {
           rowSelection={rowSelection}
           dataSource={proxyData}
           scroll={{ x: 1500, y: tableScrollY }}
-          pagination={{ rootClassName: 'pagination-wrapper', pageSize: 25 }}
+          pagination={{
+            rootClassName: 'pagination-wrapper',
+            pageSize: pageSize,
+            pageSizeOptions: [20, 50, 100],
+            showSizeChanger: true,
+            onChange: (page, pageSize) => {
+              setPageSize(pageSize);
+            },
+          }}
         />
       </Card>
       <Modal

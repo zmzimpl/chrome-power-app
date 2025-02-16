@@ -5,9 +5,9 @@ export namespace DB {
     id?: number;
     profile_id?: string;
     name?: string;
-    group_id?: number;
+    group_id?: number | null;
     group_name?: string;
-    tags?: number[] | string;
+    tags?: number[] | string | null;
     remark?: string;
     opened_at?: string;
     created_at?: string;

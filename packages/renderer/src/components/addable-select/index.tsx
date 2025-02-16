@@ -1,19 +1,21 @@
-import React, {useState, useRef} from 'react';
-import {PlusOutlined} from '@ant-design/icons';
-import {Divider, Input, Select, Space, Button, Tag} from 'antd';
-import type {InputRef} from 'antd';
-import type {CustomTagProps} from 'rc-select/lib/BaseSelect';
+import React, { useState, useRef } from 'react';
+import { PlusOutlined } from '@ant-design/icons';
+import { Divider, Input, Select, Space, Button, Tag, Row, Col, Typography } from 'antd';
+import type { InputRef } from 'antd';
+import type { CustomTagProps } from 'rc-select/lib/BaseSelect';
 import './index.css';
-import type {DB} from '../../../../shared/types/db';
-
+import type { DB } from '../../../../shared/types/db';
+import { DeleteOutlined } from '@ant-design/icons';
 interface AddableSelectOptions {
   options: DB.Group[] | DB.Tag[];
   value?: number | string[] | number[] | undefined | string;
   mode?: 'tags' | 'multiple' | undefined;
-  onChange?: (value: number | string[] | number[] | string, options?: DB.Group | DB.Group[]) => void;
+  onChange?: (value: number | string[] | number[] | string, options: DB.Group | DB.Group[]) => void;
+  onClear?: () => void;
   onAddItem: (name: string) => Promise<boolean>;
   addBtnLabel?: string;
   placeholder?: string;
+  onRemoveItem?: (value: number | string) => void;
 }
 
 const AddableSelect: React.FC<AddableSelectOptions> = ({
@@ -21,14 +23,16 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
   value,
   mode,
   onChange,
+  onClear,
   onAddItem,
   addBtnLabel,
   placeholder,
+  onRemoveItem,
 }) => {
   const [name, setName] = useState('');
   const inputRef = useRef<InputRef>(null);
-  const fieldNames = {label: 'name', value: 'id'};
-
+  const fieldNames = { label: 'name', value: 'id' };
+  const { Text } = Typography;
   const onNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value);
   };
@@ -51,7 +55,7 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
   };
 
   const tagRender = (props: CustomTagProps) => {
-    const {label, value, closable, onClose} = props;
+    const { label, value, closable, onClose } = props;
     const onPreventMouseDown = (event: React.MouseEvent<HTMLSpanElement>) => {
       event.preventDefault();
       event.stopPropagation();
@@ -65,7 +69,7 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
         closable={closable}
         bordered={false}
         onClose={onClose}
-        style={{marginRight: 3}}
+        style={{ marginRight: 3 }}
       >
         {label}
       </Tag>
@@ -82,6 +86,8 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
       mode={mode}
       value={value}
       filterOption={filterOption}
+      allowClear
+      onClear={onClear}
       tagRender={tagRender}
       placeholder={placeholder || ''}
       // labelInValue={true}
@@ -91,8 +97,8 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
       dropdownRender={menu => (
         <>
           {menu}
-          <Divider style={{margin: '8px 0'}} />
-          <Space style={{padding: '0 8px 4px'}}>
+          <Divider style={{ margin: '8px 0' }} />
+          <Space style={{ padding: '0 8px 4px' }}>
             <Input
               placeholder="Please enter item"
               ref={inputRef}
@@ -116,6 +122,26 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
         </>
       )}
       options={options}
+      optionRender={option => {
+        return (
+          <Row justify="space-between">
+            <Col span={21}>
+              <Text ellipsis>{option.label}</Text>
+            </Col>
+            <Col span={3} title="Remove">
+              <span
+                onClick={e => {
+                  e.stopPropagation();
+                  onRemoveItem?.(option.value);
+                }}
+                className="cursor-pointer p-1 border rounded-lg bg-red-200 text-red-500"
+              >
+                <DeleteOutlined />
+              </span>
+            </Col>
+          </Row>
+        );
+      }}
     />
   );
 };

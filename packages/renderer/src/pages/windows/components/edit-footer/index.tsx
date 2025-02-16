@@ -28,6 +28,7 @@ const WindowDetailFooter = ({
   };
 
   const handleOk = () => {
+    console.log('handleOk', formValue);
     saveWindow(formValue);
   };
 

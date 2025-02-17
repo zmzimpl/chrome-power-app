@@ -82,10 +82,10 @@ module.exports = async function () {
       artifactName: '${productName}-Setup-${version}.${ext}',
     },
 
-    // macOS 配置
+    // macOS 基础配置（本地构建使用）
     mac: {
       icon: 'buildResources/icon.icns',
-      identity: null,
+      identity: null,  // 本地构建不签名
       target: [
         {
           target: 'dmg',
@@ -136,33 +136,19 @@ module.exports = async function () {
     },
   };
 
-  // 根据平台添加特定配置
-  if (process.platform === 'darwin') {
-    // 只在 CI 环境中启用签名
-    if (process.env.CI) {
-      config.mac = {
-        icon: 'buildResources/icon.icns',
-        identity: process.env.APPLE_IDENTITY,
-        target: ['dmg', 'zip'],
-        category: 'public.app-category.developer-tools',
-        hardenedRuntime: true,
-        gatekeeperAssess: false,
-        entitlements: 'buildResources/entitlements.mac.plist',
-        entitlementsInherit: 'buildResources/entitlements.mac.plist',
-        signIgnore: [
-          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-        ],
-        artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
-        compression: 'store',
-        darkModeSupport: true,
-      };
-    }
-    
-    config.dmg = {
-      sign: false,
-      writeUpdateInfo: false,
-      format: 'ULFO',
+  // CI 环境特定配置（GitHub Actions 使用）
+  if (process.env.CI && process.platform === 'darwin') {
+    config.mac = {
+      ...config.mac,  // 保留基础配置
+      identity: process.env.APPLE_IDENTITY,  // CI 环境使用签名
+      hardenedRuntime: true,
+      gatekeeperAssess: false,
+      entitlements: 'buildResources/entitlements.mac.plist',
+      entitlementsInherit: 'buildResources/entitlements.mac.plist',
+      signIgnore: [
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+      ],
     };
   }
 

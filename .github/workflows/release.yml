@@ -42,7 +42,14 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
         node_version: [22]
-        arch: [x64, arm64]
+        # Windows 只需要 x64，macOS 需要 x64 和 arm64
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: macos-latest
+            arch: x64
+          - os: macos-latest
+            arch: arm64
 
     runs-on: ${{ matrix.os }}
 

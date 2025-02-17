@@ -55,9 +55,12 @@ module.exports = async function () {
     // Windows 配置
     win: {
       icon: 'buildResources/icon.ico',
-      requestedExecutionLevel: 'requireAdministrator',
-      signAndEditExecutable: false,
-      verifyUpdateCodeSignature: false,
+      target: [
+        {
+          target: 'nsis',
+          arch: ['x64'],  // 只构建 x64 版本
+        },
+      ],
     },
     nsis: {
       oneClick: false,
@@ -80,10 +83,6 @@ module.exports = async function () {
       target: [
         {
           target: 'dmg',
-          arch: ['x64', 'arm64'],
-        },
-        {
-          target: 'zip',
           arch: ['x64', 'arm64'],
         },
       ],

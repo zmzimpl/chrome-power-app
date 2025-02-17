@@ -181,17 +181,8 @@ jobs:
           retry_wait_seconds: 15
           command: >
             npx electron-builder --config .electron-builder.config.js 
-            --publish ${{ inputs.dry-run && 'never' || 'always' }}
+            --publish always
             ${{ matrix.os == 'windows-latest' && '--win' || '' }}
-            --config.artifactName='${name}-${version}-${arch}-${os}-${buildTime}.${ext}'
-          # 添加错误处理逻辑
-          on_retry_command: |
-            echo "Checking if assets already exist..."
-            if [[ $ERROR_OUTPUT == *"already_exists"* ]]; then
-              echo "Assets already exist, treating as success"
-              exit 0
-            fi
-          continue_on_error: true  # 允许任务继续执行
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           BUILD_TIME: ${{ github.run_number }}

@@ -8,6 +8,11 @@
  * @type {() => import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
  */
+
+function getBuildTime() {
+  return process.env.BUILD_TIME || new Date().getTime();
+}
+
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
   const config = {
@@ -58,9 +63,10 @@ module.exports = async function () {
       target: [
         {
           target: 'nsis',
-          arch: ['x64'],  // 只构建 x64 版本
+          arch: ['x64'],
         },
       ],
+      artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
     },
     nsis: {
       oneClick: false,
@@ -79,7 +85,7 @@ module.exports = async function () {
     // macOS 配置
     mac: {
       icon: 'buildResources/icon.icns',
-      identity: process.env.APPLE_IDENTITY,
+      identity: null,
       target: [
         {
           target: 'dmg',
@@ -87,22 +93,11 @@ module.exports = async function () {
         },
       ],
       category: 'public.app-category.developer-tools',
-      hardenedRuntime: true,
+      hardenedRuntime: false,
       gatekeeperAssess: false,
-      entitlements: 'buildResources/entitlements.mac.plist',
-      entitlementsInherit: 'buildResources/entitlements.mac.plist',
-      signIgnore: [
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-      ],
-      extraFiles: [
-        {
-          from: 'node_modules/sqlite3/lib/binding',
-          to: 'Resources/app.asar.unpacked/node_modules/sqlite3/lib/binding',
-          filter: ['*.node'],
-        },
-      ],
-      artifactName: '${productName}-${version}-${arch}.${ext}',
+      entitlements: null,
+      entitlementsInherit: null,
+      artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
       compression: 'store',
       darkModeSupport: true,
     },
@@ -137,29 +132,32 @@ module.exports = async function () {
     publish: {
       provider: 'github',
       private: false,
-      releaseType: 'release',
+      releaseType: 'draft',
     },
   };
 
   // 根据平台添加特定配置
   if (process.platform === 'darwin') {
-    config.mac = {
-      icon: 'buildResources/icon.icns',
-      identity: process.env.APPLE_IDENTITY,
-      target: ['dmg', 'zip'],
-      category: 'public.app-category.developer-tools',
-      hardenedRuntime: true,
-      gatekeeperAssess: false,
-      entitlements: 'buildResources/entitlements.mac.plist',
-      entitlementsInherit: 'buildResources/entitlements.mac.plist',
-      signIgnore: [
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-      ],
-      artifactName: '${productName}-${version}-${arch}.${ext}',
-      compression: 'store',
-      darkModeSupport: true,
-    };
+    // 只在 CI 环境中启用签名
+    if (process.env.CI) {
+      config.mac = {
+        icon: 'buildResources/icon.icns',
+        identity: process.env.APPLE_IDENTITY,
+        target: ['dmg', 'zip'],
+        category: 'public.app-category.developer-tools',
+        hardenedRuntime: true,
+        gatekeeperAssess: false,
+        entitlements: 'buildResources/entitlements.mac.plist',
+        entitlementsInherit: 'buildResources/entitlements.mac.plist',
+        signIgnore: [
+          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+        ],
+        artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
+        compression: 'store',
+        darkModeSupport: true,
+      };
+    }
     
     config.dmg = {
       sign: false,

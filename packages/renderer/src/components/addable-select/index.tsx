@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
-import { Divider, Input, Select, Space, Button, Tag, Row, Col, Typography } from 'antd';
-import type { InputRef } from 'antd';
-import type { CustomTagProps } from 'rc-select/lib/BaseSelect';
+import React, {useState, useRef} from 'react';
+import {PlusOutlined} from '@ant-design/icons';
+import {Divider, Input, Select, Space, Button, Tag, Row, Col, Typography} from 'antd';
+import type {InputRef} from 'antd';
+import type {CustomTagProps} from 'rc-select/lib/BaseSelect';
 import './index.css';
-import type { DB } from '../../../../shared/types/db';
-import { DeleteOutlined } from '@ant-design/icons';
+import type {DB} from '../../../../shared/types/db';
+import {DeleteOutlined} from '@ant-design/icons';
 interface AddableSelectOptions {
   options: DB.Group[] | DB.Tag[];
   value?: number | string[] | number[] | undefined | string;
@@ -31,8 +31,8 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
 }) => {
   const [name, setName] = useState('');
   const inputRef = useRef<InputRef>(null);
-  const fieldNames = { label: 'name', value: 'id' };
-  const { Text } = Typography;
+  const fieldNames = {label: 'name', value: 'id'};
+  const {Text} = Typography;
   const onNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value);
   };
@@ -55,7 +55,7 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
   };
 
   const tagRender = (props: CustomTagProps) => {
-    const { label, value, closable, onClose } = props;
+    const {label, value, closable, onClose} = props;
     const onPreventMouseDown = (event: React.MouseEvent<HTMLSpanElement>) => {
       event.preventDefault();
       event.stopPropagation();
@@ -69,7 +69,7 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
         closable={closable}
         bordered={false}
         onClose={onClose}
-        style={{ marginRight: 3 }}
+        style={{marginRight: 3}}
       >
         {label}
       </Tag>
@@ -97,8 +97,8 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
       dropdownRender={menu => (
         <>
           {menu}
-          <Divider style={{ margin: '8px 0' }} />
-          <Space style={{ padding: '0 8px 4px' }}>
+          <Divider style={{margin: '8px 0'}} />
+          <Space style={{padding: '0 8px 4px'}}>
             <Input
               placeholder="Please enter item"
               ref={inputRef}
@@ -128,7 +128,10 @@ const AddableSelect: React.FC<AddableSelectOptions> = ({
             <Col span={21}>
               <Text ellipsis>{option.label}</Text>
             </Col>
-            <Col span={3} title="Remove">
+            <Col
+              span={3}
+              title="Remove"
+            >
               <span
                 onClick={e => {
                   e.stopPropagation();

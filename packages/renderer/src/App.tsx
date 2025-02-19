@@ -25,7 +25,6 @@ const App = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [messageApi, contextHolder] = message.useMessage(MESSAGE_CONFIG);
 
-
   useEffect(() => {
     setTimeout(() => setIsVisible(true), 100); // 延迟显示组件
   }, []);

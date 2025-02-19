@@ -1,7 +1,7 @@
 import {ipcMain} from 'electron';
 import type {DB} from '../../../shared/types/db';
 import {TagDB} from '../db/tag';
-import { WindowDB } from '../db/window';
+import {WindowDB} from '../db/window';
 
 export const initTagService = () => {
   ipcMain.handle('tag-create', async (_, tag: DB.Tag) => {

@@ -151,17 +151,20 @@ const Windows = () => {
         render: (_, recorder) => (
           <>
             {recorder.tags &&
-              recorder.tags.toString().split(',').map(tagId => {
-                const tag = tagMap.get(Number(tagId));
-                return (
-                  <Tag
-                    key={tagId}
-                    color={tag?.color}
-                  >
-                    {tag?.name}
-                  </Tag>
-                );
-              })}
+              recorder.tags
+                .toString()
+                .split(',')
+                .map(tagId => {
+                  const tag = tagMap.get(Number(tagId));
+                  return (
+                    <Tag
+                      key={tagId}
+                      color={tag?.color}
+                    >
+                      {tag?.name}
+                    </Tag>
+                  );
+                })}
           </>
         ),
       },
@@ -215,8 +218,8 @@ const Windows = () => {
             {recorder.status === 1
               ? t('window_open')
               : recorder.status === 2
-              ? t('window_running')
-              : t('window_preparing')}
+                ? t('window_running')
+                : t('window_preparing')}
           </Button>
         ),
       },
@@ -464,9 +467,12 @@ const Windows = () => {
             containsKeyword(f.profile_id, keyword) ||
             containsKeyword(f.proxy, keyword) ||
             (f.tags &&
-              (f.tags instanceof Array &&
-              f.tags.some(tag => containsKeyword(tagMap.get(tag)?.name, keyword)) ||
-              f.tags.toString().split(',').some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword)))), // Changed this line for tag check
+              ((f.tags instanceof Array &&
+                f.tags.some(tag => containsKeyword(tagMap.get(tag)?.name, keyword))) ||
+                f.tags
+                  .toString()
+                  .split(',')
+                  .some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword)))), // Changed this line for tag check
         ),
       );
     } else {

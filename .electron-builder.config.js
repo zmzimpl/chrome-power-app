@@ -85,7 +85,7 @@ module.exports = async function () {
     // macOS 基础配置（本地构建使用）
     mac: {
       icon: 'buildResources/icon.icns',
-      identity: null,  // 本地构建不签名
+      identity: null, // 本地构建不签名
       target: [
         {
           target: 'dmg',
@@ -139,8 +139,8 @@ module.exports = async function () {
   // CI 环境特定配置（GitHub Actions 使用）
   if (process.env.CI && process.platform === 'darwin') {
     config.mac = {
-      ...config.mac,  // 保留基础配置
-      identity: process.env.APPLE_IDENTITY,  // CI 环境使用签名
+      ...config.mac, // 保留基础配置
+      identity: process.env.APPLE_IDENTITY, // CI 环境使用签名
       hardenedRuntime: true,
       gatekeeperAssess: false,
       entitlements: 'buildResources/entitlements.mac.plist',

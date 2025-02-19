@@ -39,9 +39,7 @@ const Api = () => {
           </Link>
         </Title>
 
-        <Paragraph type="secondary">
-          {t('api_description')}
-        </Paragraph>
+        <Paragraph type="secondary">{t('api_description')}</Paragraph>
         <Divider />
 
         <Form
@@ -89,7 +87,12 @@ const Api = () => {
           GET /profiles/close?windowId=xxx
         </Paragraph>
         <Title level={4}>{t('api_windows')}</Title>
-        <Paragraph code copyable={{text: 'https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#9734dfc0-2879-4cae-b4e4-029c411fafa2'}}>
+        <Paragraph
+          code
+          copyable={{
+            text: 'https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#9734dfc0-2879-4cae-b4e4-029c411fafa2',
+          }}
+        >
           <Link
             href="https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#9734dfc0-2879-4cae-b4e4-029c411fafa2"
             target="_blank"
@@ -98,7 +101,12 @@ const Api = () => {
           </Link>
         </Paragraph>
         <Title level={4}>{t('api.proxy')}</Title>
-        <Paragraph code copyable={{text: 'https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#b8af2d09-618a-4e27-9ce7-35094efee212'}}>
+        <Paragraph
+          code
+          copyable={{
+            text: 'https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#b8af2d09-618a-4e27-9ce7-35094efee212',
+          }}
+        >
           <Link
             href="https://documenter.getpostman.com/view/25586363/2sA3BkdZ61#b8af2d09-618a-4e27-9ce7-35094efee212"
             target="_blank"

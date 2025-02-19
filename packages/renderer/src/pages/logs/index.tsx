@@ -50,9 +50,7 @@ const Logs = () => {
         bordered={false}
       >
         <Tabs
-          onChange={(key: string) =>
-            fetchLogs(key as 'Main' | 'Windows' | 'Proxy' | 'Api')
-          }
+          onChange={(key: string) => fetchLogs(key as 'Main' | 'Windows' | 'Proxy' | 'Api')}
           size="small"
           items={items}
         />

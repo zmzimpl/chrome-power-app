@@ -7,7 +7,6 @@ import {createLogger} from '../../shared/utils/logger';
 import {MAIN_LOGGER_LABEL} from './constants';
 import {existsSync} from 'fs';
 
-
 const logger = createLogger(MAIN_LOGGER_LABEL);
 const server = express();
 const isDev = import.meta.env.DEV;
@@ -83,9 +82,7 @@ async function createWindow() {
     browserWindow.setIcon(icon);
     // 设置应用 ID，这对任务栏图标很重要
     // 设置应用 ID
-    const appId = app.isPackaged 
-      ? 'com.chromepower.app'
-      : process.execPath;
+    const appId = app.isPackaged ? 'com.chromepower.app' : process.execPath;
     app.setAppUserModelId(appId);
 
     browserWindow.setThumbarButtons([]);

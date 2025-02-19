@@ -113,7 +113,7 @@ const getAvailablePort = async () => {
 const waitForChromeReady = async (chromePort: number, maxAttempts = 30) => {
   const timeout = 500; // 每次尝试等待 500ms
   let attempts = 0;
-  
+
   while (attempts < maxAttempts) {
     try {
       // 尝试连接 CDP
@@ -124,11 +124,11 @@ const waitForChromeReady = async (chromePort: number, maxAttempts = 30) => {
     } catch (error) {
       // 连接失败，继续等待
     }
-    
+
     attempts++;
     await sleep(timeout);
   }
-  
+
   throw new Error('Chrome instance failed to start within the timeout period');
 };
 

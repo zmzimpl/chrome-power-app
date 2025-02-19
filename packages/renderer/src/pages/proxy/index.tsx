@@ -1,4 +1,4 @@
-import type { MenuProps } from 'antd';
+import type {MenuProps} from 'antd';
 import {
   Badge,
   Button,
@@ -12,13 +12,13 @@ import {
   Table,
   message,
 } from 'antd';
-import _, { debounce } from 'lodash';
-import { useEffect, useState } from 'react';
-import type { MenuInfo } from 'rc-menu/lib/interface';
-import type { DB } from '../../../../shared/types/db';
-import { ProxyBridge } from '#preload';
-import type { SearchProps } from 'antd/es/input';
-import { containsKeyword } from '/@/utils/str';
+import _, {debounce} from 'lodash';
+import {useEffect, useState} from 'react';
+import type {MenuInfo} from 'rc-menu/lib/interface';
+import type {DB} from '../../../../shared/types/db';
+import {ProxyBridge} from '#preload';
+import type {SearchProps} from 'antd/es/input';
+import {containsKeyword} from '/@/utils/str';
 import {
   GlobalOutlined,
   MoreOutlined,
@@ -31,11 +31,11 @@ import {
   WifiOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import { PIN_URL } from '../../../../shared/constants';
-import { MESSAGE_CONFIG } from '/@/constants';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import type {ColumnsType} from 'antd/es/table';
+import {PIN_URL} from '../../../../shared/constants';
+import {MESSAGE_CONFIG} from '/@/constants';
+import {useNavigate} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 
 type ProxyFormProps = {
   proxy_type?: string;
@@ -49,7 +49,7 @@ type ProxyFormProps = {
 };
 
 const Proxy = () => {
-  const { t } = useTranslation();
+  const {t} = useTranslation();
   const OFFSET = 266;
   const [searchValue, setSearchValue] = useState('');
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET);
@@ -142,7 +142,7 @@ const Proxy = () => {
           {PIN_URL?.map((m, index: number) => (
             <Badge
               key={index}
-              classNames={{ indicator: `w-[8px] h-[8px] ${recorder.checking ? 'animate-ping' : ''}` }}
+              classNames={{indicator: `w-[8px] h-[8px] ${recorder.checking ? 'animate-ping' : ''}`}}
               status={getStatus(!!recorder.checking, recorder.check_result!, index)}
               text={m.n}
             />
@@ -201,8 +201,9 @@ const Proxy = () => {
         <Space size={24}>
           <WifiOutlined
             onClick={() => checkProxy(recorder.id)}
-            className={`inline-block p-[8px] rounded-lg cursor-pointer ${recorder.checking ? 'animate-ping text-blue-500' : ''
-              }`}
+            className={`inline-block p-[8px] rounded-lg cursor-pointer ${
+              recorder.checking ? 'animate-ping text-blue-500' : ''
+            }`}
           />
           <Dropdown
             className="inline-block p-[8px] rounded-lg cursor-pointer"
@@ -492,7 +493,7 @@ const Proxy = () => {
           loading={loading}
           rowSelection={rowSelection}
           dataSource={proxyData}
-          scroll={{ x: 1500, y: tableScrollY }}
+          scroll={{x: 1500, y: tableScrollY}}
           pagination={{
             rootClassName: 'pagination-wrapper',
             pageSize: pageSize,
@@ -508,7 +509,7 @@ const Proxy = () => {
         title={
           <>
             <ExclamationCircleFilled
-              style={{ color: '#faad14', fontSize: '22px', marginRight: '12px' }}
+              style={{color: '#faad14', fontSize: '22px', marginRight: '12px'}}
             ></ExclamationCircleFilled>
             <span>Delete IPs</span>
           </>
@@ -586,43 +587,43 @@ const Proxy = () => {
             form={form}
             size="large"
             initialValues={formValue}
-            labelCol={{ span: 6 }}
+            labelCol={{span: 6}}
           >
             <Form.Item<ProxyFormProps>
               label="Proxy Type"
               name="proxy_type"
-              rules={[{ required: true, message: 'Please Select Proxy Type!' }]}
+              rules={[{required: true, message: 'Please Select Proxy Type!'}]}
             >
               <Select
                 options={[
-                  { label: 'Socks5', value: 'socks5' },
-                  { label: 'Http', value: 'http' },
+                  {label: 'Socks5', value: 'socks5'},
+                  {label: 'Http', value: 'http'},
                 ]}
               />
             </Form.Item>
             <Form.Item<ProxyFormProps>
               label="IP Checker"
               name="ip_checker"
-              rules={[{ required: true, message: 'Please Select IP Checker!' }]}
+              rules={[{required: true, message: 'Please Select IP Checker!'}]}
             >
               <Select
                 options={[
-                  { label: 'Ip2Location', value: 'ip2location' },
-                  { label: 'GeoIp', value: 'geoip' },
+                  {label: 'Ip2Location', value: 'ip2location'},
+                  {label: 'GeoIp', value: 'geoip'},
                 ]}
               />
             </Form.Item>
             <Form.Item<ProxyFormProps>
               label="Host"
               name="host"
-              rules={[{ required: true, message: 'Please input IP!' }]}
+              rules={[{required: true, message: 'Please input IP!'}]}
             >
               <Input />
             </Form.Item>
             <Form.Item<ProxyFormProps>
               label="Port"
               name="port"
-              rules={[{ required: true, message: 'Please input Port!' }]}
+              rules={[{required: true, message: 'Please input Port!'}]}
             >
               <Input />
             </Form.Item>
@@ -644,7 +645,7 @@ const Proxy = () => {
               label="Remark"
               name="remark"
             >
-              <Input.TextArea style={{ height: 120, resize: 'none' }} />
+              <Input.TextArea style={{height: 120, resize: 'none'}} />
             </Form.Item>
           </Form>
         </div>

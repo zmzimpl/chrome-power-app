@@ -74,9 +74,7 @@ const WindowImportForm = () => {
           <Form.Item label={t('window_import_from_template')}>
             <Space>
               <Upload {...props}>
-                <Button icon={<UploadOutlined />}>
-                  {t('window_import_from_template_tip')}
-                </Button>
+                <Button icon={<UploadOutlined />}>{t('window_import_from_template_tip')}</Button>
               </Upload>
               <Button
                 type="link"
@@ -88,9 +86,7 @@ const WindowImportForm = () => {
           </Form.Item>
           <Form.Item label={t('window_import_from_ads')}>
             <Upload {...props}>
-              <Button icon={<UploadOutlined />}>
-                {t('window_import_from_ads_tip')}
-              </Button>
+              <Button icon={<UploadOutlined />}>{t('window_import_from_ads_tip')}</Button>
             </Upload>
           </Form.Item>
         </Form>

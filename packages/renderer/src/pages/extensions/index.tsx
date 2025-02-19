@@ -458,7 +458,7 @@ const Extensions = () => {
             <Row gutter={[16, 16]} className="mt-4 overflow-y-auto max-h-[calc(100vh-200px)]">
                 {loading ? <Spin /> : (
                     extensions.map(ext => (
-                        <Col span={6} key={ext.id}>
+                        <Col xs={24} sm={12} md={8} lg={6} xl={6} xxl={4} key={ext.id}>
                             <Card
                                 hoverable
                                 title={ext.name}

@@ -44,6 +44,7 @@ const batchDelete = async (ids: number[]) => {
   // 首先，检查这些 IDs 是否被 window 表所引用
   const referencedIds = await db('window')
     .select('proxy_id')
+    .where('status', '>', 0)
     .whereIn('proxy_id', ids)
     .then(rows => rows.map(row => row.proxy_id));
 

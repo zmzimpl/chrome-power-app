@@ -65,7 +65,7 @@ async function createWindow() {
     minWidth: 920,
     minHeight: 700,
     frame: false,
-    hasShadow: true,
+    hasShadow: process.platform === 'win32',
     transparent: false,
     backgroundColor: 'rgba(255, 255, 255, 0)',
     movable: true,

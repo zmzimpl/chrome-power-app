@@ -6,6 +6,7 @@ import extract from 'extract-zip';
 import {join} from 'path';
 import {getSettings} from '../utils/get-settings';
 import {db} from '../db';
+import {readdir, rename} from 'fs/promises';
 
 export const initExtensionService = () => {
   ipcMain.handle('extension-create', async (_, extension: DB.Extension) => {
@@ -101,8 +102,6 @@ export const initExtensionService = () => {
         mkdirSync(versionDir);
 
         // 将临时目录中的文件移动到版本目录
-        const {rename} = require('fs/promises');
-        const {readdir} = require('fs/promises');
         const files = await readdir(tempExtractDir);
         for (const file of files) {
           await rename(join(tempExtractDir, file), join(versionDir, file));

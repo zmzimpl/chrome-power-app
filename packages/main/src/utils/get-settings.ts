@@ -3,14 +3,13 @@ import {join} from 'path';
 import type {SettingOptions} from '../../../shared/types/common';
 import {getChromePath} from '../fingerprint/device';
 import {app} from 'electron';
-
+import {CONFIG_FILE_PATH} from '../constants';
 export const getSettings = (): SettingOptions => {
-  const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
+  const configFilePath = CONFIG_FILE_PATH;
   const isMac = process.platform === 'darwin';
   const defaultCachePath = isMac
     ? `${app.getPath('documents')}/ChromePowerCache`
     : join(app.getPath('appData'), 'ChromePowerCache');
-
   let settings = {
     profileCachePath: defaultCachePath,
     useLocalChrome: true,

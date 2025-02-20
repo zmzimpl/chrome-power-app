@@ -1,4 +1,6 @@
 import {getDbPath} from '../utils/get-db-path';
+import {app} from 'electron';
+import {join} from 'path';
 
 export const DB_CONFIG = {
   client: 'sqlite3',
@@ -17,3 +19,6 @@ export const WINDOW_LOGGER_LABEL = 'Window';
 export const PROXY_LOGGER_LABEL = 'Proxy';
 export const API_LOGGER_LABEL = 'Api';
 export const MAIN_LOGGER_LABEL = 'Main';
+
+export const CONFIG_FILE_PATH = join(app.getPath('userData'), 'chrome-power-config.json');
+export const LOGS_PATH = join(app.getPath('userData'), 'logs');

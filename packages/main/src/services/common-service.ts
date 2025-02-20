@@ -1,6 +1,6 @@
 import {app, BrowserWindow, ipcMain, dialog, shell} from 'electron';
 import {createLogger} from '../../../shared/utils/logger';
-import {SERVICE_LOGGER_LABEL} from '../constants';
+import {CONFIG_FILE_PATH, LOGS_PATH, SERVICE_LOGGER_LABEL} from '../constants';
 import {join} from 'path';
 import {copyFileSync, writeFileSync, readFileSync, readdir, existsSync, mkdirSync} from 'fs';
 import type {SettingOptions} from '../../../shared/types/common';
@@ -45,7 +45,7 @@ export const initCommonService = () => {
       // if (import.meta.env.DEV) {
       //   return [];
       // }
-      const logDir = join(app.getPath('appData'), 'logs', module);
+      const logDir = join(LOGS_PATH, module);
       if (!existsSync(logDir)) {
         mkdirSync(logDir, {recursive: true});
       }
@@ -90,7 +90,7 @@ export const initCommonService = () => {
     if (values.localChromePath === '/Applications/Google Chrome.app') {
       values.localChromePath = values.localChromePath + '/Contents/MacOS/Google Chrome';
     }
-    const configFilePath = join(process.resourcesPath, 'chrome-power-config.json');
+    const configFilePath = CONFIG_FILE_PATH;
 
     try {
       writeFileSync(configFilePath, JSON.stringify(values), 'utf8');

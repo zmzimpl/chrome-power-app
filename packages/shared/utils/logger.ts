@@ -13,7 +13,7 @@ export function createLogger(label: string) {
     //   // 开发环境: 所有日志都输出到控制台
     //   transport = new winston.transports.Console({level: 'info'});
     // } else {
-    const logsPath = join(app.getPath('appData'), 'logs');
+    const logsPath = join(app.getPath('userData'), 'logs');
     if (!existsSync(logsPath)) {
       mkdirSync(logsPath, {recursive: true});
     }

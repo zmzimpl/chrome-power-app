@@ -1,7 +1,7 @@
 {
   "name": "chrome-power",
   "description": "The first open source multi-chrome manager tool.",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "private": true,
   "author": {
     "email": "zmzimpl@gmail.com",

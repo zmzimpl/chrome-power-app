@@ -184,12 +184,12 @@ export async function openFingerprintWindow(id: number, headless = false) {
     //   windowData.fingerprint && windowData.fingerprint !== '{}'
     //     ? JSON.parse(windowData.fingerprint)
     //     : randomFingerprint();
-    if (!windowData.fingerprint || windowData.fingerprint === '{}') {
-      await WindowDB.update(id, {
-        ...windowData,
-        // fingerprint,
-      });
-    }
+    // if (!windowData.fingerprint || windowData.fingerprint === '{}') {
+    //   await WindowDB.update(id, {
+    //     ...windowData,
+    //     fingerprint,
+    //   });
+    // }
 
     if (driverPath) {
       const chromePort = await getAvailablePort();
@@ -412,7 +412,7 @@ async function createSocksProxy(proxyData: DB.Proxy) {
 }
 
 export async function resetWindowStatus(id: number) {
-  await WindowDB.update(id, {status: 1, port: undefined});
+  await WindowDB.update(id, {status: 1, port: null});
 }
 
 export async function closeFingerprintWindow(id: number, force = false) {
@@ -421,14 +421,18 @@ export async function closeFingerprintWindow(id: number, force = false) {
   if (force && port) {
     try {
       const browserURL = `http://${HOST}:${port}`;
-      const browser = await puppeteer.connect({browserURL, defaultViewport: null});
+      const {data} = await api.get(browserURL + '/json/version');
+      const browser = await puppeteer.connect({
+        browserWSEndpoint: data.webSocketDebuggerUrl,
+        defaultViewport: null,
+      });
       logger.info('close browser', browserURL);
       await browser?.close();
     } catch (error) {
       logger.error(error);
     }
   }
-  await WindowDB.update(id, {status: 1, port: undefined});
+  await WindowDB.update(id, {status: 1, port: null});
   const win = getMainWindow();
   if (win) {
     win.webContents.send('window-closed', id);

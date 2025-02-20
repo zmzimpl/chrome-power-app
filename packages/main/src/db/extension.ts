@@ -50,12 +50,19 @@ const deleteExtensionWindows = async (id: number, windowIds: number[]) => {
     .delete();
 };
 
+const deleteWindowReleted = async (windowIds: number | number[]) => {
+  return await db('window_extension')
+    .whereIn('window_id', Array.isArray(windowIds) ? windowIds : [windowIds])
+    .delete();
+};
+
 const getExtensionWindows = async (id: number) => {
   return await db('window_extension').where({extension_id: id});
 };
 
 const deleteExtension = async (id: number) => {
   const relatedWindows = await getExtensionWindows(id);
+  console.log('relatedWindows', relatedWindows);
   if (relatedWindows.length > 0) {
     return {
       success: false,
@@ -72,6 +79,7 @@ export const ExtensionDB = {
   createExtension,
   updateExtension,
   deleteExtension,
+  deleteWindowReleted,
   insertExtensionWindows,
   deleteExtensionWindows,
   getExtensionWindows,

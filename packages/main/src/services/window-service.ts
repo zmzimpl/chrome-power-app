@@ -12,7 +12,7 @@ import {randomASCII, randomFloat, randomInt} from '../../../shared/utils';
 import path from 'path';
 import puppeteer from 'puppeteer';
 import {presetCookie} from '../puppeteer/helpers';
-
+import {ExtensionDB} from '../db/extension';
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 export const initWindowService = () => {
   logger.info('init window service...');
@@ -50,12 +50,15 @@ export const initWindowService = () => {
   });
 
   ipcMain.handle('window-delete', async (_, id: number) => {
+    await ExtensionDB.deleteWindowReleted(id);
     return await WindowDB.remove(id);
   });
   ipcMain.handle('window-batchClear', async (_, ids: number[]) => {
+    await ExtensionDB.deleteWindowReleted(ids);
     return await WindowDB.batchClear(ids);
   });
   ipcMain.handle('window-batchDelete', async (_, ids: number[]) => {
+    await ExtensionDB.deleteWindowReleted(ids);
     return await WindowDB.batchRemove(ids);
   });
 

@@ -101,7 +101,7 @@ class HttpProxy extends EventEmitter {
       destination: {host: u.hostname!, port: u.port ? +u.port! : 80},
       command: 'connect' as SocksCommandOption,
     };
-    
+
     if (!uSocket.writable) {
       this.emit('connect:error', new Error('Client socket is not writable'));
       return;
@@ -120,12 +120,12 @@ class HttpProxy extends EventEmitter {
         if (pSocket?.socket && uSocket?.writable) {
           pSocket.socket.pipe(uSocket);
           uSocket.pipe(pSocket.socket);
-          
+
           pSocket.socket.on('error', err => {
             this.emit('connect:error', err);
             uSocket.destroy();
           });
-          
+
           uSocket.on('error', err => {
             this.emit('connect:error', err);
             pSocket.socket.destroy();
@@ -135,7 +135,7 @@ class HttpProxy extends EventEmitter {
             pSocket.socket.write(uHead);
             uSocket.write(`HTTP/${uReq.httpVersion} 200 Connection established\r\n\r\n`);
           }
-          
+
           this.emit('connect:success');
           pSocket.socket.resume();
         }

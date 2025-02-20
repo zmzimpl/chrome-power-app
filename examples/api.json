@@ -1,0 +1,446 @@
+[
+  {
+    "name": "window",
+    "item": [
+      {
+        "name": "create-window",
+        "id": "d82a0a78-53b6-45e8-8f9e-c82ff75322b3",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"name\": \"api-create-test\",\r\n    \"proxy_id\": 71\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/window/create",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["window", "create"],
+            "host": ["localhost"],
+            "query": [],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "d82a0a78-53b6-45e8-8f9e-c82ff75322b3"
+      },
+      {
+        "name": "update-window",
+        "id": "f93b86bd-4331-4393-825e-01ef40fe4fa7",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "PUT",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"window\": {\r\n        \"name\": \"修改测试\",\r\n        \"proxy_id\": 70\r\n    },\r\n    \"id\": 193\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/window/update",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["window", "update"],
+            "host": ["localhost"],
+            "query": [],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "f93b86bd-4331-4393-825e-01ef40fe4fa7"
+      },
+      {
+        "name": "delete-window",
+        "id": "8534485f-5cbd-43aa-93f8-7066d6828111",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "DELETE",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/window/delete?windowId=196",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["window", "delete"],
+            "host": ["localhost"],
+            "query": [
+              {
+                "key": "windowId",
+                "value": "196"
+              }
+            ],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "8534485f-5cbd-43aa-93f8-7066d6828111"
+      },
+      {
+        "name": "get-window-by-id",
+        "id": "5b8e3651-2ae6-49bb-b5d5-cf2cd2c390f0",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"window\": {\r\n        \"name\": \"修改测试\",\r\n        \"proxy_id\": 70\r\n    },\r\n    \"id\": 195\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/window/info?windowId=193",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["window", "info"],
+            "host": ["localhost"],
+            "query": [
+              {
+                "key": "windowId",
+                "value": "193"
+              }
+            ],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "5b8e3651-2ae6-49bb-b5d5-cf2cd2c390f0"
+      },
+      {
+        "name": "get-all-windows",
+        "id": "0bcc0912-f83e-4cd1-b38e-c6831475f27b",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"window\": {\r\n        \"name\": \"修改测试\",\r\n        \"proxy_id\": 70\r\n    },\r\n    \"id\": 195\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/window/all",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["window", "all"],
+            "host": ["localhost"],
+            "query": [],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "0bcc0912-f83e-4cd1-b38e-c6831475f27b"
+      }
+    ],
+    "id": "9734dfc0-2879-4cae-b4e4-029c411fafa2",
+    "_postman_id": "9734dfc0-2879-4cae-b4e4-029c411fafa2",
+    "description": ""
+  },
+  {
+    "name": "profiles",
+    "item": [
+      {
+        "name": "profiles",
+        "id": "dacd3919-b0ba-4f6c-8a3e-2d627c8ddfbe",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "urlObject": {
+            "query": [],
+            "variable": []
+          },
+          "url": ""
+        },
+        "response": [],
+        "_postman_id": "dacd3919-b0ba-4f6c-8a3e-2d627c8ddfbe"
+      },
+      {
+        "name": "open",
+        "id": "a71f8805-af40-4aae-9a63-b2886b8ccf1f",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "http://localhost:49556/profiles/open?windowId=194",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["profiles", "open"],
+            "host": ["localhost"],
+            "query": [
+              {
+                "key": "windowId",
+                "value": "194"
+              }
+            ],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "a71f8805-af40-4aae-9a63-b2886b8ccf1f"
+      },
+      {
+        "name": "close",
+        "id": "991474cb-f47d-48c7-9b69-892f3b2f5100",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "http://localhost:49556/profiles/close?windowId=194",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["profiles", "close"],
+            "host": ["localhost"],
+            "query": [
+              {
+                "key": "windowId",
+                "value": "194"
+              }
+            ],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "991474cb-f47d-48c7-9b69-892f3b2f5100"
+      }
+    ],
+    "id": "21aa2afe-eef9-44c7-beb7-17010523d1a3",
+    "_postman_id": "21aa2afe-eef9-44c7-beb7-17010523d1a3",
+    "description": ""
+  },
+  {
+    "name": "proxy",
+    "item": [
+      {
+        "name": "create-proxy",
+        "id": "041295f1-5456-4691-b2dc-383fdea7928c",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "POST",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"name\": \"api-create-test\",\r\n    \"proxy_id\": 71\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/proxy/create",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["proxy", "create"],
+            "host": ["localhost"],
+            "query": [],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "041295f1-5456-4691-b2dc-383fdea7928c"
+      },
+      {
+        "name": "update-proxy",
+        "id": "4ad1034b-0e79-490d-bbcf-a0926c870b47",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "PUT",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"window\": {\r\n        \"name\": \"修改测试\",\r\n        \"proxy_id\": 70\r\n    },\r\n    \"id\": 195\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/proxy/update",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["proxy", "update"],
+            "host": ["localhost"],
+            "query": [],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "4ad1034b-0e79-490d-bbcf-a0926c870b47"
+      },
+      {
+        "name": "delete-proxy",
+        "id": "b1cbfa3b-0be2-4ac3-8333-520356c5b0a3",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "DELETE",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/proxy/delete?windowId=194",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["proxy", "delete"],
+            "host": ["localhost"],
+            "query": [
+              {
+                "key": "windowId",
+                "value": "194"
+              }
+            ],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "b1cbfa3b-0be2-4ac3-8333-520356c5b0a3"
+      },
+      {
+        "name": "get-proxy-by-id",
+        "id": "66f67f0d-1dc9-4a81-bacf-8af0d6134122",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"window\": {\r\n        \"name\": \"修改测试\",\r\n        \"proxy_id\": 70\r\n    },\r\n    \"id\": 195\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/proxy/info?proxyId=193",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["proxy", "info"],
+            "host": ["localhost"],
+            "query": [
+              {
+                "key": "proxyId",
+                "value": "193"
+              }
+            ],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "66f67f0d-1dc9-4a81-bacf-8af0d6134122"
+      },
+      {
+        "name": "get-all-proxy",
+        "id": "528714f5-caa2-4f7b-8b5e-67f0f0a5a213",
+        "protocolProfileBehavior": {
+          "disableBodyPruning": true
+        },
+        "request": {
+          "method": "GET",
+          "header": [],
+          "body": {
+            "mode": "raw",
+            "raw": "{\r\n    \"window\": {\r\n        \"name\": \"修改测试\",\r\n        \"proxy_id\": 70\r\n    },\r\n    \"id\": 195\r\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "url": "http://localhost:49556/proxy/all",
+          "urlObject": {
+            "protocol": "http",
+            "port": "49556",
+            "path": ["proxy", "all"],
+            "host": ["localhost"],
+            "query": [],
+            "variable": []
+          }
+        },
+        "response": [],
+        "_postman_id": "528714f5-caa2-4f7b-8b5e-67f0f0a5a213"
+      }
+    ],
+    "id": "b8af2d09-618a-4e27-9ce7-35094efee212",
+    "_postman_id": "b8af2d09-618a-4e27-9ce7-35094efee212",
+    "description": ""
+  },
+  {
+    "name": "status",
+    "id": "3baf9b88-f154-4eaf-986e-f0fbb387725d",
+    "protocolProfileBehavior": {
+      "disableBodyPruning": true
+    },
+    "request": {
+      "method": "GET",
+      "header": [],
+      "urlObject": {
+        "query": [],
+        "variable": []
+      },
+      "url": ""
+    },
+    "response": [],
+    "_postman_id": "3baf9b88-f154-4eaf-986e-f0fbb387725d"
+  }
+]

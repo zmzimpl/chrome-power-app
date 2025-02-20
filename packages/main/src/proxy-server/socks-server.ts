@@ -101,26 +101,49 @@ class HttpProxy extends EventEmitter {
       destination: {host: u.hostname!, port: u.port ? +u.port! : 80},
       command: 'connect' as SocksCommandOption,
     };
+
+    if (!uSocket.writable) {
+      this.emit('connect:error', new Error('Client socket is not writable'));
+      return;
+    }
+
     SocksClient.createConnection(options, (error, pSocket) => {
       if (error) {
-        uSocket?.write(`HTTP/${uReq.httpVersion} 500 Connection error\r\n\r\n`);
+        if (uSocket?.writable) {
+          uSocket?.write(`HTTP/${uReq.httpVersion} 500 Connection error\r\n\r\n`);
+        }
         this.emit('connect:error', error);
         return;
       }
-      pSocket?.socket.pipe(uSocket);
-      if (pSocket?.socket) {
-        uSocket?.pipe(pSocket?.socket);
+
+      try {
+        if (pSocket?.socket && uSocket?.writable) {
+          pSocket.socket.pipe(uSocket);
+          uSocket.pipe(pSocket.socket);
+
+          pSocket.socket.on('error', err => {
+            this.emit('connect:error', err);
+            uSocket.destroy();
+          });
+
+          uSocket.on('error', err => {
+            this.emit('connect:error', err);
+            pSocket.socket.destroy();
+          });
+
+          if (uSocket.writable) {
+            pSocket.socket.write(uHead);
+            uSocket.write(`HTTP/${uReq.httpVersion} 200 Connection established\r\n\r\n`);
+          }
+
+          this.emit('connect:success');
+          pSocket.socket.resume();
+        }
+      } catch (err) {
+        this.emit('connect:error', err);
+        uSocket?.destroy();
+        pSocket?.socket?.destroy();
       }
-      pSocket?.socket.on('error', err => {
-        this.emit('connect:error', err);
-      });
-      uSocket.on('error', err => {
-        this.emit('connect:error', err);
-      });
-      pSocket?.socket.write(uHead);
-      uSocket?.write(`HTTP/${uReq.httpVersion} 200 Connection established\r\n\r\n`);
-      this.emit('connect:success');
-      pSocket?.socket.resume();
     });
   }
 

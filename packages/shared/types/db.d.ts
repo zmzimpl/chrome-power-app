@@ -19,7 +19,7 @@ export namespace DB {
     status?: number;
 
     ip?: string;
-    port?: number;
+    port?: number | null;
     local_proxy_port?: number;
 
     proxy_id?: number | null;

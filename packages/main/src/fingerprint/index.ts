@@ -110,23 +110,25 @@ const getAvailablePort = async () => {
   throw new Error('Failed to find a free port after multiple attempts');
 };
 
-const waitForChromeReady = async (chromePort: number, maxAttempts = 30) => {
-  const timeout = 500; // 每次尝试等待 500ms
+const waitForChromeReady = async (chromePort: number, id: number, maxAttempts = 30) => {
   let attempts = 0;
 
   while (attempts < maxAttempts) {
     try {
       // 尝试连接 CDP
-      const response = await fetch(`http://127.0.0.1:${chromePort}/json/version`);
-      if (response.ok) {
+      const response = await api.get(`http://${HOST}:${chromePort}/json/version`, {
+        timeout: 1000,
+      });
+      if (response.status === 200) {
         return true;
       }
     } catch (error) {
+      logger.error('连接失败', error);
       // 连接失败，继续等待
     }
 
     attempts++;
-    await sleep(timeout);
+    await sleep(0.5);
   }
 
   throw new Error('Chrome instance failed to start within the timeout period');
@@ -292,7 +294,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
         await closeFingerprintWindow(id, false);
       });
 
-      await waitForChromeReady(chromePort);
+      await waitForChromeReady(chromePort, id, 30);
 
       try {
         const browserURL = `http://${HOST}:${chromePort}`;

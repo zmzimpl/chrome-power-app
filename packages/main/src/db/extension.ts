@@ -62,7 +62,6 @@ const getExtensionWindows = async (id: number) => {
 
 const deleteExtension = async (id: number) => {
   const relatedWindows = await getExtensionWindows(id);
-  console.log('relatedWindows', relatedWindows);
   if (relatedWindows.length > 0) {
     return {
       success: false,

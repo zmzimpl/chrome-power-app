@@ -143,7 +143,6 @@ const Extensions = () => {
     setLoading(true);
     try {
       const data = await ExtensionBridge.getAll();
-      console.log(data);
       setExtensions(data);
     } catch (error) {
       messageApi.error('获取扩展列表失败');
@@ -169,7 +168,6 @@ const Extensions = () => {
   };
 
   const handleUploadExtension = async (extension: DB.Extension) => {
-    console.log(extension);
     if (!extension.name || !extension.path) {
       if (!extension.name) {
         messageApi.error('请填写扩展名称');
@@ -279,19 +277,16 @@ const Extensions = () => {
       showUploadList: false,
       fileList,
       onChange: ({fileList: newFileList}) => {
-        console.log(newFileList);
         setFileList(newFileList);
       },
       accept: '.zip',
       customRequest: async ({file, onSuccess, onError}) => {
         try {
-          console.log(file);
           setUploading(true);
           const result = await ExtensionBridge.uploadPackage(
             (file as File).path,
             selectedExtension?.id,
           );
-          console.log(result);
           if (result.success) {
             form.setFieldsValue({
               id: result.extensionId,

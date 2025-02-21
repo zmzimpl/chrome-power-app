@@ -8,9 +8,15 @@ if (!app.isPackaged) {
 } else {
   const isMac = process.platform === 'darwin';
   const addonPath = isMac
-    ? path.join(app.getAppPath(), '../app.asar.unpacked/node_modules/window-addon/window-addon.node')
-    : path.join(process.resourcesPath, 'app.asar.unpacked/node_modules/window-addon/window-addon.node');
-  
+    ? path.join(
+        app.getAppPath(),
+        '../app.asar.unpacked/node_modules/window-addon/window-addon.node',
+      )
+    : path.join(
+        process.resourcesPath,
+        'app.asar.unpacked/node_modules/window-addon/window-addon.node',
+      );
+
   try {
     addon = require(addonPath);
   } catch (error) {

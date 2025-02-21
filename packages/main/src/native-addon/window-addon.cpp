@@ -6,10 +6,13 @@
     #include <windows.h>
     #include <cstring>
 #elif __APPLE__
-    #include <ApplicationServices/ApplicationServices.h>
     #include <CoreFoundation/CoreFoundation.h>
     #include <CoreGraphics/CoreGraphics.h>
+    
     #import <Cocoa/Cocoa.h>
+    
+    @class NSExtensionContext;
+    @class NSItemProvider;
 #endif
 
 // Error logging macro

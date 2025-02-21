@@ -468,7 +468,7 @@ const Windows = () => {
             containsKeyword(f.proxy, keyword) ||
             (f.tags &&
               ((f.tags instanceof Array &&
-                f.tags.some(tag => containsKeyword(tagMap.get(tag)?.name, keyword))) ||
+                f.tags.some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword))) ||
                 f.tags
                   .toString()
                   .split(',')

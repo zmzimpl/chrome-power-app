@@ -1,11 +1,13 @@
-import { Button, Card, Col, Row, Space, Table } from 'antd';
+import { Button, Card, Col, Form, InputNumber, Row, Space, Table, Typography } from 'antd';
 import { SyncBridge, WindowBridge } from '#preload';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
-import type { DB } from '../../../../shared/types/db';
+import type { DB, SafeAny } from '../../../../shared/types/db';
 import _ from 'lodash';
 // import { BranchesOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+
+const { Text } = Typography;
 
 interface SyncConfig {
   mainPid: number;
@@ -16,10 +18,9 @@ interface SyncConfig {
 }
 
 const Sync = () => {
-  const [syncConfig, setSyncConfig] = useState<SyncConfig>({
-    mainPid: 0,
+  const [syncConfig, setSyncConfig] = useState<SyncConfig>(localStorage.getItem('syncConfig') ? JSON.parse(localStorage.getItem('syncConfig') || '{}') : {
+    mainPid: null,
     childPids: [],
-    // 间距
     spacing: 10,
     columns: 3,
     size: { width: 0, height: 0 },
@@ -29,6 +30,7 @@ const Sync = () => {
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET); // Note: Set SOME_OFFSET based on your design
   const { t, i18n } = useTranslation();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
+  const [form] = Form.useForm();
 
   const columns: ColumnsType<DB.Window> = useMemo(() => {
     // select all
@@ -85,10 +87,19 @@ const Sync = () => {
         mainPid: windows[0].pid!,
         childPids: windows.filter((window: DB.Window) => window.pid !== windows[0].pid!).map((window: DB.Window) => window.pid!),
       };
-      console.log(config);
       setSyncConfig(config);
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem('syncConfig', JSON.stringify({
+      mainPid: null,
+      childPids: [],
+      spacing: syncConfig.spacing,
+      columns: syncConfig.columns,
+      size: syncConfig.size,
+    }));
+  }, [syncConfig]);
 
   useEffect(() => {
     fetchOpenedWindows();
@@ -114,7 +125,10 @@ const Sync = () => {
     };
   }, []);
 
-  const handleTileWindows = () => {
+  const handleArrangeWindows = () => {
+    if (!windows.length || !syncConfig.mainPid) {
+      return;
+    }
     let config;
     if (selectedRowKeys.length > 0) {
       config = {
@@ -132,18 +146,24 @@ const Sync = () => {
     SyncBridge.arrangeWindows(config as SyncConfig);
   };
 
+  const onValuesChange = (_changedFields: 'columns' | 'spacing' | 'height', allFields: SafeAny) => {
+    setSyncConfig({
+      ...syncConfig,
+      ...allFields,
+      size: {
+        width: syncConfig.size.width,
+        height: allFields.height ?? syncConfig.size.height,
+      },
+    });
+  };
+
   return (
     <>
       <div className="content-toolbar">
         <Row>
           <Col span={17}>
             <Space>
-              <Button
-                type="primary"
-                onClick={handleTileWindows}
-              >
-                {t('tile_windows')}
-              </Button>
+
             </Space>
           </Col>
         </Row>
@@ -156,7 +176,66 @@ const Sync = () => {
             <Table dataSource={windows} rowKey="pid" rowSelection={rowSelection}
               scroll={{ y: tableScrollY }} columns={columns} />
           </Col>
-          <Col span={6}> </Col>
+          <Col span={6} className="arrange-settings p-4 bg-white rounded-lg shadow-sm">
+            <div className="mb-4">
+              <Text strong className="text-lg">
+                {t('arrange_settings')}
+              </Text>
+            </div>
+            <Form
+              form={form}
+              layout="vertical"
+              size="middle"
+              initialValues={{
+                columns: syncConfig.columns,
+                spacing: syncConfig.spacing,
+                height: undefined,
+              }}
+              onValuesChange={onValuesChange}
+              className="space-y-4"
+            >
+              <Form.Item
+                label={t('arrange_columns')}
+                name="columns"
+              >
+                <InputNumber
+                  min={1}
+                  max={12}
+                  className="w-full"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={t('arrange_spacing')}
+                name="spacing"
+              >
+                <InputNumber
+                  min={0}
+                  max={50}
+                  className="w-full"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={t('arrange_height')}
+                name="height"
+              >
+                <InputNumber
+                  className="w-full"
+                />
+              </Form.Item>
+            </Form>
+
+            <div className="mt-4">
+              <Button
+                block
+                type="primary"
+                onClick={handleArrangeWindows}
+              >
+                {t('arrange_windows')}
+              </Button>
+            </div>
+          </Col>
         </Row>
       </Card>
     </>

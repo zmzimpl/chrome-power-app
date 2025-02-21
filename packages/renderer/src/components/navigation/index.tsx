@@ -24,7 +24,7 @@ export default function Navigation() {
           label: route.name,
         };
       });
-    menuItemsTemp.splice(3, 0, {type: 'divider'});
+    menuItemsTemp.splice(4, 0, {type: 'divider'});
     setMenuItems(menuItemsTemp);
   }, [routes]);
 

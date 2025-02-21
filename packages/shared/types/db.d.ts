@@ -7,7 +7,7 @@ export namespace DB {
     name?: string;
     group_id?: number | null;
     group_name?: string;
-    tags?: number[] | string[] | null;
+    tags?: number[] | string[] | null | string;
     remark?: string;
     opened_at?: string;
     created_at?: string;

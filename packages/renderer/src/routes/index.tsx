@@ -5,7 +5,7 @@ import Proxy from '../pages/proxy';
 import WindowDetail from '../pages/windows/detail';
 import ProxyImport from '../pages/proxy/import';
 import {Icon} from '@iconify/react';
-// import Sync from '../pages/sync';
+import Sync from '../pages/sync';
 import {useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import Logs from '../pages/logs';
@@ -61,12 +61,12 @@ export const useRoutes = () => {
         icon: <Icon icon="solar:global-outline" />,
         component: Extensions,
       },
-      // {
-      //   path: '/sync',
-      //   name: t('menu_sync'),
-      //   icon: <Icon icon="ic:outline-sync" />,
-      //   component: Sync,
-      // },
+      {
+        path: '/sync',
+        name: t('menu_sync'),
+        icon: <Icon icon="ic:outline-sync" />,
+        component: Sync,
+      },
       {
         path: '/logs',
         name: t('menu_logs'),

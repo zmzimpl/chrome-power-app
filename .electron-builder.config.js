@@ -31,11 +31,11 @@ module.exports = async function () {
       '!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}',
     ],
     extraResources: [
-      // {
-      //   from: 'packages/main/src/native-addon/build/Release/',
-      //   to: 'app.asar.unpacked/node_modules/window-addon/',
-      //   filter: ['*.node'],
-      // },
+      {
+        from: 'packages/main/src/native-addon/build/Release/',
+        to: 'app.asar.unpacked/node_modules/window-addon/',
+        filter: ['*.node'],
+      },
       {
         from: 'migrations',
         to: 'app/migrations',

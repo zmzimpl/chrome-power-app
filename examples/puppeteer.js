@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer';
 
 export async function createBrowser() {
   const browser = await puppeteer.connect({
-    browserWSEndpoint: 'ws://localhost:9222/devtools/browser/9b69cef1-00ee-427c-bae2-c2f436f14c33',
+    browserWSEndpoint: 'ws://localhost:9222/devtools/browser/05efd11e-4025-4eb3-ab97-9e335efa354a',
     defaultViewport: null,
   });
   return browser;
@@ -18,11 +18,7 @@ async function randomWait(min, max) {
 }
 
 // 主要的自动化脚本函数
-export async function autoScript(browser) {
-  const page = await browser.newPage();
-  await page.goto('https://www.baidu.com');
-  await page.screenshot({path: 'screenshot.png'});
-}
+export async function autoScript(browser) {}
 
 (async () => {
   const browser = await createBrowser();

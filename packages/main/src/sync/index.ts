@@ -20,10 +20,10 @@ if (process.env.MODE === 'development') {
   //   'window-addon.node',
   // ));
 }
-export const tileWindows = async () => {
+export const arrangeWindows = async () => {
   try {
-    const tileResult = (windowAddon as unknown as SafeAny)!.tileChromeWindows();
-    console.log('tileResult', tileResult);
+    const arrangeResult = (windowAddon as unknown as SafeAny)!.arrangeWindows();
+    console.log('arrangeResult', arrangeResult);
   } catch (error) {
     console.error(error);
   }

@@ -88,7 +88,7 @@ i18n
           proxy_import_column_remark: 'Remark',
           proxy_import_column_status: 'Status',
 
-          tile_windows: 'Tile window',
+          arrange_windows: 'Auto arrange',
 
           settings_cache_path: 'Cache path',
           settings_choose_cache_path: 'Choose path',
@@ -106,7 +106,7 @@ i18n
           menu_extensions: 'Extensions',
           menu_settings: 'Settings',
           menu_logs: 'Running Logs',
-          menu_sync: 'Sync',
+          menu_sync: 'Auto Arrange',
           menu_api: 'API',
 
           header_language: 'Language',
@@ -166,6 +166,11 @@ i18n
           extension_delete_confirm_content:
             'Are you sure you want to delete this extension? This operation cannot be recovered.',
           extension_current_version: 'Current version',
+
+          arrange_settings: 'Arrange settings',
+          arrange_columns: 'Columns',
+          arrange_spacing: 'Spacing',
+          arrange_height: 'Height',
         },
       },
       zh: {
@@ -248,7 +253,7 @@ i18n
           proxy_import_column_remark: '备注',
           proxy_import_column_status: '状态',
 
-          tile_windows: '平铺窗口',
+          arrange_windows: '自动排列',
 
           settings_cache_path: '缓存目录',
           settings_choose_cache_path: '选择路径',
@@ -264,7 +269,7 @@ i18n
           menu_windows: '窗口管理',
           menu_proxy: '代理设置',
           menu_extensions: '扩展管理',
-          menu_sync: '同步操作',
+          menu_sync: '窗口排列',
           menu_logs: '运行日志',
           menu_settings: '设置',
           menu_api: 'API',
@@ -324,6 +329,11 @@ i18n
           extension_delete_confirm_content: '确定要删除这个扩展吗？此操作不可恢复。',
           extension_update2: '更新扩展',
           extension_current_version: '当前版本',
+
+          arrange_settings: '排列设置',
+          arrange_columns: '列数',
+          arrange_spacing: '间距',
+          arrange_height: '高度',
         },
       },
     },

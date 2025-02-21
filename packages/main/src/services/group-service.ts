@@ -12,8 +12,9 @@ export const initGroupService = () => {
   });
 
   ipcMain.handle('group-delete', async (_, id: number) => {
+    // group_id = id,  status > 0
     const windows = await WindowDB.find({group_id: id});
-    if (windows.length > 0) {
+    if (windows.filter(window => window.status > 0).length > 0) {
       return {
         success: false,
         message: 'Group is used by some windows',

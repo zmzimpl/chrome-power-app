@@ -39,6 +39,9 @@ class HttpProxy extends EventEmitter {
     port: 7890,
     type: 5,
   };
+  private retryCount = 0;
+  private maxRetries = 3;
+
   constructor(options: SocketOptions) {
     super();
     this.opt = {
@@ -73,20 +76,41 @@ class HttpProxy extends EventEmitter {
       method: uReq.method || 'get',
       headers: uReq.headers,
       agent: socksAgent,
+      timeout: 5000,
     };
-    const pReq = http.request(options);
-    pReq
-      .on('response', pRes => {
-        pRes.pipe(uRes);
-        uRes.writeHead(pRes.statusCode!, pRes.headers);
-        this.emit('request:success');
-      })
-      .on('error', e => {
-        uRes.writeHead(500);
-        uRes.end('Connection error\n');
-        this.emit('request:error', e);
-      });
-    uReq.pipe(pReq);
+
+    const handleRequest = () => {
+      const pReq = http.request(options);
+
+      pReq
+        .on('response', pRes => {
+          this.retryCount = 0; // 重置重试计数
+          pRes.pipe(uRes);
+          uRes.writeHead(pRes.statusCode!, pRes.headers);
+          this.emit('request:success');
+        })
+        .on('error', e => {
+          logger.error('Proxy connection error:', {
+            error: e.message,
+            host: u.hostname,
+            port: u.port,
+            proxy: `${proxy.ipaddress}:${proxy.port}`,
+            url: uReq.url,
+          });
+          if (this.retryCount < this.maxRetries) {
+            this.retryCount++;
+            setTimeout(() => handleRequest(), 1000); // 1秒后重试
+          } else {
+            uRes.writeHead(500);
+            uRes.end('Connection error\n');
+            this.emit('request:error', e);
+          }
+        });
+
+      uReq.pipe(pReq);
+    };
+
+    handleRequest();
   }
 
   _connect(

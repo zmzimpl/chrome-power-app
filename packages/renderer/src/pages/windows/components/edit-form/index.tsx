@@ -65,9 +65,9 @@ const WindowEditForm = ({
     }
   };
 
-  const onRemoveGroup = async (id: number) => {
+  const onRemoveGroup = async (id: number | undefined | string) => {
     console.log('onRemoveGroup', id);
-    const res = await GroupBridge?.delete(id);
+    const res = await GroupBridge?.delete(Number(id));
     if (res.success) {
       await fetchGroups();
     } else {
@@ -88,8 +88,8 @@ const WindowEditForm = ({
     }
   };
 
-  const onRemoveTag = async (id: number) => {
-    const res = await TagBridge?.delete(id);
+  const onRemoveTag = async (id: number | undefined | string) => {
+    const res = await TagBridge?.delete(Number(id));
     if (res.success) {
       await fetchTags();
     } else {
@@ -144,7 +144,7 @@ const WindowEditForm = ({
         <AddableSelect
           mode="multiple"
           options={tags}
-          value={formValue.tags}
+          value={formValue.tags as string[]}
           onAddItem={onAddTag}
           addBtnLabel="Add Tag"
           onRemoveItem={onRemoveTag}

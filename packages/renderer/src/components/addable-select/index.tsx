@@ -10,12 +10,12 @@ interface AddableSelectOptions {
   options: DB.Group[] | DB.Tag[];
   value?: number | string[] | number[] | undefined | string;
   mode?: 'tags' | 'multiple' | undefined;
-  onChange?: (value: number | string[] | number[] | string, options: DB.Group | DB.Group[]) => void;
+  onChange?: (value: number | string[] | number[] | string, options: DB.Group | DB.Group[] | undefined) => void;
   onClear?: () => void;
   onAddItem: (name: string) => Promise<boolean>;
   addBtnLabel?: string;
   placeholder?: string;
-  onRemoveItem?: (value: number | string) => void;
+  onRemoveItem?: (value: number | string | undefined) => void;
 }
 
 const AddableSelect: React.FC<AddableSelectOptions> = ({

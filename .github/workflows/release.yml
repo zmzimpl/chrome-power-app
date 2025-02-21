@@ -92,7 +92,20 @@ jobs:
         run: |
           sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
           sudo xcodebuild -license accept
-          brew install python3 make gcc
+          
+          # 使用 Python 3.11 而不是 3.13
+          brew uninstall python@3.13 || true
+          brew install python@3.11 make gcc
+          
+          # 安装必要的 Python 包
+          python3.11 -m pip install setuptools wheel
+
+          # 设置 Python 路径
+          echo "PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11" >> $GITHUB_ENV
+          
+          # 确保 node-gyp 使用正确的 Python
+          npm config set python /opt/homebrew/opt/python@3.11/bin/python3.11
+          
           echo "network=inet" > ~/.curlrc
 
       - name: Use Node.js ${{ matrix.node_version }}
@@ -108,7 +121,18 @@ jobs:
       - name: Rebuild native modules
         if: matrix.os == 'macos-latest'
         run: |
-          npm rebuild sqlite3 --build-from-source
+          # 设置环境变量
+          export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
+          
+          # x64 架构构建
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            npm rebuild sqlite3 --build-from-source --target_arch=x64
+          fi
+          
+          # arm64 架构构建
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            npm rebuild sqlite3 --build-from-source --target_arch=arm64
+          fi
 
       - name: Install dependencies
         uses: nick-fields/retry@v2

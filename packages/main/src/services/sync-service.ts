@@ -1,19 +1,22 @@
 import {app, ipcMain} from 'electron';
 import path from 'path';
 import type {SafeAny} from '../../../shared/types/db';
+
 let addon: unknown;
 if (!app.isPackaged) {
   addon = require(path.join(__dirname, '../src/native-addon/build/Release/window-addon.node'));
 } else {
-  addon = require(
-    path.join(
-      process.resourcesPath,
-      'app.asar.unpacked',
-      'node_modules',
-      'window-addon',
-      'window-addon.node',
-    ),
-  );
+  const isMac = process.platform === 'darwin';
+  const addonPath = isMac
+    ? path.join(app.getAppPath(), '../app.asar.unpacked/node_modules/window-addon/window-addon.node')
+    : path.join(process.resourcesPath, 'app.asar.unpacked/node_modules/window-addon/window-addon.node');
+  
+  try {
+    addon = require(addonPath);
+  } catch (error) {
+    console.error('Failed to load addon:', error);
+    console.error('Attempted path:', addonPath);
+  }
 }
 
 export const initSyncService = () => {

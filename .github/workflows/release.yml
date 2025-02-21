@@ -173,6 +173,25 @@ jobs:
           ls -la packages/preload/dist/
           ls -la packages/renderer/dist/
 
+      - name: Build macOS
+        runs-on: macos-latest
+        steps:
+          - uses: actions/checkout@v3
+          - uses: actions/setup-node@v3
+            with:
+              node-version: 18
+          - name: Install dependencies
+            run: npm install
+          - name: Build native addons for all architectures
+            run: |
+              npm run build:native-addon:mac
+              npm run rebuild-deps:mac
+          - name: Build and publish
+            run: npm run publish
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+
       - name: Build and Publish
         uses: nick-fields/retry@v2
         with:

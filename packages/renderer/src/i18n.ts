@@ -334,7 +334,6 @@ i18n
           arrange_columns: '列数',
           arrange_spacing: '间距',
           arrange_height: '高度',
-          
         },
       },
     },

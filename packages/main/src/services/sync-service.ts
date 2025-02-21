@@ -5,13 +5,15 @@ let addon: unknown;
 if (!app.isPackaged) {
   addon = require(path.join(__dirname, '../src/native-addon/build/Release/window-addon.node'));
 } else {
-  addon = require(path.join(
-    process.resourcesPath,
-    'app.asar.unpacked',
-    'node_modules',
-    'window-addon',
-    'window-addon.node',
-  ));
+  addon = require(
+    path.join(
+      process.resourcesPath,
+      'app.asar.unpacked',
+      'node_modules',
+      'window-addon',
+      'window-addon.node',
+    ),
+  );
 }
 
 export const initSyncService = () => {

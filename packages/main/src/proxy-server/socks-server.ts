@@ -81,33 +81,35 @@ class HttpProxy extends EventEmitter {
 
     const handleRequest = () => {
       const pReq = http.request(options);
-      
-      pReq.on('response', pRes => {
-        this.retryCount = 0; // 重置重试计数
-        pRes.pipe(uRes);
-        uRes.writeHead(pRes.statusCode!, pRes.headers);
-        this.emit('request:success');
-      }).on('error', e => {
-        logger.error('Proxy connection error:', {
-          error: e.message,
-          host: u.hostname,
-          port: u.port,
-          proxy: `${proxy.ipaddress}:${proxy.port}`,
-          url: uReq.url,
+
+      pReq
+        .on('response', pRes => {
+          this.retryCount = 0; // 重置重试计数
+          pRes.pipe(uRes);
+          uRes.writeHead(pRes.statusCode!, pRes.headers);
+          this.emit('request:success');
+        })
+        .on('error', e => {
+          logger.error('Proxy connection error:', {
+            error: e.message,
+            host: u.hostname,
+            port: u.port,
+            proxy: `${proxy.ipaddress}:${proxy.port}`,
+            url: uReq.url,
+          });
+          if (this.retryCount < this.maxRetries) {
+            this.retryCount++;
+            setTimeout(() => handleRequest(), 1000); // 1秒后重试
+          } else {
+            uRes.writeHead(500);
+            uRes.end('Connection error\n');
+            this.emit('request:error', e);
+          }
         });
-        if (this.retryCount < this.maxRetries) {
-          this.retryCount++;
-          setTimeout(() => handleRequest(), 1000); // 1秒后重试
-        } else {
-          uRes.writeHead(500);
-          uRes.end('Connection error\n');
-          this.emit('request:error', e);
-        }
-      });
-      
+
       uReq.pipe(pReq);
     };
-    
+
     handleRequest();
   }
 

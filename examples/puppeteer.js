@@ -18,9 +18,7 @@ async function randomWait(min, max) {
 }
 
 // 主要的自动化脚本函数
-export async function autoScript(browser) {
-  
-}
+export async function autoScript(browser) {}
 
 (async () => {
   const browser = await createBrowser();

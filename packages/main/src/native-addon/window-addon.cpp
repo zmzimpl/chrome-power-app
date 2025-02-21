@@ -1,44 +1,58 @@
 #include <napi.h>
 #include <iostream>
 
+// Platform specific includes
 #ifdef _WIN32
-#include <windows.h>
-#include <cstring>
+    #include <windows.h>
+    #include <cstring>
 #elif __APPLE__
-#include <ApplicationServices/ApplicationServices.h>
+    #include <ApplicationServices/ApplicationServices.h>
+    #include <CoreFoundation/CoreFoundation.h>
+    #include <CoreGraphics/CoreGraphics.h>
+    #import <Cocoa/Cocoa.h>
 #endif
 
-#define LOG_ERROR(msg)                                                               \
-    do                                                                               \
-    {                                                                                \
+// Error logging macro
+#define LOG_ERROR(msg) \
+    do { \
         std::cerr << "Error: " << msg << " (line: " << __LINE__ << ")" << std::endl; \
     } while (0)
 
-#define CHECK_WINDOW_OPERATION(op, msg)                                 \
-    do                                                                  \
-    {                                                                   \
-        if (!(op))                                                      \
-        {                                                               \
-            LOG_ERROR(msg << " (LastError: " << GetLastError() << ")"); \
-        }                                                               \
-    } while (0)
+#ifdef _WIN32
+    #define CHECK_WINDOW_OPERATION(op, msg) \
+        do { \
+            if (!(op)) { \
+                LOG_ERROR(msg << " (LastError: " << GetLastError() << ")"); \
+            } \
+        } while (0)
+#endif
 
-struct WindowInfo
-{
+// Platform specific window info structure
+#ifdef _WIN32
+struct WindowInfo {
     HWND hwnd;
     bool isExtension;
     int width;
     int height;
 };
+#elif __APPLE__
+struct WindowInfo {
+    AXUIElementRef window;
+    pid_t pid;
+    bool isExtension;
+    int width;
+    int height;
+};
+#endif
 
-class WindowManager : public Napi::ObjectWrap<WindowManager>
-{
+class WindowManager : public Napi::ObjectWrap<WindowManager> {
 public:
-    static Napi::Object Init(Napi::Env env, Napi::Object exports)
-    {
-        Napi::Function func = DefineClass(env, "WindowManager", {InstanceMethod("arrangeWindows", &WindowManager::ArrangeWindows)});
+    static Napi::Object Init(Napi::Env env, Napi::Object exports) {
+        Napi::Function func = DefineClass(env, "WindowManager", {
+            InstanceMethod("arrangeWindows", &WindowManager::ArrangeWindows)
+        });
 
-        Napi::FunctionReference *constructor = new Napi::FunctionReference();
+        Napi::FunctionReference* constructor = new Napi::FunctionReference();
         *constructor = Napi::Persistent(func);
         env.SetInstanceData(constructor);
 
@@ -46,15 +60,380 @@ public:
         return exports;
     }
 
-    WindowManager(const Napi::CallbackInfo &info) : Napi::ObjectWrap<WindowManager>(info) {}
+    WindowManager(const Napi::CallbackInfo& info) : Napi::ObjectWrap<WindowManager>(info) {}
 
 private:
-    Napi::Value ArrangeWindows(const Napi::CallbackInfo &info)
-    {
+    #ifdef _WIN32
+    bool ArrangeWindow(HWND hwnd, int x, int y, int width, int height, bool preserveSize = false) {
+        if (!hwnd) return false;
+        
+        if (IsIconic(hwnd)) {
+            ShowWindow(hwnd, SW_RESTORE);
+        }
+        SetForegroundWindow(hwnd);
+        
+        LONG style = GetWindowLong(hwnd, GWL_STYLE);
+        if (style == 0) {
+            LOG_ERROR("Failed to get window style");
+            return false;
+        }
+        
+        style &= ~(WS_MAXIMIZE | WS_MINIMIZE);
+        if (SetWindowLong(hwnd, GWL_STYLE, style) == 0) {
+            LOG_ERROR("Failed to set window style");
+            return false;
+        }
+        
+        UINT flags = SWP_SHOWWINDOW | SWP_FRAMECHANGED;
+        if (preserveSize) {
+            flags |= SWP_NOSIZE;
+        }
+        
+        if (!SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, flags)) {
+            LOG_ERROR("Failed to set window position");
+            return false;
+        }
+        
+        if (!SetWindowPos(hwnd, HWND_NOTOPMOST, x, y, width, height, flags)) {
+            LOG_ERROR("Failed to reset window z-order");
+            return false;
+        }
+        
+        return true;
+    }
+
+    bool IsExtensionWindow(const char* title, const char* className) {
+        return title != nullptr &&
+               strlen(title) > 0 &&
+               strstr(title, "Google Chrome") == nullptr;
+    }
+
+    std::vector<WindowInfo> FindWindowsByPid(DWORD processId) {
+        std::vector<WindowInfo> windows;
+        HWND hwnd = nullptr;
+
+        while ((hwnd = FindWindowEx(nullptr, hwnd, nullptr, nullptr)) != nullptr) {
+            DWORD pid = 0;
+            GetWindowThreadProcessId(hwnd, &pid);
+
+            if (pid == processId && IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
+                char className[256] = {0};
+                GetClassNameA(hwnd, className, sizeof(className));
+
+                char title[256] = {0};
+                GetWindowTextA(hwnd, title, sizeof(title));
+
+                RECT rect;
+                GetWindowRect(hwnd, &rect);
+
+                bool isExtension = IsExtensionWindow(title, className);
+                bool isMainWindow = strstr(title, "Google Chrome") != nullptr &&
+                                  (GetWindowLong(hwnd, GWL_STYLE) & WS_OVERLAPPEDWINDOW);
+
+                if (isMainWindow || isExtension) {
+                    WindowInfo info;
+                    info.hwnd = hwnd;
+                    info.isExtension = isExtension;
+                    info.width = rect.right - rect.left;
+                    info.height = rect.bottom - rect.top;
+                    windows.push_back(info);
+                }
+            }
+        }
+        return windows;
+    }
+    #elif __APPLE__
+    bool CheckAccessibilityPermission() {
+        @autoreleasepool {
+            NSDictionary* options = @{(id)kAXTrustedCheckOptionPrompt: @YES};
+            BOOL isEnabled = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
+            
+            if (!isEnabled) {
+                NSAlert* alert = [[NSAlert alloc] init];
+                [alert setMessageText:@"Accessibility Permission Required"];
+                [alert setInformativeText:@"Chrome Power needs accessibility permission to manage windows. Please enable it in System Preferences."];
+                [alert addButtonWithTitle:@"Open System Preferences"];
+                [alert addButtonWithTitle:@"Cancel"];
+                
+                if ([alert runModal] == NSAlertFirstButtonReturn) {
+                    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"]];
+                }
+            }
+            
+            return isEnabled;
+        }
+    }
+
+    bool IsExtensionWindow(AXUIElementRef window) {
+        // Check window title
+        CFStringRef titleRef;
+        if (AXUIElementCopyAttributeValue(window, kAXTitleAttribute, (CFTypeRef*)&titleRef) == kAXErrorSuccess) {
+            char buffer[256];
+            CFStringGetCString(titleRef, buffer, sizeof(buffer), kCFStringEncodingUTF8);
+            CFRelease(titleRef);
+            
+            // Extension windows typically don't have "Google Chrome" in their titles
+            // and are usually smaller floating windows
+            if (strstr(buffer, "Google Chrome") == nullptr) {
+                return true;
+            }
+        }
+
+        // Check window role
+        CFStringRef roleRef;
+        if (AXUIElementCopyAttributeValue(window, kAXRoleAttribute, (CFTypeRef*)&roleRef) == kAXErrorSuccess) {
+            char buffer[256];
+            CFStringGetCString(roleRef, buffer, sizeof(buffer), kCFStringEncodingUTF8);
+            CFRelease(roleRef);
+            
+            // Extension windows might have different roles
+            if (strcmp(buffer, "AXWindow") == 0) {
+                // Additional check for window level
+                CFStringRef subroleRef;
+                if (AXUIElementCopyAttributeValue(window, kAXSubroleAttribute, (CFTypeRef*)&subroleRef) == kAXErrorSuccess) {
+                    char subroleBuffer[256];
+                    CFStringGetCString(subroleRef, subroleBuffer, sizeof(subroleBuffer), kCFStringEncodingUTF8);
+                    CFRelease(subroleRef);
+                    
+                    return strcmp(subroleBuffer, "AXStandardWindow") != 0;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    void BringWindowToFront(AXUIElementRef window) {
+        // Get the window's PID
+        pid_t windowPid;
+        if (AXUIElementGetPid(window, &windowPid) == kAXErrorSuccess) {
+            // Create a new NSRunningApplication instance
+            @autoreleasepool {
+                NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:windowPid];
+                if (app) {
+                    [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+                }
+            }
+        }
+
+        // Raise the window
+        AXUIElementPerformAction(window, kAXRaiseAction);
+    }
+
+    bool IsMainWindow(AXUIElementRef window) {
+        // Check window title
+        CFStringRef titleRef;
+        if (AXUIElementCopyAttributeValue(window, kAXTitleAttribute, (CFTypeRef*)&titleRef) == kAXErrorSuccess) {
+            char buffer[256];
+            CFStringGetCString(titleRef, buffer, sizeof(buffer), kCFStringEncodingUTF8);
+            CFRelease(titleRef);
+            
+            // Main Chrome window should contain "Google Chrome" in title
+            if (strstr(buffer, "Google Chrome") != nullptr) {
+                // Also check subrole to ensure it's a standard window
+                CFStringRef subroleRef;
+                if (AXUIElementCopyAttributeValue(window, kAXSubroleAttribute, (CFTypeRef*)&subroleRef) == kAXErrorSuccess) {
+                    char subroleBuffer[256];
+                    CFStringGetCString(subroleRef, subroleBuffer, sizeof(subroleBuffer), kCFStringEncodingUTF8);
+                    CFRelease(subroleRef);
+                    
+                    // Main window should have "AXStandardWindow" subrole
+                    return strcmp(subroleBuffer, "AXStandardWindow") == 0;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    std::vector<WindowInfo> GetWindowsForPid(pid_t pid) {
+        std::vector<WindowInfo> windows;
+        AXUIElementRef app = AXUIElementCreateApplication(pid);
+        if (!app) {
+            LOG_ERROR("Failed to create AX UI Element for application");
+            return windows;
+        }
+
+        CFArrayRef windowArray;
+        if (AXUIElementCopyAttributeValue(app, kAXWindowsAttribute, (CFTypeRef*)&windowArray) == kAXErrorSuccess) {
+            CFIndex count = CFArrayGetCount(windowArray);
+            for (CFIndex i = 0; i < count; i++) {
+                AXUIElementRef window = (AXUIElementRef)CFArrayGetValueAtIndex(windowArray, i);
+                
+                // Only process visible windows
+                CFBooleanRef isMinimizedRef;
+                bool isVisible = true;
+                if (AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute, (CFTypeRef*)&isMinimizedRef) == kAXErrorSuccess) {
+                    isVisible = !CFBooleanGetValue(isMinimizedRef);
+                    CFRelease(isMinimizedRef);
+                }
+
+                if (isVisible) {
+                    CGSize size = {0, 0};
+                    AXValueRef sizeRef;
+                    if (AXUIElementCopyAttributeValue(window, kAXSizeAttribute, (CFTypeRef*)&sizeRef) == kAXErrorSuccess) {
+                        AXValueGetValue(sizeRef, (AXValueType)kAXValueCGSizeType, &size);
+                        CFRelease(sizeRef);
+
+                        bool isExtension = IsExtensionWindow(window);
+                        bool isMain = IsMainWindow(window);
+
+                        if (isMain || isExtension) {
+                            WindowInfo info;
+                            info.window = (AXUIElementRef)CFRetain(window);
+                            info.pid = pid;
+                            info.isExtension = isExtension;
+                            info.width = static_cast<int>(size.width);
+                            info.height = static_cast<int>(size.height);
+                            windows.push_back(info);
+                        }
+                    }
+                }
+            }
+            CFRelease(windowArray);
+        }
+        CFRelease(app);
+        return windows;
+    }
+
+    bool ArrangeWindow(pid_t pid, float x, float y, float width, float height, bool preserveSize = false) {
+        auto windows = GetWindowsForPid(pid);
+        if (windows.empty()) {
+            LOG_ERROR("No windows found for process");
+            return false;
+        }
+
+        WindowInfo* mainWindow = nullptr;
+        std::vector<WindowInfo*> extensionWindows;
+
+        for (auto& window : windows) {
+            if (!window.isExtension) {
+                mainWindow = &window;
+            } else {
+                extensionWindows.push_back(&window);
+            }
+        }
+
+        if (!mainWindow) {
+            LOG_ERROR("Main window not found");
+            return false;
+        }
+
+        // Position and size for main window
+        CGPoint position = CGPointMake(x, y);
+        AXValueRef positionRef = AXValueCreate((AXValueType)kAXValueCGPointType, &position);
+        if (positionRef) {
+            AXUIElementSetAttributeValue(mainWindow->window, kAXPositionAttribute, positionRef);
+            CFRelease(positionRef);
+        }
+
+        if (!preserveSize) {
+            CGSize size = CGSizeMake(width, height);
+            AXValueRef sizeRef = AXValueCreate((AXValueType)kAXValueCGSizeType, &size);
+            if (sizeRef) {
+                AXUIElementSetAttributeValue(mainWindow->window, kAXSizeAttribute, sizeRef);
+                CFRelease(sizeRef);
+            }
+        }
+
+        // Bring main window to front
+        BringWindowToFront(mainWindow->window);
+
+        // Handle extension windows
+        for (auto extWindow : extensionWindows) {
+            // Position extension windows at the right edge of the main window
+            CGPoint extPosition = CGPointMake(x + width - extWindow->width - 10, y);
+            AXValueRef extPositionRef = AXValueCreate((AXValueType)kAXValueCGPointType, &extPosition);
+            if (extPositionRef) {
+                AXUIElementSetAttributeValue(extWindow->window, kAXPositionAttribute, extPositionRef);
+                CFRelease(extPositionRef);
+            }
+
+            // Bring extension window to front
+            BringWindowToFront(extWindow->window);
+        }
+
+        // Clean up
+        for (auto& window : windows) {
+            if (window.window) {
+                CFRelease(window.window);
+            }
+        }
+
+        return true;
+    }
+    #endif
+
+    #ifdef _WIN32
+    struct MonitorInfo {
+        HMONITOR handle;
+        RECT rect;
+        bool isPrimary;
+    };
+
+    std::vector<MonitorInfo> GetMonitors() {
+        std::vector<MonitorInfo> monitors;
+        EnumDisplayMonitors(NULL, NULL, [](HMONITOR hMonitor, HDC, LPRECT, LPARAM lParam) -> BOOL {
+            auto& monitors = *reinterpret_cast<std::vector<MonitorInfo>*>(lParam);
+            MONITORINFOEX monitorInfo;
+            monitorInfo.cbSize = sizeof(MONITORINFOEX);
+            
+            if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+                MonitorInfo info;
+                info.handle = hMonitor;
+                info.rect = monitorInfo.rcWork;
+                info.isPrimary = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
+                monitors.push_back(info);
+            }
+            return TRUE;
+        }, reinterpret_cast<LPARAM>(&monitors));
+        
+        // Sort monitors so that non-primary monitors come first
+        std::sort(monitors.begin(), monitors.end(), 
+            [](const MonitorInfo& a, const MonitorInfo& b) {
+                return a.isPrimary < b.isPrimary;
+            });
+        
+        return monitors;
+    }
+    #elif __APPLE__
+    struct MonitorInfo {
+        CGDirectDisplayID id;
+        CGRect bounds;
+        bool isPrimary;
+    };
+
+    std::vector<MonitorInfo> GetMonitors() {
+        std::vector<MonitorInfo> monitors;
+        uint32_t displayCount;
+        CGDirectDisplayID displays[32];
+        
+        if (CGGetActiveDisplayList(32, displays, &displayCount) == kCGErrorSuccess) {
+            CGDirectDisplayID mainDisplay = CGMainDisplayID();
+            
+            for (uint32_t i = 0; i < displayCount; i++) {
+                MonitorInfo info;
+                info.id = displays[i];
+                info.bounds = CGDisplayBounds(displays[i]);
+                info.isPrimary = (displays[i] == mainDisplay);
+                monitors.push_back(info);
+            }
+            
+            // Sort monitors so that non-primary monitors come first
+            std::sort(monitors.begin(), monitors.end(), 
+                [](const MonitorInfo& a, const MonitorInfo& b) {
+                    return a.isPrimary < b.isPrimary;
+                });
+        }
+        
+        return monitors;
+    }
+    #endif
+
+    Napi::Value ArrangeWindows(const Napi::CallbackInfo& info) {
         Napi::Env env = info.Env();
 
-        if (info.Length() < 5)
-        {
+        if (info.Length() < 5) {
             throw Napi::TypeError::New(env, "Wrong number of arguments");
             return env.Null();
         }
@@ -69,308 +448,130 @@ private:
         int height = size.Get("height").As<Napi::Number>().Int32Value();
 
         std::vector<int> childPids;
-        for (uint32_t i = 0; i < childPidsArray.Length(); i++)
-        {
+        for (uint32_t i = 0; i < childPidsArray.Length(); i++) {
             childPids.push_back(childPidsArray.Get(i).As<Napi::Number>().Int32Value());
         }
 
+        // Get all available monitors
+        auto monitors = GetMonitors();
+        if (monitors.empty()) {
+            throw Napi::Error::New(env, "No monitors found");
+            return env.Null();
+        }
+
 #ifdef _WIN32
-        // Windows implementation
-        RECT workArea;
-        SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
-        int screenWidth = workArea.right - workArea.left;
-        int screenHeight = workArea.bottom - workArea.top;
+        // Use the first monitor (preferably a non-primary one)
+        const auto& monitor = monitors[0];
+        int screenWidth = monitor.rect.right - monitor.rect.left;
+        int screenHeight = monitor.rect.bottom - monitor.rect.top;
+        int screenX = monitor.rect.left;
+        int screenY = monitor.rect.top;
 
         int effectiveWidth = width > 0 ? width : screenWidth / columns;
         int effectiveHeight = height > 0 ? height : screenHeight / ((childPids.size() + 1 + columns - 1) / columns);
 
         // Handle main window and its extensions
         auto mainWindows = FindWindowsByPid(mainPid);
-        WindowInfo *mainWindow = nullptr;
-        std::vector<WindowInfo *> mainExtensions;
+        WindowInfo* mainWindow = nullptr;
+        std::vector<WindowInfo*> mainExtensions;
 
-        for (auto &win : mainWindows)
-        {
-            if (!win.isExtension)
-            {
+        for (auto& win : mainWindows) {
+            if (!win.isExtension) {
                 mainWindow = &win;
-            }
-            else
-            {
+            } else {
                 mainExtensions.push_back(&win);
             }
         }
 
-        if (mainWindow)
-        {
-            int x = spacing;
-            int y = spacing;
+        if (mainWindow) {
+            int x = screenX + spacing;
+            int y = screenY + spacing;
             ArrangeWindow(mainWindow->hwnd, x, y, effectiveWidth - spacing * 2, effectiveHeight - spacing * 2);
 
-            // Arrange extensions for main window
-            for (auto ext : mainExtensions)
-            {
+            for (auto ext : mainExtensions) {
                 ArrangeWindow(ext->hwnd,
-                              x + effectiveWidth - ext->width - spacing,
-                              y,
-                              ext->width,
-                              ext->height,
-                              true);
+                            x + effectiveWidth - ext->width - spacing,
+                            y,
+                            ext->width,
+                            ext->height,
+                            true);
             }
         }
 
         // Handle child windows
-        for (size_t i = 0; i < childPids.size(); i++)
-        {
+        for (size_t i = 0; i < childPids.size(); i++) {
             auto childWindows = FindWindowsByPid(childPids[i]);
-            WindowInfo *childMain = nullptr;
-            std::vector<WindowInfo *> childExtensions;
+            WindowInfo* childMain = nullptr;
+            std::vector<WindowInfo*> childExtensions;
 
-            for (auto &win : childWindows)
-            {
-                if (!win.isExtension)
-                {
+            for (auto& win : childWindows) {
+                if (!win.isExtension) {
                     childMain = &win;
-                }
-                else
-                {
+                } else {
                     childExtensions.push_back(&win);
                 }
             }
 
-            if (childMain)
-            {
+            if (childMain) {
                 int row = (i + 1) / columns;
                 int col = (i + 1) % columns;
-                int x = col * effectiveWidth + spacing;
-                int y = row * effectiveHeight + spacing;
+                int x = screenX + col * effectiveWidth + spacing;
+                int y = screenY + row * effectiveHeight + spacing;
 
                 ArrangeWindow(childMain->hwnd,
-                              x,
-                              y,
-                              effectiveWidth - spacing * 2,
-                              effectiveHeight - spacing * 2);
+                            x,
+                            y,
+                            effectiveWidth - spacing * 2,
+                            effectiveHeight - spacing * 2);
 
-                // Arrange extensions for child window
-                for (auto ext : childExtensions)
-                {
+                for (auto ext : childExtensions) {
                     ArrangeWindow(ext->hwnd,
-                                  x + effectiveWidth - ext->width - spacing,
-                                  y,
-                                  ext->width,
-                                  ext->height,
-                                  true);
+                                x + effectiveWidth - ext->width - spacing,
+                                y,
+                                ext->width,
+                                ext->height,
+                                true);
                 }
             }
         }
 #elif __APPLE__
-        // macOS implementation
-        CGRect mainDisplayBounds = CGDisplayBounds(CGMainDisplayID());
-        float screenWidth = mainDisplayBounds.size.width;
-        float screenHeight = mainDisplayBounds.size.height;
+        // Use the first monitor (preferably a non-primary one)
+        const auto& monitor = monitors[0];
+        float screenWidth = monitor.bounds.size.width;
+        float screenHeight = monitor.bounds.size.height;
+        float screenX = monitor.bounds.origin.x;
+        float screenY = monitor.bounds.origin.y;
 
-        float windowWidth = width > 0 ? width : screenWidth / columns;
-        float windowHeight = height > 0 ? height : screenHeight / ((childPids.size() + 1 + columns - 1) / columns);
+        float effectiveWidth = width > 0 ? width : screenWidth / columns;
+        float effectiveHeight = height > 0 ? height : screenHeight / ((childPids.size() + 1 + columns - 1) / columns);
 
-        // Arrange main window
-        ArrangeMacWindow(mainPid, 0, 0, windowWidth, windowHeight);
+        // Handle main window
+        ArrangeWindow(mainPid, 
+                     screenX + spacing, 
+                     screenY + spacing, 
+                     effectiveWidth - spacing * 2, 
+                     effectiveHeight - spacing * 2);
 
-        // Arrange child windows
-        for (size_t i = 0; i < childPids.size(); i++)
-        {
+        // Handle child windows
+        for (size_t i = 0; i < childPids.size(); i++) {
             int row = (i + 1) / columns;
             int col = (i + 1) % columns;
-            ArrangeMacWindow(childPids[i],
-                             col * windowWidth,
-                             row * windowHeight,
-                             windowWidth, windowHeight);
+            float x = screenX + col * effectiveWidth + spacing;
+            float y = screenY + row * effectiveHeight + spacing;
+            
+            ArrangeWindow(childPids[i],
+                         x,
+                         y,
+                         effectiveWidth - spacing * 2,
+                         effectiveHeight - spacing * 2);
         }
 #endif
 
         return env.Null();
     }
-
-#ifdef _WIN32
-    HWND FindWindowByPid(DWORD processId)
-    {
-        HWND hwnd = nullptr;
-        try
-        {
-            while ((hwnd = FindWindowEx(nullptr, hwnd, nullptr, nullptr)) != nullptr)
-            {
-                DWORD pid = 0;
-                DWORD threadId = GetWindowThreadProcessId(hwnd, &pid);
-                if (threadId == 0)
-                {
-                    LOG_ERROR("Failed to get window thread process id");
-                    continue;
-                }
-
-                if (pid == processId)
-                {
-                    char className[256] = {0};
-                    if (GetClassNameA(hwnd, className, sizeof(className)) == 0)
-                    {
-                        LOG_ERROR("Failed to get window class name");
-                        continue;
-                    }
-
-                    char title[256] = {0};
-                    if (GetWindowTextA(hwnd, title, sizeof(title)) == 0 && GetLastError() != 0)
-                    {
-                        LOG_ERROR("Failed to get window title");
-                        continue;
-                    }
-
-                    if ((strstr(className, "Chrome") != nullptr ||
-                         strstr(title, "Chrome") != nullptr) &&
-                        IsWindowVisible(hwnd) &&
-                        !IsIconic(hwnd))
-                    {
-
-                        LONG style = GetWindowLong(hwnd, GWL_STYLE);
-                        if (style & WS_OVERLAPPEDWINDOW)
-                        {
-                            return hwnd;
-                        }
-                    }
-                }
-            }
-        }
-        catch (...)
-        {
-            LOG_ERROR("Exception in FindWindowByPid");
-        }
-        return nullptr;
-    }
-
-    bool IsExtensionWindow(const char *title, const char *className)
-    {
-        // Check if the title exists and doesn't contain "Google Chrome"
-        return title != nullptr &&
-               strlen(title) > 0 &&
-               strstr(title, "Google Chrome") == nullptr;
-    }
-
-    std::vector<WindowInfo> FindWindowsByPid(DWORD processId)
-    {
-        std::vector<WindowInfo> windows;
-        HWND hwnd = nullptr;
-
-        while ((hwnd = FindWindowEx(nullptr, hwnd, nullptr, nullptr)) != nullptr)
-        {
-            DWORD pid = 0;
-            GetWindowThreadProcessId(hwnd, &pid);
-
-            if (pid == processId && IsWindowVisible(hwnd) && !IsIconic(hwnd))
-            {
-                char className[256] = {0};
-                GetClassNameA(hwnd, className, sizeof(className));
-
-                char title[256] = {0};
-                GetWindowTextA(hwnd, title, sizeof(title));
-
-                RECT rect;
-                GetWindowRect(hwnd, &rect);
-
-                bool isExtension = IsExtensionWindow(title, className);
-                bool isMainWindow = strstr(title, "Google Chrome") != nullptr &&
-                                    (GetWindowLong(hwnd, GWL_STYLE) & WS_OVERLAPPEDWINDOW);
-
-                if (isMainWindow || isExtension)
-                {
-                    WindowInfo info;
-                    info.hwnd = hwnd;
-                    info.isExtension = isExtension;
-                    info.width = rect.right - rect.left;
-                    info.height = rect.bottom - rect.top;
-                    windows.push_back(info);
-                }
-            }
-        }
-        return windows;
-    }
-#elif __APPLE__
-    void ArrangeMacWindow(int pid, float x, float y, float width, float height)
-    {
-        AXUIElementRef app = AXUIElementCreateApplication(pid);
-        if (app)
-        {
-            AXUIElementRef window = nullptr;
-            CFArrayRef windowArray = nullptr;
-            AXUIElementCopyAttributeValue(app, kAXWindowsAttribute, (CFTypeRef *)&windowArray);
-
-            if (windowArray && CFArrayGetCount(windowArray) > 0)
-            {
-                window = (AXUIElementRef)CFArrayGetValueAtIndex(windowArray, 0);
-
-                CGPoint position = {x, y};
-                CGSize size = {width, height};
-
-                AXValueRef positionRef = AXValueCreate(kAXValueCGPointType, &position);
-                AXValueRef sizeRef = AXValueCreate(kAXValueCGSizeType, &size);
-
-                AXUIElementSetAttributeValue(window, kAXPositionAttribute, positionRef);
-                AXUIElementSetAttributeValue(window, kAXSizeAttribute, sizeRef);
-
-                CFRelease(positionRef);
-                CFRelease(sizeRef);
-            }
-
-            if (windowArray)
-                CFRelease(windowArray);
-            CFRelease(app);
-        }
-    }
-#endif
-
-    bool ArrangeWindow(HWND hwnd, int x, int y, int width, int height, bool preserveSize = false)
-    {
-        if (!hwnd) return false;
-        
-        // Ensure window is not minimized and bring it to front
-        if (IsIconic(hwnd)) {
-            ShowWindow(hwnd, SW_RESTORE);
-        }
-        SetForegroundWindow(hwnd);
-        
-        // Remove maximize and minimize styles from window
-        LONG style = GetWindowLong(hwnd, GWL_STYLE);
-        if (style == 0) {
-            LOG_ERROR("Failed to get window style");
-            return false;
-        }
-        
-        style &= ~(WS_MAXIMIZE | WS_MINIMIZE);
-        if (SetWindowLong(hwnd, GWL_STYLE, style) == 0) {
-            LOG_ERROR("Failed to set window style");
-            return false;
-        }
-        
-        // Set window position and size
-        UINT flags = SWP_SHOWWINDOW | SWP_FRAMECHANGED;
-        if (preserveSize) {
-            flags |= SWP_NOSIZE;
-        }
-        
-        // Use HWND_TOPMOST temporarily to ensure window comes to front
-        if (!SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, flags)) {
-            LOG_ERROR("Failed to set window position");
-            return false;
-        }
-        
-        // Then remove topmost state
-        if (!SetWindowPos(hwnd, HWND_NOTOPMOST, x, y, width, height, flags)) {
-            LOG_ERROR("Failed to reset window z-order");
-            return false;
-        }
-        
-        return true;
-    }
 };
 
-Napi::Object Init(Napi::Env env, Napi::Object exports)
-{
+Napi::Object Init(Napi::Env env, Napi::Object exports) {
     return WindowManager::Init(env, exports);
 }
 

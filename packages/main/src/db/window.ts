@@ -43,6 +43,7 @@ const getOpenedWindows = async () => {
       'window.name',
       'window.remark',
       'window.port',
+      'window.pid',
       'window.created_at',
       'window.updated_at',
       'window.profile_id',

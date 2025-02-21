@@ -301,6 +301,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
         const {data} = await api.get(browserURL + '/json/version');
         await WindowDB.update(windowData.id, {
           status: 2,
+          pid: chromeInstance.pid,
           port: chromePort,
           opened_at: db.fn.now() as unknown as string,
         });
@@ -414,7 +415,7 @@ async function createSocksProxy(proxyData: DB.Proxy) {
 }
 
 export async function resetWindowStatus(id: number) {
-  await WindowDB.update(id, {status: 1, port: null});
+  await WindowDB.update(id, {status: 1, port: null, pid: null});
 }
 
 export async function closeFingerprintWindow(id: number, force = false) {
@@ -434,7 +435,7 @@ export async function closeFingerprintWindow(id: number, force = false) {
       logger.error(error);
     }
   }
-  await WindowDB.update(id, {status: 1, port: null});
+  await WindowDB.update(id, {status: 1, port: null, pid: null});
   const win = getMainWindow();
   if (win) {
     win.webContents.send('window-closed', id);

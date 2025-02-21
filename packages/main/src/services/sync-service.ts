@@ -1,20 +1,43 @@
-import {ipcMain} from 'electron';
-import {createLogger} from '../../../shared/utils/logger';
-import {SERVICE_LOGGER_LABEL} from '../constants';
-import {startGroupControl, tileWindows} from '../sync';
-
-const logger = createLogger(SERVICE_LOGGER_LABEL);
+import {app, ipcMain} from 'electron';
+import path from 'path';
+import type {SafeAny} from '../../../shared/types/db';
+let addon: unknown;
+if (!app.isPackaged) {
+  addon = require(path.join(__dirname, '../src/native-addon/build/Release/window-addon.node'));
+} else {
+  addon = require(path.join(
+    process.resourcesPath,
+    'app.asar.unpacked',
+    'node_modules',
+    'window-addon',
+    'window-addon.node',
+  ));
+}
 
 export const initSyncService = () => {
-  ipcMain.handle('tile-windows', async () => {
-    tileWindows();
-  });
+  if (!addon) {
+    console.error('Window addon not loaded properly');
+    return;
+  }
 
-  ipcMain.handle(
-    'start-group-control',
-    async (_, masterProcessId: number, slaveProcessIds: number[]) => {
-      logger.info('start-group-control', masterProcessId, slaveProcessIds);
-      startGroupControl(masterProcessId, slaveProcessIds);
-    },
-  );
+  const windowManager = new (addon as SafeAny).WindowManager();
+
+  ipcMain.handle('window-arrange', async (_, args) => {
+    const {mainPid, childPids, columns, size, spacing} = args;
+
+    try {
+      if (!windowManager) {
+        throw new Error('WindowManager not initialized');
+      }
+
+      windowManager.arrangeWindows(mainPid, childPids, columns, size, spacing);
+      return {success: true};
+    } catch (error) {
+      console.error('Window arrangement failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  });
 };

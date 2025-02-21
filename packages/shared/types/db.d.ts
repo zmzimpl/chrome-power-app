@@ -7,7 +7,7 @@ export namespace DB {
     name?: string;
     group_id?: number | null;
     group_name?: string;
-    tags?: number[] | string | null;
+    tags?: number[] | string[] | null;
     remark?: string;
     opened_at?: string;
     created_at?: string;
@@ -20,6 +20,7 @@ export namespace DB {
 
     ip?: string;
     port?: number | null;
+    pid?: number | null;
     local_proxy_port?: number;
 
     proxy_id?: number | null;

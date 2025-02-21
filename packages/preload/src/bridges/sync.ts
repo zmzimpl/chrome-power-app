@@ -1,13 +1,12 @@
-import type {IpcRendererEvent} from 'electron';
 import {ipcRenderer} from 'electron';
 
 export const SyncBridge = {
-  async tileWindows() {
-    ipcRenderer.invoke('tile-windows');
+  arrangeWindows: (args: {
+    mainPid: number;
+    childPids: number[];
+    columns: number;
+    size: {width: number; height: number};
+  }) => {
+    return ipcRenderer.invoke('window-arrange', args);
   },
-  async startGroupControl(masterProcessId?: number, slaveProcessIds?: number[]) {
-    ipcRenderer.invoke('start-group-control', masterProcessId, slaveProcessIds);
-  },
-  onGroupControlAction: (callback: (event: IpcRendererEvent, id: number) => void) =>
-    ipcRenderer.on('control-action', callback),
 };

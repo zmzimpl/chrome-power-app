@@ -88,7 +88,7 @@ i18n
           proxy_import_column_remark: 'Remark',
           proxy_import_column_status: 'Status',
 
-          tile_windows: 'Tile window',
+          tile_windows: 'Auto arrange',
 
           settings_cache_path: 'Cache path',
           settings_choose_cache_path: 'Choose path',
@@ -248,7 +248,7 @@ i18n
           proxy_import_column_remark: '备注',
           proxy_import_column_status: '状态',
 
-          tile_windows: '平铺窗口',
+          tile_windows: '自动排列',
 
           settings_cache_path: '缓存目录',
           settings_choose_cache_path: '选择路径',

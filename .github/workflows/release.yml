@@ -206,6 +206,13 @@ jobs:
           echo "Looking for specific certificate: $APPLE_IDENTITY"
           security find-certificate -a -c "$APPLE_IDENTITY" -Z build.keychain || true
 
+      - name: Build Project
+        run: |
+          npm run build
+          ls -la packages/main/dist/
+          ls -la packages/preload/dist/
+          ls -la packages/renderer/dist/
+
       - name: Build macOS
         if: matrix.os == 'macos-latest'
         run: |

@@ -9,6 +9,7 @@
  * @see https://www.electron.build/configuration/configuration
  */
 require('dotenv').config();
+
 function getBuildTime() {
   return process.env.BUILD_TIME || new Date().getTime();
 }
@@ -100,20 +101,34 @@ module.exports = async function () {
     target: [
       {
         target: 'dmg',
-        arch: ['x64', 'arm64'],
+        arch: process.env.BUILD_ARCH || 'arm64',
       },
     ],
     category: 'public.app-category.developer-tools',
-    hardenedRuntime: false,
+    hardenedRuntime: true,
     gatekeeperAssess: false,
-    entitlements: null,
-    entitlementsInherit: null,
+    entitlements: 'buildResources/entitlements.mac.plist',
+    entitlementsInherit: 'buildResources/entitlements.mac.plist',
     artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
     compression: 'store',
     darkModeSupport: true,
+    signIgnore: [
+      'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+      'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+    ],
+    // extendInfo: {
+    //   NSAppleEventsUsageDescription: "Please allow access to system events",
+    //   NSCameraUsageDescription: "Please allow access to camera",
+    // },
+    // protocols: [],
+    // helperBundleId: `${process.env.APP_BUNDLE_ID}.helper`,
+    // helperEHBundleId: `${process.env.APP_BUNDLE_ID}.helper.EH`,
+    // helperGPUBundleId: `${process.env.APP_BUNDLE_ID}.helper.GPU`,
+    // helperPluginBundleId: `${process.env.APP_BUNDLE_ID}.helper.Plugin`,
+    // helperRendererBundleId: `${process.env.APP_BUNDLE_ID}.helper.Renderer`,
   };
   config.dmg = {
-    sign: false,
+    sign: true,
     writeUpdateInfo: false,
     format: 'ULFO',
   };
@@ -145,6 +160,22 @@ module.exports = async function () {
     private: false,
     releaseType: 'draft',
   };
+
+  // CI 环境特定配置（GitHub Actions 使用）
+  if (process.env.CI && process.platform === 'darwin') {
+    config.mac = {
+      ...config.mac, // 保留基础配置
+      identity: process.env.APPLE_IDENTITY, // CI 环境使用签名
+      hardenedRuntime: true,
+      gatekeeperAssess: false,
+      entitlements: 'buildResources/entitlements.mac.plist',
+      entitlementsInherit: 'buildResources/entitlements.mac.plist',
+      signIgnore: [
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+      ],
+    };
+  }
 
   return config;
 };

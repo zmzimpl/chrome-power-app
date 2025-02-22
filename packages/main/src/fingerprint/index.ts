@@ -403,7 +403,7 @@ async function createSocksProxy(proxyData: DB.Proxy) {
   });
 
   // 添加更多错误处理
-  proxyServer.on('error', (err) => {
+  proxyServer.on('error', err => {
     logger.error('Socks server error:', err);
   });
 

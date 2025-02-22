@@ -57,11 +57,11 @@ class HttpProxy extends EventEmitter {
     };
 
     // 添加未捕获异常处理
-    this.on('error', (error) => {
+    this.on('error', error => {
       logger.error('Proxy server error:', error);
     });
-    
-    process.on('uncaughtException', (error) => {
+
+    process.on('uncaughtException', error => {
       if (error instanceof Error && 'code' in error && error.code === 'ECONNRESET') {
         logger.error('Connection reset by peer');
       } else {
@@ -106,7 +106,7 @@ class HttpProxy extends EventEmitter {
             proxy: `${proxy.ipaddress}:${proxy.port}`,
             url: uReq.url,
           });
-          
+
           if (this.retryCount < this.maxRetries) {
             this.retryCount++;
             setTimeout(() => handleRequest(), 1000);
@@ -127,7 +127,7 @@ class HttpProxy extends EventEmitter {
         pReq.on('response', pRes => {
           try {
             this.retryCount = 0;
-            
+
             // 为响应添加错误处理
             pRes.on('error', error => {
               logger.error('Response error:', error);
@@ -144,7 +144,7 @@ class HttpProxy extends EventEmitter {
               pRes.pipe(uRes);
               uRes.writeHead(pRes.statusCode!, pRes.headers);
             }
-            
+
             this.emit('request:success');
           } catch (error) {
             logger.error('Error handling response:', error);

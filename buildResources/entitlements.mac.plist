@@ -27,5 +27,10 @@
     <true/>
     <key>NSAccessibilityUsageDescription</key>
     <string>Chrome Power needs accessibility permission to manage windows. Please enable it in System Preferences.</string>
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+    
   </dict>
 </plist>

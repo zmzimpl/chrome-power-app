@@ -11,6 +11,14 @@ on:
     secrets:
       GH_TOKEN:
         required: true
+      BUILD_CERTIFICATE_BASE64:
+        required: true
+      P12_PASSWORD:
+        required: true
+      KEYCHAIN_PASSWORD:
+        required: true
+      APPLE_IDENTITY:
+        required: true
       VITE_APP_API:
         required: true
       VITE_START_PAGE_URL:
@@ -156,31 +164,69 @@ jobs:
           echo "VITE_APP_API=${{ secrets.VITE_APP_API }}" > .env.production.local
           echo "VITE_START_PAGE_URL=${{ secrets.VITE_START_PAGE_URL }}" >> .env.production.local
 
-      - name: Build Project
+      - name: Install Apple certificates
+        if: matrix.os == 'macos-latest'
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
         run: |
-          npm run build
-          ls -la packages/main/dist/
-          ls -la packages/preload/dist/
-          ls -la packages/renderer/dist/
+          CERTIFICATE_PATH=$HOME/certificates
+          KEYCHAIN_PATH=$HOME/Library/Keychains/build.keychain-db
+          
+          mkdir -p $CERTIFICATE_PATH
+          
+          # 输出证书长度（不要显示内容）
+          echo "Certificate length: ${#BUILD_CERTIFICATE_BASE64}"
+          
+          # 使用 -D 参数进行解码
+          echo "$BUILD_CERTIFICATE_BASE64" | base64 -D > $CERTIFICATE_PATH/certificate.p12
+          
+          # 检查证书文件
+          ls -l $CERTIFICATE_PATH/certificate.p12
+          
+          # 创建并配置钥匙串
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          
+          # 导入证书
+          security import $CERTIFICATE_PATH/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          
+          # 列出所有身份
+          echo "All identities in keychain:"
+          security find-identity -v -p codesigning build.keychain
+          
+          # 设置钥匙串访问权限
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          
+          # 尝试查找特定证书
+          echo "Looking for specific certificate: $APPLE_IDENTITY"
+          security find-certificate -a -c "$APPLE_IDENTITY" -Z build.keychain || true
 
       - name: Build macOS
         if: matrix.os == 'macos-latest'
         run: |
-          # 设置 Xcode
-          sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-          sudo xcodebuild -license accept
+          # 设置构建架构
+          export BUILD_ARCH="${{ matrix.arch }}"
           
-          # 构建 native addon（添加详细日志）
-          npm run build:native-addon:mac --verbose
-          npm run rebuild-deps:mac --verbose
-          
-          # 检查构建产物
-          ls -la packages/main/src/native-addon/build/Release/
+          # 构建指定架构
+          if [ "$BUILD_ARCH" = "x64" ]; then 
+            npm run rebuild-deps:mac:x64 --verbose
+            npm run build:native-addon:mac:x64 --verbose
+          elif [ "$BUILD_ARCH" = "arm64" ]; then
+            npm run rebuild-deps:mac:arm64 --verbose
+            npm run build:native-addon:mac:arm64 --verbose
+          fi
           
           # 构建和发布
           npm run publish --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+          BUILD_ARCH: ${{ matrix.arch }}
 
       - name: Build and Publish
         uses: nick-fields/retry@v2

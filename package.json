@@ -35,7 +35,9 @@
     "postinstall": "electron-builder install-app-deps && cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs && npm run build:native-addon",
     "format": "npx prettier --write \"**/*.{js,mjs,cjs,ts,mts,cts,vue,json}\"",
     "rebuild-deps": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64",
-    "rebuild-deps:mac": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64"
+    "rebuild-deps:mac": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64",
+    "rebuild-deps:mac:x64": "npm rebuild sqlite3 --build-from-source --arch=x64",
+    "rebuild-deps:mac:arm64": "npm rebuild sqlite3 --build-from-source --arch=arm64"
   },
   "devDependencies": {
     "@iconify/react": "^4.1.1",

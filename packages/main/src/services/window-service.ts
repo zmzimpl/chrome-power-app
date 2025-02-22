@@ -95,7 +95,9 @@ export const initWindowService = () => {
   });
 
   ipcMain.handle('window-set-cookie', async (_, id: number) => {
+    const window = await WindowDB.getById(id);
     await WindowDB.update(id, {
+      ...window,
       status: 3,
     });
     const {webSocketDebuggerUrl} = await openFingerprintWindow(id, true);

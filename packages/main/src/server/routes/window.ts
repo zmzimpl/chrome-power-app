@@ -66,7 +66,8 @@ router.put('/update', async (req, res) => {
     res.send({success: false, message: 'id and window is required.'});
     return;
   }
-  const result = await WindowDB.update(id, window);
+  const originalWindow = await WindowDB.getById(id);
+  const result = await WindowDB.update(id, {...originalWindow, ...window});
   res.send(result);
 });
 

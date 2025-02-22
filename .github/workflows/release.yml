@@ -11,14 +11,6 @@ on:
     secrets:
       GH_TOKEN:
         required: true
-      BUILD_CERTIFICATE_BASE64:
-        required: true
-      P12_PASSWORD:
-        required: true
-      KEYCHAIN_PASSWORD:
-        required: true
-      APPLE_IDENTITY:
-        required: true
       VITE_APP_API:
         required: true
       VITE_START_PAGE_URL:
@@ -189,7 +181,6 @@ jobs:
           npm run publish --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
 
       - name: Build and Publish
         uses: nick-fields/retry@v2

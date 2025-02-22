@@ -423,7 +423,10 @@ const Windows = () => {
 
   const handleProxySettingSave = async () => {
     if (selectedRow) {
-      await WindowBridge?.update(selectedRow.id!, {proxy_id: selectedProxy ? selectedProxy : null});
+      await WindowBridge?.update(selectedRow.id!, {
+        ...selectedRow,
+        proxy_id: selectedProxy ? selectedProxy : null,
+      });
       setProxySettingVisible(false);
       messageApi.success('Update proxy successfully');
       fetchWindowData();

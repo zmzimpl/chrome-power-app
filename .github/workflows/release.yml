@@ -220,12 +220,15 @@ jobs:
           sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
           sudo xcodebuild -license accept
           
-          # 构建 native addon
-          npm run build:native-addon:mac
-          npm run rebuild-deps:mac
+          # 构建 native addon（添加详细日志）
+          npm run build:native-addon:mac --verbose
+          npm run rebuild-deps:mac --verbose
+          
+          # 检查构建产物
+          ls -la packages/main/src/native-addon/build/Release/
           
           # 构建和发布
-          npm run publish
+          npm run publish --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}

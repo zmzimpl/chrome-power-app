@@ -8,7 +8,7 @@
  * @type {() => import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
  */
-
+require('dotenv').config();
 function getBuildTime() {
   return process.env.BUILD_TIME || new Date().getTime();
 }
@@ -96,7 +96,7 @@ module.exports = async function () {
   // macOS 基础配置（本地构建使用）
   config.mac = {
     icon: 'buildResources/icon.icns',
-    identity: null, // 本地构建不签名
+    identity: null,
     target: [
       {
         target: 'dmg',
@@ -145,22 +145,6 @@ module.exports = async function () {
     private: false,
     releaseType: 'draft',
   };
-
-  // CI 环境特定配置（GitHub Actions 使用）
-  if (process.env.CI && process.platform === 'darwin') {
-    config.mac = {
-      ...config.mac, // 保留基础配置
-      identity: process.env.APPLE_IDENTITY, // CI 环境使用签名
-      hardenedRuntime: true,
-      gatekeeperAssess: false,
-      entitlements: 'buildResources/entitlements.mac.plist',
-      entitlementsInherit: 'buildResources/entitlements.mac.plist',
-      signIgnore: [
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-      ],
-    };
-  }
 
   return config;
 };

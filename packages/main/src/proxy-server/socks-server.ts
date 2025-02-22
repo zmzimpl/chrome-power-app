@@ -55,6 +55,19 @@ class HttpProxy extends EventEmitter {
       userId: this.opt.socksUsername || '',
       password: this.opt.socksPassword || '',
     };
+
+    // 添加未捕获异常处理
+    this.on('error', (error) => {
+      logger.error('Proxy server error:', error);
+    });
+    
+    process.on('uncaughtException', (error) => {
+      if (error instanceof Error && 'code' in error && error.code === 'ECONNRESET') {
+        logger.error('Connection reset by peer');
+      } else {
+        logger.error('Uncaught Exception:', error);
+      }
+    });
   }
 
   _request(
@@ -80,16 +93,12 @@ class HttpProxy extends EventEmitter {
     };
 
     const handleRequest = () => {
-      const pReq = http.request(options);
+      let pReq: http.ClientRequest;
+      try {
+        pReq = http.request(options);
 
-      pReq
-        .on('response', pRes => {
-          this.retryCount = 0; // 重置重试计数
-          pRes.pipe(uRes);
-          uRes.writeHead(pRes.statusCode!, pRes.headers);
-          this.emit('request:success');
-        })
-        .on('error', e => {
+        // 处理请求错误
+        pReq.on('error', e => {
           logger.error('Proxy connection error:', {
             error: e.message,
             host: u.hostname,
@@ -97,17 +106,75 @@ class HttpProxy extends EventEmitter {
             proxy: `${proxy.ipaddress}:${proxy.port}`,
             url: uReq.url,
           });
+          
           if (this.retryCount < this.maxRetries) {
             this.retryCount++;
-            setTimeout(() => handleRequest(), 1000); // 1秒后重试
+            setTimeout(() => handleRequest(), 1000);
           } else {
-            uRes.writeHead(500);
-            uRes.end('Connection error\n');
+            try {
+              if (!uRes.writableEnded) {
+                uRes.writeHead(500);
+                uRes.end('Connection error\n');
+              }
+            } catch (writeError) {
+              logger.error('Error writing response:', writeError);
+            }
             this.emit('request:error', e);
           }
         });
 
-      uReq.pipe(pReq);
+        // 处理响应
+        pReq.on('response', pRes => {
+          try {
+            this.retryCount = 0;
+            
+            // 为响应添加错误处理
+            pRes.on('error', error => {
+              logger.error('Response error:', error);
+              try {
+                if (!uRes.writableEnded) {
+                  uRes.destroy();
+                }
+              } catch (destroyError) {
+                logger.error('Error destroying response:', destroyError);
+              }
+            });
+
+            if (!uRes.writableEnded) {
+              pRes.pipe(uRes);
+              uRes.writeHead(pRes.statusCode!, pRes.headers);
+            }
+            
+            this.emit('request:success');
+          } catch (error) {
+            logger.error('Error handling response:', error);
+          }
+        });
+
+        // 处理请求端错误
+        uReq.on('error', error => {
+          logger.error('Client request error:', error);
+          try {
+            pReq.destroy();
+          } catch (destroyError) {
+            logger.error('Error destroying proxy request:', destroyError);
+          }
+        });
+
+        // 处理响应端错误
+        uRes.on('error', error => {
+          logger.error('Client response error:', error);
+          try {
+            pReq.destroy();
+          } catch (destroyError) {
+            logger.error('Error destroying proxy request:', destroyError);
+          }
+        });
+
+        uReq.pipe(pReq);
+      } catch (error) {
+        logger.error('Error creating request:', error);
+      }
     };
 
     handleRequest();
@@ -133,8 +200,14 @@ class HttpProxy extends EventEmitter {
 
     SocksClient.createConnection(options, (error, pSocket) => {
       if (error) {
-        if (uSocket?.writable) {
-          uSocket?.write(`HTTP/${uReq.httpVersion} 500 Connection error\r\n\r\n`);
+        try {
+          // 在写入之前检查 socket 是否可写
+          if (uSocket?.writable) {
+            uSocket?.write(`HTTP/${uReq.httpVersion} 500 Connection error\r\n\r\n`);
+          }
+        } catch (writeError) {
+          // 忽略写入错误，只记录日志
+          logger.error('Failed to write error response:', writeError);
         }
         this.emit('connect:error', error);
         return;
@@ -147,17 +220,31 @@ class HttpProxy extends EventEmitter {
 
           pSocket.socket.on('error', err => {
             this.emit('connect:error', err);
-            uSocket.destroy();
+            try {
+              uSocket?.destroy();
+            } catch (destroyError) {
+              logger.error('Failed to destroy socket:', destroyError);
+            }
           });
 
           uSocket.on('error', err => {
             this.emit('connect:error', err);
-            pSocket.socket.destroy();
+            try {
+              pSocket.socket?.destroy();
+            } catch (destroyError) {
+              logger.error('Failed to destroy proxy socket:', destroyError);
+            }
           });
 
-          if (uSocket.writable) {
-            pSocket.socket.write(uHead);
-            uSocket.write(`HTTP/${uReq.httpVersion} 200 Connection established\r\n\r\n`);
+          try {
+            if (uSocket.writable) {
+              pSocket.socket.write(uHead.toString());
+              uSocket.write(`HTTP/${uReq.httpVersion} 200 Connection established\r\n\r\n`);
+            }
+          } catch (writeError) {
+            logger.error('Failed to write response:', writeError);
+            this.emit('connect:error', writeError);
+            return;
           }
 
           this.emit('connect:success');
@@ -165,8 +252,12 @@ class HttpProxy extends EventEmitter {
         }
       } catch (err) {
         this.emit('connect:error', err);
-        uSocket?.destroy();
-        pSocket?.socket?.destroy();
+        try {
+          uSocket?.destroy();
+          pSocket?.socket?.destroy();
+        } catch (destroyError) {
+          logger.error('Failed to cleanup sockets:', destroyError);
+        }
       }
     });
   }

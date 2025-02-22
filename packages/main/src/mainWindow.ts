@@ -120,7 +120,12 @@ async function createWindow() {
    * icpMain
    */
   ipcMain?.handle('close', () => {
-    browserWindow?.close();
+    const isMac = process.platform === 'darwin';
+    if (!isMac) {
+      browserWindow?.close();
+    } else {
+      app.quit();
+    }
   });
   ipcMain?.handle('minimize', () => {
     browserWindow.minimize();

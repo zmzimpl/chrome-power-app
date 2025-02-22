@@ -25,6 +25,20 @@ app.get('/status', async (req, res) => {
   });
 });
 
+// 添加全局错误处理
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Express error:', err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+  next(err);
+});
+
+// 处理未捕获的 Promise 拒绝
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const server: Server = app
   .listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

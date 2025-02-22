@@ -123,7 +123,7 @@ const waitForChromeReady = async (chromePort: number, id: number, maxAttempts = 
         return true;
       }
     } catch (error) {
-      logger.error('连接失败', error);
+      logger.error('连接失败', (error as Error).message);
       // 连接失败，继续等待
     }
 
@@ -402,11 +402,22 @@ async function createSocksProxy(proxyData: DB.Proxy) {
     socksPassword,
   });
 
-  proxyServer.on('connect:error', err => {
-    logger.error(err);
+  // 添加更多错误处理
+  proxyServer.on('error', (err) => {
+    logger.error('Socks server error:', err);
   });
+
+  proxyServer.on('connect:error', err => {
+    logger.error('Socks connect error:', err);
+  });
+
   proxyServer.on('request:error', err => {
-    logger.error(err);
+    logger.error('Socks request error:', err);
+  });
+
+  // 添加连接关闭处理
+  proxyServer.on('close', () => {
+    logger.info('Socks server closed');
   });
 
   return {

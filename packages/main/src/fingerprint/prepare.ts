@@ -37,10 +37,21 @@ const getRealIP = async (proxy: DB.Proxy) => {
         timeout: 5_000,
         httpAgent: agent,
         httpsAgent: agent,
+        validateStatus: function (status) {
+          return status >= 200 && status < 300;
+        },
+        maxRedirects: 5,
       });
       return url.includes('ip-api.com') ? data.query : data.ip;
     } catch (error) {
-      throw new Error(`Failed to fetch IP from ${url}: ${error}`);
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNRESET') {
+          logger.error(`Connection reset by peer: ${url}`);
+        } else {
+          logger.error(`Network error: ${error.message}`);
+        }
+      }
+      throw error;
     }
   };
 
@@ -70,6 +81,7 @@ export const getProxyInfo = async (proxy: DB.Proxy) => {
     try {
       const res = await api.get(getOrigin() + `/ip/${proxy.ip_checker || 'ip2location'}`, {
         params: params,
+        timeout: 2000,
       });
       return res.data;
     } catch (error) {

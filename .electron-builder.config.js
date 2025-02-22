@@ -49,22 +49,17 @@ module.exports = async function () {
     asarUnpack: ['node_modules/sqlite3/**/*'],
   };
 
-  // Windows 特定配置
-  if (process.platform === 'win32') {
-    config.extraResources.push({
-      from: 'packages/main/src/native-addon/build/Release/',
-      to: 'app.asar.unpacked/node_modules/window-addon/',
-      filter: ['*.node'],
-    });
-  }
+  config.extraResources.push({
+    from: 'packages/main/src/native-addon/build/Release/',
+    to: 'app.asar.unpacked/node_modules/window-addon/',
+    filter: ['*.node'],
+  });
+  // // Windows 特定配置
+  // if (process.platform === 'win32') {
+  // }
 
   // macOS 特定配置
   if (process.platform === 'darwin') {
-    config.extraResources.push({
-      from: 'packages/main/src/native-addon/build/Release/',
-      to: 'Resources/app.asar.unpacked/node_modules/window-addon/',
-      filter: ['*.node'],
-    });
     config.asarUnpack.push('**/*.node');
   }
 

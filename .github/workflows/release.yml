@@ -90,32 +90,9 @@ jobs:
       - name: Setup macOS build tools
         if: matrix.os == 'macos-latest'
         run: |
-          # 设置 Xcode
           sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
           sudo xcodebuild -license accept
-          
-          # 安装 Python 3.11
-          brew install python@3.11 make gcc
-          
-          # 更新 pip 和安装必要的包
-          /opt/homebrew/opt/python@3.11/bin/pip3.11 install --upgrade pip setuptools wheel
-          
-          # 设置环境变量
-          PYTHON_PATH="/opt/homebrew/opt/python@3.11/bin/python3.11"
-          echo "PYTHON=$PYTHON_PATH" >> $GITHUB_ENV
-          
-          # 创建 .npmrc 文件
-          echo "python=$PYTHON_PATH" > ~/.npmrc
-          
-          # 验证设置
-          echo "Python path: $PYTHON_PATH"
-          $PYTHON_PATH --version
-          $PYTHON_PATH -c "import setuptools; print('setuptools:', setuptools.__version__)"
-          
-          # 设置 PATH
-          echo "/opt/homebrew/opt/python@3.11/bin" >> $GITHUB_PATH
-          
-          # 网络设置
+          brew install python3 make gcc
           echo "network=inet" > ~/.curlrc
 
       - name: Use Node.js ${{ matrix.node_version }}
@@ -126,29 +103,12 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install native modules
-        run: |
-          # 验证环境
-          echo "Using Python: $PYTHON"
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          
-          # 安装模块
-          npm install --ignore-scripts active-win sqlite3 electron
+        run: npm install --ignore-scripts active-win sqlite3 electron
 
       - name: Rebuild native modules
         if: matrix.os == 'macos-latest'
-        env:
-          PYTHON: /opt/homebrew/opt/python@3.11/bin/python3.11
         run: |
-          # x64 架构构建
-          if [ "${{ matrix.arch }}" = "x64" ]; then
-            SDKROOT=$(xcrun --show-sdk-path) NODE_GYP_FORCE_PYTHON=$PYTHON npm rebuild sqlite3 --build-from-source --target_arch=x64
-          fi
-          
-          # arm64 架构构建
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            SDKROOT=$(xcrun --show-sdk-path) NODE_GYP_FORCE_PYTHON=$PYTHON npm rebuild sqlite3 --build-from-source --target_arch=arm64
-          fi
+          npm rebuild sqlite3 --build-from-source
 
       - name: Install dependencies
         uses: nick-fields/retry@v2
@@ -157,6 +117,18 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 30
           command: npm ci --verbose
+      
+      - name: Build local native addon
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            if [ "${{ matrix.arch }}" = "x64" ]; then
+              npm run build:native-addon:mac-x64
+            elif [ "${{ matrix.arch }}" = "arm64" ]; then
+              npm run build:native-addon:mac-arm64
+            fi
+          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
+            npm run build:native-addon
+          fi
 
       # 后续步骤保持不变...
       - name: Create .env.production.local
@@ -213,28 +185,6 @@ jobs:
           ls -la packages/preload/dist/
           ls -la packages/renderer/dist/
 
-      - name: Build macOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          # 设置构建架构
-          export BUILD_ARCH="${{ matrix.arch }}"
-          
-          # 构建指定架构
-          if [ "$BUILD_ARCH" = "x64" ]; then 
-            npm run rebuild-deps:mac-x64 --verbose
-            npm run build:native-addon:mac-x64 --verbose
-          elif [ "$BUILD_ARCH" = "arm64" ]; then
-            npm run rebuild-deps:mac-arm64 --verbose
-            npm run build:native-addon:mac-arm64 --verbose
-          fi
-          
-          # 构建和发布
-          npm run publish --verbose
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
-          BUILD_ARCH: ${{ matrix.arch }}
-
       - name: Build and Publish
         uses: nick-fields/retry@v2
         with:
@@ -262,4 +212,3 @@ jobs:
             echo "Release assets verification failed"
             exit 1
           fi
-

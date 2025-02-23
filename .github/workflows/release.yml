@@ -112,10 +112,15 @@ jobs:
 
       - name: Setup Windows build tools
         if: matrix.os == 'windows-latest'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+
+      - name: Setup Windows Python environment
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
-          # 安装 Python
-          choco install python3 --version=3.11.0
-          
           # 创建虚拟环境
           python -m venv $env:USERPROFILE\python_env
           $env:USERPROFILE\python_env\Scripts\Activate.ps1

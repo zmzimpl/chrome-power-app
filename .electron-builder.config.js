@@ -8,7 +8,6 @@
  * @type {() => import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
  */
-require('dotenv').config();
 
 function getBuildTime() {
   return process.env.BUILD_TIME || new Date().getTime();
@@ -33,6 +32,11 @@ module.exports = async function () {
     ],
     extraResources: [
       {
+        from: 'packages/main/src/native-addon/build/Release/',
+        to: 'app.asar.unpacked/node_modules/window-addon/',
+        filter: ['*.node'],
+      },
+      {
         from: 'migrations',
         to: 'app/migrations',
       },
@@ -46,134 +50,119 @@ module.exports = async function () {
         filter: ['*.ico', '*.png', '*.icns'],
       },
     ],
+    extraMetadata: {
+      version: getVersion(),
+      main: './packages/main/dist/index.cjs',
+    },
     asar: true,
-    asarUnpack: ['node_modules/sqlite3/**/*'],
-  };
+    asarUnpack: ['node_modules/sqlite3/**/*', '**/*.node'],
 
-  config.extraResources.push({
-    from: 'packages/main/src/native-addon/build/Release/',
-    to: 'app.asar.unpacked/node_modules/window-addon/',
-    filter: ['*.node'],
-  });
-  // // Windows 特定配置
-  // if (process.platform === 'win32') {
-  // }
-
-  // macOS 特定配置
-  if (process.platform === 'darwin') {
-    config.asarUnpack.push('**/*.node');
-  }
-
-  config.extraMetadata = {
-    version: getVersion(),
-    main: './packages/main/dist/index.cjs',
-  };
-
-  // Windows 配置
-  config.win = {
-    icon: 'buildResources/icon.ico',
-    target: [
-      {
-        target: 'nsis',
-        arch: ['x64'],
-      },
-    ],
-    artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
-  };
-  config.nsis = {
-    oneClick: false,
-    allowElevation: true,
-    allowToChangeInstallationDirectory: true,
-    createDesktopShortcut: true,
-    createStartMenuShortcut: true,
-    shortcutName: 'Chrome Power',
-    installerIcon: 'buildResources/icon.ico',
-    uninstallerIcon: 'buildResources/icon.ico',
-    installerHeaderIcon: 'buildResources/icon.ico',
-    menuCategory: true,
-    artifactName: '${productName}-Setup-${version}.${ext}',
-  };
-
-  // macOS 基础配置（本地构建使用）
-  config.mac = {
-    icon: 'buildResources/icon.icns',
-    identity: null,
-    target: [
-      {
-        target: 'dmg',
-        arch: process.env.BUILD_ARCH || 'arm64',
-      },
-    ],
-    category: 'public.app-category.developer-tools',
-    hardenedRuntime: true,
-    gatekeeperAssess: false,
-    entitlements: 'buildResources/entitlements.mac.plist',
-    entitlementsInherit: 'buildResources/entitlements.mac.plist',
-    artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
-    compression: 'store',
-    darkModeSupport: true,
-    signIgnore: [
-      'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-      'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-    ],
-    // extendInfo: {
-    //   NSAppleEventsUsageDescription: "Please allow access to system events",
-    //   NSCameraUsageDescription: "Please allow access to camera",
-    // },
-    // protocols: [],
-    // helperBundleId: `${process.env.APP_BUNDLE_ID}.helper`,
-    // helperEHBundleId: `${process.env.APP_BUNDLE_ID}.helper.EH`,
-    // helperGPUBundleId: `${process.env.APP_BUNDLE_ID}.helper.GPU`,
-    // helperPluginBundleId: `${process.env.APP_BUNDLE_ID}.helper.Plugin`,
-    // helperRendererBundleId: `${process.env.APP_BUNDLE_ID}.helper.Renderer`,
-  };
-  config.dmg = {
-    sign: true,
-    writeUpdateInfo: false,
-    format: 'ULFO',
-  };
-  // 自编译不需要签名也行
-  // mac: {
-  //   identity: null,
-  //   target: ['dmg', 'zip'],
-  //   category: 'public.app-category.developer-tools',
-  //   icon: 'buildResources/icon.icns',
-  //   hardenedRuntime: true,
-  //   gatekeeperAssess: false,
-  //   entitlements: 'buildResources/entitlements.mac.plist',
-  //   entitlementsInherit: 'buildResources/entitlements.mac.plist'
-  // },
-  // dmg: {
-  //   sign: false
-  // },
-  config.afterSign = async context => {
-    const {electronPlatformName, appOutDir} = context;
-    if (electronPlatformName === 'darwin') {
-      console.log('Signing completed for macOS');
-      console.log('Output directory:', appOutDir);
-    }
-  };
-
-  // 添加 GitHub 发布配置
-  config.publish = {
-    provider: 'github',
-    private: false,
-    releaseType: 'draft',
-  };
-
-  // CI 环境特定配置（GitHub Actions 使用）
-  if (process.env.CI && process.platform === 'darwin') {
-    config.mac = {
-      ...config.mac, // 保留基础配置
-      identity: process.env.APPLE_IDENTITY, // CI 环境使用签名
-      hardenedRuntime: true,
-      gatekeeperAssess: false,
-      entitlements: 'buildResources/entitlements.mac.plist',
-      entitlementsInherit: 'buildResources/entitlements.mac.plist',
-      signIgnore: [
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+    // Windows 配置
+    win: {
+      icon: 'buildResources/icon.ico',
+      target: [
+        {
+          target: 'nsis',
+          arch: ['x64'],
+        },
       ],
+      artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
+    },
+    nsis: {
+      oneClick: false,
+      allowElevation: true,
+      allowToChangeInstallationDirectory: true,
+      createDesktopShortcut: true,
+      createStartMenuShortcut: true,
+      shortcutName: 'Chrome Power',
+      installerIcon: 'buildResources/icon.ico',
+      uninstallerIcon: 'buildResources/icon.ico',
+      installerHeaderIcon: 'buildResources/icon.ico',
+      menuCategory: true,
+      artifactName: '${productName}-Setup-${version}.${ext}',
+    },
+
+    // macOS 配置
+    mac: {
+      icon: 'buildResources/icon.icns',
+      identity: null,
+      target: [
+        {
+          target: 'dmg',
+          arch: ['x64', 'arm64'],
+        },
+      ],
+      category: 'public.app-category.developer-tools',
+      hardenedRuntime: false,
+      gatekeeperAssess: false,
+      entitlements: null,
+      entitlementsInherit: null,
+      artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
+      compression: 'store',
+      darkModeSupport: true,
+    },
+    dmg: {
+      sign: false,
+      writeUpdateInfo: false,
+      format: 'ULFO',
+    },
+    // 自编译不需要签名也行
+    // mac: {
+    //   identity: null,
+    //   target: ['dmg', 'zip'],
+    //   category: 'public.app-category.developer-tools',
+    //   icon: 'buildResources/icon.icns',
+    //   hardenedRuntime: true,
+    //   gatekeeperAssess: false,
+    //   entitlements: 'buildResources/entitlements.mac.plist',
+    //   entitlementsInherit: 'buildResources/entitlements.mac.plist'
+    // },
+    // dmg: {
+    //   sign: false
+    // },
+    afterSign: async context => {
+      const {electronPlatformName, appOutDir} = context;
+      if (electronPlatformName === 'darwin') {
+        console.log('Signing completed for macOS');
+        console.log('Output directory:', appOutDir);
+      }
+    },
+
+    // 添加 GitHub 发布配置
+    publish: {
+      provider: 'github',
+      private: false,
+      releaseType: 'draft',
+    },
+  };
+
+  // 根据平台添加特定配置
+  if (process.platform === 'darwin') {
+    // 只在 CI 环境中启用签名
+    if (process.env.CI) {
+      config.mac = {
+        icon: 'buildResources/icon.icns',
+        identity: process.env.APPLE_IDENTITY,
+        target: ['dmg', 'zip'],
+        category: 'public.app-category.developer-tools',
+        hardenedRuntime: true,
+        gatekeeperAssess: false,
+        entitlements: 'buildResources/entitlements.mac.plist',
+        entitlementsInherit: 'buildResources/entitlements.mac.plist',
+        signIgnore: [
+          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+        ],
+        artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
+        compression: 'store',
+        darkModeSupport: true,
+      };
+    }
+    
+    config.dmg = {
+      sign: false,
+      writeUpdateInfo: false,
+      format: 'ULFO',
     };
   }
 

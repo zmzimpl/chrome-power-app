@@ -110,39 +110,11 @@ jobs:
           brew install make gcc
           echo "network=inet" > ~/.curlrc
 
-      - name: Setup Windows build tools
-        if: matrix.os == 'windows-latest'
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-          architecture: 'x64'
-
-      - name: Setup Windows Python environment
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          # 创建虚拟环境
-          python -m venv (Join-Path $env:USERPROFILE "python_env")
-          & (Join-Path $env:USERPROFILE "python_env\Scripts\Activate.ps1")
-          
-          # 安装所需包
-          python -m pip install setuptools
-
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node_version }}
-          cache: npm
-          cache-dependency-path: '**/package-lock.json'
-
       - name: Install native modules
         run: |
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             source ~/python_env/bin/activate
             export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
-          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
-            & (Join-Path $env:USERPROFILE "python_env\Scripts\Activate.ps1")
-            $env:PYTHON = Join-Path $env:USERPROFILE "python_env\Scripts\python.exe"
           fi
           npm install --ignore-scripts active-win sqlite3 electron
 
@@ -151,14 +123,6 @@ jobs:
         run: |
           source ~/python_env/bin/activate
           export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
-          npm rebuild sqlite3 --build-from-source
-
-      - name: Rebuild native modules
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          & (Join-Path $env:USERPROFILE "python_env\Scripts\Activate.ps1")
-          $env:PYTHON = Join-Path $env:USERPROFILE "python_env\Scripts\python.exe"
           npm rebuild sqlite3 --build-from-source
 
       - name: Install dependencies
@@ -177,8 +141,6 @@ jobs:
             elif [ "${{ matrix.arch }}" = "arm64" ]; then
               npm run build:native-addon:mac-arm64
             fi
-          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
-            npm run build:native-addon
           fi
 
       # 后续步骤保持不变...

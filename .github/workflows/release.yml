@@ -99,8 +99,12 @@ jobs:
           # 设置 Python 3.11 为默认版本
           echo "/opt/homebrew/opt/python@3.11/bin" >> $GITHUB_PATH
           
-          # 安装 distutils
-          pip3 install setuptools
+          # 创建虚拟环境
+          python3.11 -m venv ~/python_env
+          source ~/python_env/bin/activate
+          
+          # 在虚拟环境中安装所需包
+          python3.11 -m pip install setuptools
 
           # 安装其他必要工具
           brew install make gcc
@@ -115,12 +119,14 @@ jobs:
 
       - name: Install native modules
         run: |
+          source ~/python_env/bin/activate
           export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
           npm install --ignore-scripts active-win sqlite3 electron
 
       - name: Rebuild native modules
         if: matrix.os == 'macos-latest'
         run: |
+          source ~/python_env/bin/activate
           export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
           npm rebuild sqlite3 --build-from-source
 

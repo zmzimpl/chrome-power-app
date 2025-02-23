@@ -93,8 +93,8 @@ jobs:
           sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
           sudo xcodebuild -license accept
           
-          # 安装特定版本的 Python
-          brew install python@3.11
+          # 安装特定版本的 Python 和其他工具
+          brew install python@3.11 make gcc
           
           # 设置 Python 3.11 为默认版本
           echo "/opt/homebrew/opt/python@3.11/bin" >> $GITHUB_PATH
@@ -103,27 +103,44 @@ jobs:
           python3.11 -m venv ~/python_env
           source ~/python_env/bin/activate
           
-          # 在虚拟环境中安装所需包
-          python3.11 -m pip install setuptools
+          # 安装必要的 Python 包
+          python3.11 -m pip install setuptools wheel
 
-          # 安装其他必要工具
-          brew install make gcc
           echo "network=inet" > ~/.curlrc
 
       - name: Install native modules
+        if: matrix.os == 'macos-latest'
         run: |
-          if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            source ~/python_env/bin/activate
-            export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
-          fi
-          npm install --ignore-scripts active-win sqlite3 electron
+          source ~/python_env/bin/activate
+          export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
+          
+          # 设置 node-gyp 环境变量
+          export npm_config_node_gyp=$(which node-gyp)
+          export npm_config_build_from_source=true
+          
+          # 安装和重建 sqlite3
+          npm install --ignore-scripts sqlite3
+          cd node_modules/sqlite3
+          node-gyp clean configure build
+          cd ../..
+          
+          # 安装其他原生模块
+          npm install --ignore-scripts active-win electron
 
       - name: Rebuild native modules
         if: matrix.os == 'macos-latest'
         run: |
           source ~/python_env/bin/activate
           export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
-          npm rebuild sqlite3 --build-from-source
+          
+          # 设置 node-gyp 环境变量
+          export npm_config_node_gyp=$(which node-gyp)
+          export npm_config_build_from_source=true
+          
+          # 重建 sqlite3
+          cd node_modules/sqlite3
+          node-gyp rebuild --target=$(electron -v | sed 's/v//') --arch=arm64 --dist-url=https://electronjs.org/headers
+          cd ../..
 
       - name: Install dependencies
         uses: nick-fields/retry@v2

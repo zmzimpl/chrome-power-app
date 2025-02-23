@@ -122,8 +122,8 @@ jobs:
         shell: pwsh
         run: |
           # 创建虚拟环境
-          python -m venv $env:USERPROFILE\python_env
-          $env:USERPROFILE\python_env\Scripts\Activate.ps1
+          python -m venv (Join-Path $env:USERPROFILE "python_env")
+          & (Join-Path $env:USERPROFILE "python_env\Scripts\Activate.ps1")
           
           # 安装所需包
           python -m pip install setuptools
@@ -141,8 +141,8 @@ jobs:
             source ~/python_env/bin/activate
             export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
           elif [ "${{ matrix.os }}" = "windows-latest" ]; then
-            $env:USERPROFILE\python_env\Scripts\Activate.ps1
-            $env:PYTHON="$env:USERPROFILE\python_env\Scripts\python.exe"
+            & (Join-Path $env:USERPROFILE "python_env\Scripts\Activate.ps1")
+            $env:PYTHON = Join-Path $env:USERPROFILE "python_env\Scripts\python.exe"
           fi
           npm install --ignore-scripts active-win sqlite3 electron
 
@@ -157,8 +157,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $env:USERPROFILE\python_env\Scripts\Activate.ps1
-          $env:PYTHON="$env:USERPROFILE\python_env\Scripts\python.exe"
+          & (Join-Path $env:USERPROFILE "python_env\Scripts\Activate.ps1")
+          $env:PYTHON = Join-Path $env:USERPROFILE "python_env\Scripts\python.exe"
           npm rebuild sqlite3 --build-from-source
 
       - name: Install dependencies

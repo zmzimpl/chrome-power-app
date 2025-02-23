@@ -110,6 +110,19 @@ jobs:
           brew install make gcc
           echo "network=inet" > ~/.curlrc
 
+      - name: Setup Windows build tools
+        if: matrix.os == 'windows-latest'
+        run: |
+          # 安装 Python
+          choco install python3 --version=3.11.0
+          
+          # 创建虚拟环境
+          python -m venv $env:USERPROFILE\python_env
+          $env:USERPROFILE\python_env\Scripts\Activate.ps1
+          
+          # 安装所需包
+          python -m pip install setuptools
+
       - name: Use Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v3
         with:
@@ -119,8 +132,13 @@ jobs:
 
       - name: Install native modules
         run: |
-          source ~/python_env/bin/activate
-          export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            source ~/python_env/bin/activate
+            export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
+          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
+            $env:USERPROFILE\python_env\Scripts\Activate.ps1
+            $env:PYTHON="$env:USERPROFILE\python_env\Scripts\python.exe"
+          fi
           npm install --ignore-scripts active-win sqlite3 electron
 
       - name: Rebuild native modules
@@ -128,6 +146,14 @@ jobs:
         run: |
           source ~/python_env/bin/activate
           export PYTHON=/opt/homebrew/opt/python@3.11/bin/python3.11
+          npm rebuild sqlite3 --build-from-source
+
+      - name: Rebuild native modules
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $env:USERPROFILE\python_env\Scripts\Activate.ps1
+          $env:PYTHON="$env:USERPROFILE\python_env\Scripts\python.exe"
           npm rebuild sqlite3 --build-from-source
 
       - name: Install dependencies

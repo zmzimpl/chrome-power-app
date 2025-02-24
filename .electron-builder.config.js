@@ -103,7 +103,6 @@ module.exports = async function () {
       signIgnore: [
         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-        'app.asar.unpacked/node_modules/window-addon/window-addon.node',
         'app.asar.unpacked/node_modules/window-addon/window-addon-x64.node',
         'app.asar.unpacked/node_modules/window-addon/window-addon-arm64.node',
       ],
@@ -164,7 +163,6 @@ module.exports = async function () {
         signIgnore: [
           'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
           'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-          'app.asar.unpacked/node_modules/window-addon/window-addon.node',
           'app.asar.unpacked/node_modules/window-addon/window-addon-x64.node',
           'app.asar.unpacked/node_modules/window-addon/window-addon-arm64.node',
         ],

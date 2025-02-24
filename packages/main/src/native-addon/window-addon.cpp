@@ -1,18 +1,16 @@
 #include <napi.h>
 #include <iostream>
 
-// Platform specific includes
+#ifdef __APPLE__
+#import <Foundation/Foundation.h>
+#import <Cocoa/Cocoa.h>
+#import <CoreFoundation/CoreFoundation.h>
+#import <CoreGraphics/CoreGraphics.h>
+#endif
+
 #ifdef _WIN32
-    #include <windows.h>
-    #include <cstring>
-#elif __APPLE__
-    #include <CoreFoundation/CoreFoundation.h>
-    #include <CoreGraphics/CoreGraphics.h>
-    
-    #import <Cocoa/Cocoa.h>
-    
-    @class NSExtensionContext;
-    @class NSItemProvider;
+#include <windows.h>
+#include <cstring>
 #endif
 
 // Error logging macro
@@ -470,8 +468,15 @@ private:
         int screenX = monitor.rect.left;
         int screenY = monitor.rect.top;
 
-        int effectiveWidth = width > 0 ? width : screenWidth / columns;
-        int effectiveHeight = height > 0 ? height : screenHeight / ((childPids.size() + 1 + columns - 1) / columns);
+        // Calculate total windows and rows
+        int totalWindows = childPids.size() + 1;
+        int rows = (totalWindows + columns - 1) / columns;
+
+        // Calculate effective dimensions with spacing
+        int availableWidth = screenWidth - (spacing * (columns + 1));
+        int availableHeight = screenHeight - (spacing * (rows + 1));
+        int effectiveWidth = width > 0 ? width : availableWidth / columns;
+        int effectiveHeight = height > 0 ? height : availableHeight / rows;
 
         // Handle main window and its extensions
         auto mainWindows = FindWindowsByPid(mainPid);
@@ -487,8 +492,10 @@ private:
         }
 
         if (mainWindow) {
-            int x = screenX + spacing;
-            int y = screenY + spacing;
+            int row = 0;
+            int col = 0;
+            int x = screenX + col * effectiveWidth + spacing;
+            int y = screenY + row * effectiveHeight + spacing;
             ArrangeWindow(mainWindow->hwnd, x, y, effectiveWidth - spacing * 2, effectiveHeight - spacing * 2);
 
             for (auto ext : mainExtensions) {
@@ -518,15 +525,16 @@ private:
             if (childMain) {
                 int row = (i + 1) / columns;
                 int col = (i + 1) % columns;
-                int x = screenX + col * effectiveWidth + spacing;
-                int y = screenY + row * effectiveHeight + spacing;
+                int x = screenX + (col * effectiveWidth) + (spacing * (col + 1));
+                int y = screenY + (row * effectiveHeight) + (spacing * (row + 1));
 
                 ArrangeWindow(childMain->hwnd,
                             x,
                             y,
-                            effectiveWidth - spacing * 2,
-                            effectiveHeight - spacing * 2);
+                            effectiveWidth - spacing,
+                            effectiveHeight - spacing);
 
+                // Handle extensions
                 for (auto ext : childExtensions) {
                     ArrangeWindow(ext->hwnd,
                                 x + effectiveWidth - ext->width - spacing,
@@ -545,8 +553,15 @@ private:
         float screenX = monitor.bounds.origin.x;
         float screenY = monitor.bounds.origin.y;
 
-        float effectiveWidth = width > 0 ? width : screenWidth / columns;
-        float effectiveHeight = height > 0 ? height : screenHeight / ((childPids.size() + 1 + columns - 1) / columns);
+        // Calculate total windows and rows
+        int totalWindows = childPids.size() + 1;
+        int rows = (totalWindows + columns - 1) / columns;
+
+        // Calculate effective dimensions with spacing
+        float availableWidth = screenWidth - (spacing * (columns + 1));
+        float availableHeight = screenHeight - (spacing * (rows + 1));
+        float effectiveWidth = width > 0 ? width : availableWidth / columns;
+        float effectiveHeight = height > 0 ? height : availableHeight / rows;
 
         // Handle main window
         ArrangeWindow(mainPid, 
@@ -559,14 +574,14 @@ private:
         for (size_t i = 0; i < childPids.size(); i++) {
             int row = (i + 1) / columns;
             int col = (i + 1) % columns;
-            float x = screenX + col * effectiveWidth + spacing;
-            float y = screenY + row * effectiveHeight + spacing;
+            float x = screenX + (col * effectiveWidth) + (spacing * (col + 1));
+            float y = screenY + (row * effectiveHeight) + (spacing * (row + 1));
             
             ArrangeWindow(childPids[i],
                          x,
                          y,
-                         effectiveWidth - spacing * 2,
-                         effectiveHeight - spacing * 2);
+                         effectiveWidth - spacing,
+                         effectiveHeight - spacing);
         }
 #endif
 

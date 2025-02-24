@@ -117,7 +117,11 @@ jobs:
       - name: Rebuild native modules
         if: matrix.os == 'macos-latest'
         run: |
-          npm rebuild sqlite3 --build-from-source --python=/opt/homebrew/opt/python@3.11/bin/python3.11
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            npm run rebuild-deps:mac-x64
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            npm run rebuild-deps:mac-arm64
+          fi
 
       - name: Install dependencies
         uses: nick-fields/retry@v2
@@ -127,6 +131,15 @@ jobs:
           retry_wait_seconds: 30
           command: npm ci --verbose
       
+      - name: Build native addon
+        if: matrix.os == 'macos-latest'
+        run: |
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            npm run build:native-addon:mac-x64
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            npm run build:native-addon:mac-arm64
+          fi
+
       - name: Build local native addon
         run: |
           if [ "${{ matrix.os }}" = "macos-latest" ]; then

@@ -91,7 +91,7 @@ const Sync = () => {
     }
   };
 
-  useEffect(() => {
+  const saveSyncConfig = () => {
     localStorage.setItem('syncConfig', JSON.stringify({
       mainPid: null,
       childPids: [],
@@ -99,7 +99,7 @@ const Sync = () => {
       columns: syncConfig.columns,
       size: syncConfig.size,
     }));
-  }, [syncConfig]);
+  };
 
   useEffect(() => {
     fetchOpenedWindows();
@@ -144,17 +144,19 @@ const Sync = () => {
       };
     }
     SyncBridge.arrangeWindows(config as SyncConfig);
+    saveSyncConfig();
   };
 
   const onValuesChange = (_changedFields: 'columns' | 'spacing' | 'height', allFields: SafeAny) => {
-    setSyncConfig({
+    const newConfig = {
       ...syncConfig,
       ...allFields,
       size: {
         width: syncConfig.size.width,
-        height: allFields.height ?? syncConfig.size.height,
+        height: allFields.height ?? 0,
       },
-    });
+    };
+    setSyncConfig(newConfig);
   };
 
   return (
@@ -189,7 +191,7 @@ const Sync = () => {
               initialValues={{
                 columns: syncConfig.columns,
                 spacing: syncConfig.spacing,
-                height: undefined,
+                height: syncConfig.size.height !== 0 ? syncConfig.size.height : undefined,
               }}
               onValuesChange={onValuesChange}
               className="space-y-4"

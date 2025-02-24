@@ -34,7 +34,7 @@ module.exports = async function () {
       {
         from: 'packages/main/src/native-addon/build/Release/',
         to: 'app.asar.unpacked/node_modules/window-addon/',
-        filter: ['*.node'],
+        filter: ['window-addon-x64.node', 'window-addon-arm64.node', 'window-addon.node'],
       },
       {
         from: 'migrations',
@@ -100,6 +100,11 @@ module.exports = async function () {
       artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
       compression: 'store',
       darkModeSupport: true,
+      signIgnore: [
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+        'app.asar.unpacked/node_modules/window-addon/window-addon.node',
+      ],
     },
     dmg: {
       sign: false,
@@ -143,15 +148,21 @@ module.exports = async function () {
       config.mac = {
         icon: 'buildResources/icon.icns',
         identity: process.env.APPLE_IDENTITY,
-        target: ['dmg', 'zip'],
+        target: [
+          {
+            target: 'dmg',
+            arch: ['x64', 'arm64'],
+          },
+        ],
         category: 'public.app-category.developer-tools',
         hardenedRuntime: true,
-        gatekeeperAssess: false,
+        gatekeeperAssess: true,
         entitlements: 'buildResources/entitlements.mac.plist',
         entitlementsInherit: 'buildResources/entitlements.mac.plist',
         signIgnore: [
           'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
           'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+          'app.asar.unpacked/node_modules/window-addon/window-addon.node',
         ],
         artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
         compression: 'store',

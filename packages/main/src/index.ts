@@ -121,3 +121,12 @@ if (import.meta.env.PROD) {
 app.on('before-quit', async () => {
   await db.destroy();
 });
+
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception:', error);
+});
+
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled rejection:', reason);
+});

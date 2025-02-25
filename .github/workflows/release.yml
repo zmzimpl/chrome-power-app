@@ -138,11 +138,9 @@ jobs:
           if [ "${{ matrix.platform }}" == "mac-arm64" ]; then
             echo "Building native modules for ARM64"
             npm run build:native-addon:mac-arm64
-            npm run rebuild-deps:mac-arm64
           elif [ "${{ matrix.platform }}" == "mac-x64" ]; then
             echo "Building native modules for x64"
             npm run build:native-addon:mac-x64
-            npm run rebuild-deps:mac-x64
           fi
           
           # 检查编译的模块

@@ -184,20 +184,42 @@ jobs:
         run: npm run build
 
       # 构建和发布项目（使用electron-builder内置发布功能）
-      - name: Build and Publish
+      - name: Build and Publish for Windows
+        if: matrix.platform == 'win'
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 15
           max_attempts: 3
           retry_wait_seconds: 30
-          command: |
-            if [ "${{ matrix.platform }}" == "win" ]; then
-              npx electron-builder --win --config .electron-builder.config.js --publish always
-            elif [ "${{ matrix.platform }}" == "mac-x64" ]; then
-              npx electron-builder --mac --x64 --config .electron-builder.config.js --publish always
-            elif [ "${{ matrix.platform }}" == "mac-arm64" ]; then
-              npx electron-builder --mac --arm64 --config .electron-builder.config.js --publish always
-            fi
+          shell: bash
+          command: npx electron-builder --win --config .electron-builder.config.js --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          BUILD_TIME: ${{ github.run_number }}
+
+      - name: Build and Publish for macOS x64
+        if: matrix.platform == 'mac-x64'
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          shell: bash
+          command: npx electron-builder --mac --x64 --config .electron-builder.config.js --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          BUILD_TIME: ${{ github.run_number }}
+          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+
+      - name: Build and Publish for macOS arm64
+        if: matrix.platform == 'mac-arm64'
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          shell: bash
+          command: npx electron-builder --mac --arm64 --config .electron-builder.config.js --publish always
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           BUILD_TIME: ${{ github.run_number }}

@@ -183,99 +183,62 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      # 根据平台打包
-      - name: Build and Package for specific platform
+      # 构建和发布项目（使用electron-builder内置发布功能）
+      - name: Build and Publish
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            if [ "${{ matrix.platform }}" == "win" ]; then
+              npx electron-builder --win --config .electron-builder.config.js --publish always
+            elif [ "${{ matrix.platform }}" == "mac-x64" ]; then
+              npx electron-builder --mac --x64 --config .electron-builder.config.js --publish always
+            elif [ "${{ matrix.platform }}" == "mac-arm64" ]; then
+              npx electron-builder --mac --arm64 --config .electron-builder.config.js --publish always
+            fi
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           BUILD_TIME: ${{ github.run_number }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
-        run: |
-          if [ "${{ matrix.platform }}" == "win" ]; then
-            npx electron-builder --win --config .electron-builder.config.js --publish never
-          elif [ "${{ matrix.platform }}" == "mac-x64" ]; then
-            # 仅构建x64架构
-            npx electron-builder --mac --x64 --config .electron-builder.config.js --publish never
-          elif [ "${{ matrix.platform }}" == "mac-arm64" ]; then
-            # 仅构建arm64架构
-            npx electron-builder --mac --arm64 --config .electron-builder.config.js --publish never
-          fi
-          
-      # 验证构建
-      - name: Verify App Bundle
-        if: startsWith(matrix.platform, 'mac')
-        run: |
-          # 修复路径构建方式
-          if [ "${{ matrix.platform }}" == "mac-arm64" ]; then
-            APP_PATH="dist/mac-arm64/Chrome Power.app"
-          else
-            APP_PATH="dist/mac/Chrome Power.app"
-          fi
-          
-          echo "Verifying app at: $APP_PATH"
-          
-          echo "=== 检查应用签名 ==="
-          codesign -dvv "$APP_PATH" || true
-          
-          echo "=== 检查原生模块 ==="
-          find "$APP_PATH" -name "*.node" -exec sh -c 'echo "=== {} ==="; codesign -dvv {} || true' \;
-          
-          echo "=== 检查权限 ==="
-          codesign -d --entitlements :- "$APP_PATH" || true
-
-      # 上传构建产物到 GitHub Release
-      - name: Upload artifacts to GitHub Release
-        if: success() && !inputs.dry-run
+      
+      # macOS特定：签名原生模块（如果需要）
+      - name: Sign native modules (macOS)
+        if: startsWith(matrix.platform, 'mac') && !inputs.dry-run
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          BUILD_TIME: ${{ github.run_number }}
+          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
         run: |
-          # 根据平台获取正确的构建产物路径
-          if [ "${{ matrix.platform }}" == "win" ]; then
-            # Windows 构建产物
-            ARTIFACTS_PATH="dist/*.exe"
-          elif [ "${{ matrix.platform }}" == "mac-x64" ]; then
-            # macOS x64 构建产物
-            ARTIFACTS_PATH="dist/mac/*.dmg"
-          elif [ "${{ matrix.platform }}" == "mac-arm64" ]; then
-            # macOS arm64 构建产物
-            ARTIFACTS_PATH="dist/mac-arm64/*.dmg"
-          fi
-          
-          # 创建版本号
+          node scripts/sign-native-modules.js
+
+      # 验证发布
+      - name: Verify Release Assets
+        if: success() && !inputs.dry-run
+        run: |
           VERSION=$(node -e "console.log(require('./package.json').version)")
           TAG="v${VERSION}"
+          RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG"
           
-          # 检查 Release 是否已存在
-          RELEASE_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG" | \
-            jq -r '.id // "null"')
+          # 尝试最多5次，每次间隔10秒
+          MAX_ATTEMPTS=5
+          for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+            echo "Checking release assets (attempt $i of $MAX_ATTEMPTS)..."
+            ASSETS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $RELEASE_URL)
             
-          # 创建 Release（如果不存在）
-          if [ "$RELEASE_ID" == "null" ]; then
-            echo "Creating new release for tag $TAG"
-            RESPONSE=$(curl -s -X POST -H "Authorization: token $GH_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "{\"tag_name\":\"$TAG\",\"name\":\"Release $TAG\",\"draft\":true}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases")
-            RELEASE_ID=$(echo $RESPONSE | jq -r '.id')
-          else
-            echo "Found existing release with ID $RELEASE_ID"
-          fi
-          
-          # 上传构建产物（增加BUILD_TIME到文件名）
-          for artifact in $ARTIFACTS_PATH; do
-            BASE_NAME=$(basename "$artifact")
-            # 在扩展名前添加BUILD_TIME
-            FILE_EXT="${BASE_NAME##*.}"
-            FILE_NAME="${BASE_NAME%.*}"
-            ARTIFACT_NAME="${FILE_NAME}-${BUILD_TIME}.${FILE_EXT}"
-            
-            echo "Uploading $artifact as $ARTIFACT_NAME to release $RELEASE_ID"
-            
-            curl -s -X POST -H "Authorization: token $GH_TOKEN" \
-              -H "Content-Type: application/octet-stream" \
-              --data-binary @"$artifact" \
-              "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$ARTIFACT_NAME"
+            # 检查是否包含我们的构建平台
+            if echo "$ASSETS" | grep -q "${{ matrix.platform }}"; then
+              echo "✅ Release assets for ${{ matrix.platform }} found successfully!"
+              exit 0
+            else
+              echo "Release assets not found yet, waiting..."
+              if [ $i -lt $MAX_ATTEMPTS ]; then
+                sleep 10
+              fi
+            fi
           done
           
-          echo "Artifacts uploaded successfully"
+          echo "❌ Failed to verify release assets after $MAX_ATTEMPTS attempts"
+          echo "Release URL: $RELEASE_URL"
+          echo "Available assets:"
+          curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" "$RELEASE_URL" | jq '.assets[].name'
+          exit 1

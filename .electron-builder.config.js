@@ -104,7 +104,7 @@ module.exports = async function () {
       entitlementsInherit: 'buildResources/entitlements.mac.plist',
       type: 'distribution',
       strictVerify: false,
-      artifactName: '${productName}-${version}-${arch}-${os}.${ext}',
+      artifactName: '${productName}-${version}-${arch}-${os}' + getBuildTime() + '.${ext}',
       signIgnore: [],
     },
     dmg: {

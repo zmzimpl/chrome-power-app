@@ -82,7 +82,7 @@ module.exports = async function () {
       uninstallerIcon: 'buildResources/icon.ico',
       installerHeaderIcon: 'buildResources/icon.ico',
       menuCategory: true,
-      artifactName: '${productName}-Setup-${version}.${ext}',
+      artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
     },
 
     // macOS 配置

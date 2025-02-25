@@ -37,7 +37,7 @@ module.exports = async function () {
       {
         from: 'packages/main/src/native-addon/build/Release/',
         to: 'app.asar.unpacked/node_modules/window-addon/',
-        filter: ['window-addon-x64.node', 'window-addon-arm64.node', 'window-addon.node'],
+        filter: ['window-addon.node'],
       },
       {
         from: 'migrations',

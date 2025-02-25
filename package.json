@@ -11,8 +11,8 @@
   "main": "packages/main/dist/index.cjs",
   "scripts": {
     "build:native-addon": "cd ./packages/main/src/native-addon && node-gyp clean && node-gyp configure && node-gyp build",
-    "build:native-addon:mac-x64": "cd ./packages/main/src/native-addon && node-gyp clean && SDKROOT=$(xcrun --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=10.13 node-gyp rebuild --arch=x64 && mv build/Release/window-addon.node build/Release/window-addon-x64.node",
-    "build:native-addon:mac-arm64": "cd ./packages/main/src/native-addon && node-gyp clean && SDKROOT=$(xcrun --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=10.13 node-gyp rebuild --arch=arm64 && mv build/Release/window-addon.node build/Release/window-addon-arm64.node",
+    "build:native-addon:mac-x64": "cd ./packages/main/src/native-addon && node-gyp clean && SDKROOT=$(xcrun --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=10.13 node-gyp rebuild --arch=x64",
+    "build:native-addon:mac-arm64": "cd ./packages/main/src/native-addon && node-gyp clean && SDKROOT=$(xcrun --show-sdk-path) MACOSX_DEPLOYMENT_TARGET=10.13 node-gyp rebuild --arch=arm64",
     "build": "npm run build:main && npm run build:preload && npm run build:renderer",
     "build:main": "cd ./packages/main && vite build",
     "build:preload": "cd ./packages/preload && vite build",

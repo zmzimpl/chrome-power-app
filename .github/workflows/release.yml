@@ -235,32 +235,35 @@ jobs:
 
       # 验证发布
       - name: Verify Release Assets
-        if: success() && !inputs.dry-run
+        if: success() || failure()  # 即使前一步失败也运行
+        shell: bash
         run: |
-          VERSION=$(node -e "console.log(require('./package.json').version)")
-          TAG="v${VERSION}"
-          RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG"
+          # 获取BUILD_TIME
+          BUILD_TIME="${{ github.run_number }}"
           
-          # 尝试最多5次，每次间隔10秒
+          # 使用最新release而不是特定tag
+          RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/latest"
+          echo "检查最新Release: $RELEASE_URL"
+          
+          # 尝试最多5次，每次间隔15秒
           MAX_ATTEMPTS=5
           for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-            echo "Checking release assets (attempt $i of $MAX_ATTEMPTS)..."
+            echo "检查资产 (尝试 $i / $MAX_ATTEMPTS)..."
             ASSETS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $RELEASE_URL)
             
-            # 检查是否包含我们的构建平台
-            if echo "$ASSETS" | grep -q "${{ matrix.platform }}"; then
-              echo "✅ Release assets for ${{ matrix.platform }} found successfully!"
+            # 检查是否包含BUILD_TIME以及平台标识
+            if echo "$ASSETS" | grep -q "${BUILD_TIME}" && echo "$ASSETS" | grep -q "${{ matrix.platform }}"; then
+              echo "✅ 成功验证平台 ${{ matrix.platform }} 的资产! (包含构建编号: ${BUILD_TIME})"
               exit 0
             else
-              echo "Release assets not found yet, waiting..."
+              echo "资产未找到，等待中..."
               if [ $i -lt $MAX_ATTEMPTS ]; then
-                sleep 10
+                sleep 15
               fi
             fi
           done
           
-          echo "❌ Failed to verify release assets after $MAX_ATTEMPTS attempts"
-          echo "Release URL: $RELEASE_URL"
-          echo "Available assets:"
-          curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" "$RELEASE_URL" | jq '.assets[].name'
+          echo "❌ $MAX_ATTEMPTS 次尝试后验证失败"
+          echo "API响应摘要:"
+          echo "$ASSETS" | grep -oE '"name":"[^"]+"' || echo "无法解析资产名称"
           exit 1

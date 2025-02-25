@@ -204,7 +204,14 @@ jobs:
       - name: Verify App Bundle
         if: startsWith(matrix.platform, 'mac')
         run: |
-          APP_PATH="dist/mac${matrix.platform == 'mac-arm64' ? '-arm64' : ''}/Chrome Power.app"
+          # 修复路径构建方式
+          if [ "${{ matrix.platform }}" == "mac-arm64" ]; then
+            APP_PATH="dist/mac-arm64/Chrome Power.app"
+          else
+            APP_PATH="dist/mac/Chrome Power.app"
+          fi
+          
+          echo "Verifying app at: $APP_PATH"
           
           echo "=== 检查应用签名 ==="
           codesign -dvv "$APP_PATH" || true

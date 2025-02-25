@@ -115,10 +115,21 @@ jobs:
           cache: npm
           cache-dependency-path: '**/package-lock.json'
 
-      # 安装依赖
-      - name: Install dependencies
+      - name: Install native modules
+        run: npm install --ignore-scripts sqlite3 electron
+
+      - name: Rebuild native modules
+        if: matrix.os == 'macos-latest'
         run: |
-          npm ci
+          npm rebuild sqlite3 --build-from-source --python=/opt/homebrew/opt/python@3.11/bin/python3.11
+
+      - name: Install dependencies
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: npm ci --verbose
           
       # 特别构建原生模块 - 基于架构
       - name: Build native modules for macOS

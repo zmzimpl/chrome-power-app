@@ -58,8 +58,8 @@ export const setCookieToPage = async (windowId: number, page: Page) => {
   console.log(domain, typeof pageCookies, pageCookies.length, cookie?.length);
   if (!pageCookies.length) {
     if (cookie?.length) {
-      console.log('set cookie:', cookie);
-      await page.setCookie(...cookie);
+      console.log('no set cookie:', cookie);
+      // await page.setCookie(...cookie);
     }
   }
 };

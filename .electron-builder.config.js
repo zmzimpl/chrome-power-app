@@ -171,7 +171,7 @@ module.exports = async function () {
         darkModeSupport: true,
       };
     }
-    
+
     config.dmg = {
       sign: false,
       writeUpdateInfo: false,

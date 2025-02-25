@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-const BASE_URL = 'http://localhost:49156';
+const BASE_URL = 'http://localhost:2018';
 
 export async function openProfile(windowId) {
   const response = await fetch(`${BASE_URL}/profiles/open?windowId=${windowId}`);

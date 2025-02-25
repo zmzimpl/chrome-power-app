@@ -49,7 +49,7 @@ export default function Start() {
 
   const checkPing = async () => {
     const windowId = search.get('windowId');
-    const serverPort = search.get('serverPort') || 49156;
+    const serverPort = search.get('serverPort') || 2018;
     setChecking(true);
     try {
       const res = await axios.get(`http://localhost:${serverPort}/ip/ping`, {
@@ -73,7 +73,7 @@ export default function Start() {
 
   const fetchInfo = async () => {
     const windowId = search.get('windowId');
-    const serverPort = search.get('serverPort') || 49156;
+    const serverPort = search.get('serverPort') || 2018;
     if (!windowId) return;
     try {
       const res = await axios.get(`http://localhost:${serverPort}/window/info`, {

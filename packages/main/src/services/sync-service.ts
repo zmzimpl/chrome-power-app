@@ -18,15 +18,15 @@ if (!app.isPackaged) {
   try {
     addon = require(addonPath);
   } catch (error) {
-    console.error('Failed to load addon:', error);
-    console.error('Attempted path:', addonPath);
-    console.error('Process arch:', process.arch);
+    logger.error('Failed to load addon:', error);
+    logger.error('Attempted path:', addonPath);
+    logger.error('Process arch:', process.arch);
   }
 }
 
 export const initSyncService = () => {
   if (!addon) {
-    logger.error('Window addon not loaded properly');
+    logger.error('Window addon not loaded properly', process.resourcesPath);
     return;
   }
   

@@ -47,7 +47,7 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 
 - 安装依赖 `npm i`
 - 运行调试 `npm run watch`
-- （非必要）打包部署 `npm run publish`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
+- （非必要）打包部署 `npm run package`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
 
 ## API 文档
 

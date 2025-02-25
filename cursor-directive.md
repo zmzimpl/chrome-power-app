@@ -32,7 +32,6 @@
 2. System Integration
    - Native Addons (node-addon-api)
    - Process Management (ps-list)
-   - Window Management (active-win)
 
 3. Network & Proxy
    - Express.js

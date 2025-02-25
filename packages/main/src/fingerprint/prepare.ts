@@ -42,7 +42,7 @@ const getRealIP = async (proxy: DB.Proxy) => {
         },
         maxRedirects: 5,
       });
-      return url.includes('ip-api.com') ? data.query : data.ip;
+      return data.ip;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNRESET') {
@@ -57,8 +57,8 @@ const getRealIP = async (proxy: DB.Proxy) => {
 
   try {
     return await Promise.race([
-      makeRequest('http://ip-api.com/json/?fields=61439', requestProxy),
-      makeRequest('https://api64.ipify.org?format=json', requestProxy),
+      makeRequest('https://ipinfo.io/json', requestProxy),
+      makeRequest('https://api.ipify.org?format=json', requestProxy),
     ]);
   } catch (error) {
     bridgeMessageToUI({
@@ -86,7 +86,7 @@ export const getProxyInfo = async (proxy: DB.Proxy) => {
       return res.data;
     } catch (error) {
       attempts++;
-      logger.error(error);
+      logger.error('| Prepare | getProxyInfo | error:', error);
       if (attempts === maxAttempts) {
         logger.error(
           '| Prepare | getProxyInfo | error:',

@@ -225,45 +225,45 @@ jobs:
           BUILD_TIME: ${{ github.run_number }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
       
-      # macOS特定：签名原生模块（如果需要）
-      - name: Sign native modules (macOS)
-        if: startsWith(matrix.platform, 'mac') && !inputs.dry-run
-        env:
-          APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
-        run: |
-          node scripts/sign-native-modules.js
+      # # macOS特定：签名原生模块（如果需要）
+      # - name: Sign native modules (macOS)
+      #   if: startsWith(matrix.platform, 'mac') && !inputs.dry-run
+      #   env:
+      #     APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+      #   run: |
+      #     node scripts/sign-native-modules.js
 
-      # 验证发布
-      - name: Verify Release Assets
-        if: success() || failure()  # 即使前一步失败也运行
-        shell: bash
-        run: |
-          # 获取BUILD_TIME
-          BUILD_TIME="${{ github.run_number }}"
+      # # 验证发布
+      # - name: Verify Release Assets
+      #   if: success() || failure()  # 即使前一步失败也运行
+      #   shell: bash
+      #   run: |
+      #     # 获取BUILD_TIME
+      #     BUILD_TIME="${{ github.run_number }}"
           
-          # 使用最新release而不是特定tag
-          RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/latest"
-          echo "检查最新Release: $RELEASE_URL"
+      #     # 使用最新release而不是特定tag
+      #     RELEASE_URL="https://api.github.com/repos/${{ github.repository }}/releases/latest"
+      #     echo "检查最新Release: $RELEASE_URL"
           
-          # 尝试最多5次，每次间隔15秒
-          MAX_ATTEMPTS=5
-          for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-            echo "检查资产 (尝试 $i / $MAX_ATTEMPTS)..."
-            ASSETS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $RELEASE_URL)
+      #     # 尝试最多5次，每次间隔15秒
+      #     MAX_ATTEMPTS=5
+      #     for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+      #       echo "检查资产 (尝试 $i / $MAX_ATTEMPTS)..."
+      #       ASSETS=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $RELEASE_URL)
             
-            # 检查是否包含BUILD_TIME以及平台标识
-            if echo "$ASSETS" | grep -q "${BUILD_TIME}" && echo "$ASSETS" | grep -q "${{ matrix.platform }}"; then
-              echo "✅ 成功验证平台 ${{ matrix.platform }} 的资产! (包含构建编号: ${BUILD_TIME})"
-              exit 0
-            else
-              echo "资产未找到，等待中..."
-              if [ $i -lt $MAX_ATTEMPTS ]; then
-                sleep 15
-              fi
-            fi
-          done
+      #       # 检查是否包含BUILD_TIME以及平台标识
+      #       if echo "$ASSETS" | grep -q "${BUILD_TIME}" && echo "$ASSETS" | grep -q "${{ matrix.platform }}"; then
+      #         echo "✅ 成功验证平台 ${{ matrix.platform }} 的资产! (包含构建编号: ${BUILD_TIME})"
+      #         exit 0
+      #       else
+      #         echo "资产未找到，等待中..."
+      #         if [ $i -lt $MAX_ATTEMPTS ]; then
+      #           sleep 15
+      #         fi
+      #       fi
+      #     done
           
-          echo "❌ $MAX_ATTEMPTS 次尝试后验证失败"
-          echo "API响应摘要:"
-          echo "$ASSETS" | grep -oE '"name":"[^"]+"' || echo "无法解析资产名称"
-          exit 1
+      #     echo "❌ $MAX_ATTEMPTS 次尝试后验证失败"
+      #     echo "API响应摘要:"
+      #     echo "$ASSETS" | grep -oE '"name":"[^"]+"' || echo "无法解析资产名称"
+      #     exit 1

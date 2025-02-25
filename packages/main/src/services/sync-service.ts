@@ -7,16 +7,12 @@ import { dialog } from 'electron';
 const logger = createLogger(MAIN_LOGGER_LABEL);
 let addon: unknown;
 if (!app.isPackaged) {
-  addon = require(path.join(__dirname, '../src/native-addon/build/Release/', process.platform === 'darwin' ? process.arch === 'arm64' ? 'window-addon-arm64.node' : 'window-addon-x64.node' : 'window-addon.node'));
+  addon = require(path.join(__dirname, '../src/native-addon/build/Release/', 'window-addon.node'));
 } else {
   const addonPath = path.join(
     process.resourcesPath,
     'app.asar.unpacked/node_modules/window-addon',
-    process.platform === 'darwin' 
-      ? process.arch === 'arm64' 
-        ? 'window-addon-arm64.node'
-        : 'window-addon-x64.node'
-      : 'window-addon.node',
+    'window-addon.node',
   );
 
   try {

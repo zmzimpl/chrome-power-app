@@ -1,4 +1,5 @@
 /* eslint-disable */
+// @ts-nocheck
 import {batchCreateWindows, getAllWindows} from './demo/window.js';
 import {openProfile} from './demo/profiles.js';
 

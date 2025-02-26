@@ -1,7 +1,7 @@
 {
   "name": "chrome-power",
   "description": "The first open source multi-chrome manager tool.",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "private": true,
   "author": {
     "email": "zmzimpl@gmail.com",
@@ -11,7 +11,7 @@
   "main": "packages/main/dist/index.cjs",
   "scripts": {
     "build:native-addon": "cd ./packages/main/src/native-addon && node-gyp clean && node-gyp configure && node-gyp build",
-    "build:native-addon:mac-x64": "cd ./packages/main/src/native-addon && node-gyp clean && node-gyp configure && node-gyp build --arch=x64",
+    "build:native-addon:mac-x64": "cd ./packages/main/src/native-addon && node-gyp clean && SDKROOT=$(xcrun --sdk macosx --show-sdk-path) CFLAGS=\"-arch x86_64\" CXXFLAGS=\"-arch x86_64\" LDFLAGS=\"-arch x86_64\" npm_config_arch=x64 node-gyp configure && SDKROOT=$(xcrun --sdk macosx --show-sdk-path) CFLAGS=\"-arch x86_64\" CXXFLAGS=\"-arch x86_64\" LDFLAGS=\"-arch x86_64\" npm_config_arch=x64 node-gyp build",
     "build:native-addon:mac-arm64": "cd ./packages/main/src/native-addon && node-gyp clean && node-gyp configure && node-gyp build --arch=arm64",
     "build": "npm run build:main && npm run build:preload && npm run build:renderer",
     "build:main": "cd ./packages/main && vite build",

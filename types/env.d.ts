@@ -32,3 +32,6 @@ interface ImportMeta {
 declare module 'portscanner';
 declare module 'geoip-lite';
 declare module 'ip';
+declare module 'async-icns';
+// declare module 'png-to-ico';
+// declare module 'jimp';

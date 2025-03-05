@@ -125,7 +125,7 @@ export const modifyPageInfo = async (windowId: number, page: Page, ipInfo: IP) =
       await page.setGeolocation({latitude: ipInfo.ll?.[0], longitude: ipInfo.ll?.[1]});
       await page.emulateTimezone(ipInfo.timeZone);
     } catch (error) {
-      console.error(error);
+      console.error('| ModifyPageInfo | error:', error);
     }
   });
   await page.evaluateOnNewDocument(

@@ -3,12 +3,14 @@
  * But currently electron-builder doesn't support ESM configs
  * @see https://github.com/develar/read-config-file/issues/10
  */
+// const { notarize } = require('@electron/notarize');
+
+require('dotenv').config();
 
 /**
  * @type {() => import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
  */
-
 function getBuildTime() {
   return process.env.BUILD_TIME || new Date().getTime();
 }
@@ -17,6 +19,7 @@ module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
   const config = {
     productName: 'Chrome Power',
+    appId: 'com.chrome-power.app',
     directories: {
       output: 'dist',
       buildResources: 'buildResources',
@@ -25,16 +28,16 @@ module.exports = async function () {
       'packages/**/dist/**',
       'packages/**/assets/**',
       'migrations',
-      'node_modules/sqlite3/**/*',
+      'package.json',
+      'node_modules/sqlite3/lib/binding/**/*.node',
+      'node_modules/iconv-corefoundation/lib/*.node',
       'buildResources/**/*',
-      '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}',
-      '!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}',
     ],
     extraResources: [
       {
         from: 'packages/main/src/native-addon/build/Release/',
         to: 'app.asar.unpacked/node_modules/window-addon/',
-        filter: ['window-addon-x64.node', 'window-addon-arm64.node', 'window-addon.node'],
+        filter: ['window-addon.node'],
       },
       {
         from: 'migrations',
@@ -55,7 +58,7 @@ module.exports = async function () {
       main: './packages/main/dist/index.cjs',
     },
     asar: true,
-    asarUnpack: ['node_modules/sqlite3/**/*', '**/*.node'],
+    asarUnpack: '**/*.{node,dll}',
 
     // Windows 配置
     win: {
@@ -79,13 +82,15 @@ module.exports = async function () {
       uninstallerIcon: 'buildResources/icon.ico',
       installerHeaderIcon: 'buildResources/icon.ico',
       menuCategory: true,
-      artifactName: '${productName}-Setup-${version}.${ext}',
+      artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
     },
 
     // macOS 配置
     mac: {
+      timestamp: false,
       icon: 'buildResources/icon.icns',
-      identity: null,
+      notarize: false,
+      identity: process.env.APPLE_IDENTITY,
       target: [
         {
           target: 'dmg',
@@ -93,19 +98,14 @@ module.exports = async function () {
         },
       ],
       category: 'public.app-category.developer-tools',
-      hardenedRuntime: false,
+      hardenedRuntime: true,
       gatekeeperAssess: false,
-      entitlements: null,
-      entitlementsInherit: null,
-      artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
-      compression: 'store',
-      darkModeSupport: true,
-      signIgnore: [
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-        'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-        'app.asar.unpacked/node_modules/window-addon/window-addon-x64.node',
-        'app.asar.unpacked/node_modules/window-addon/window-addon-arm64.node',
-      ],
+      entitlements: 'buildResources/entitlements.mac.plist',
+      entitlementsInherit: 'buildResources/entitlements.mac.plist',
+      type: 'distribution',
+      strictVerify: false,
+      artifactName: '${productName}-${version}-${arch}-${os}' + getBuildTime() + '.${ext}',
+      signIgnore: [],
     },
     dmg: {
       sign: false,
@@ -126,13 +126,22 @@ module.exports = async function () {
     // dmg: {
     //   sign: false
     // },
-    afterSign: async context => {
-      const {electronPlatformName, appOutDir} = context;
-      if (electronPlatformName === 'darwin') {
-        console.log('Signing completed for macOS');
-        console.log('Output directory:', appOutDir);
-      }
-    },
+    // afterSign: async context => {
+    //   const { electronPlatformName, appOutDir } = context;
+    //   if (electronPlatformName === 'darwin') {
+    //     const appName = context.packager.appInfo.productFilename;
+
+    //     return await notarize({
+    //       tool: 'notarytool',
+    //       identity: process.env.APPLE_IDENTITY,
+    //       teamId: process.env.APPLE_TEAM_ID,
+    //       appBundleId: 'com.chrome-power.app',
+    //       appPath: `${appOutDir}/${appName}.app`,
+    //       appleId: process.env.APPLE_ID,
+    //       appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD,
+    //     });
+    //   }
+    // },
 
     // 添加 GitHub 发布配置
     publish: {
@@ -143,41 +152,42 @@ module.exports = async function () {
   };
 
   // 根据平台添加特定配置
-  if (process.platform === 'darwin') {
-    // 只在 CI 环境中启用签名
-    if (process.env.CI) {
-      config.mac = {
-        icon: 'buildResources/icon.icns',
-        identity: process.env.APPLE_IDENTITY,
-        target: [
-          {
-            target: 'dmg',
-            arch: ['x64', 'arm64'],
-          },
-        ],
-        category: 'public.app-category.developer-tools',
-        hardenedRuntime: true,
-        gatekeeperAssess: true,
-        entitlements: 'buildResources/entitlements.mac.plist',
-        entitlementsInherit: 'buildResources/entitlements.mac.plist',
-        signIgnore: [
-          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
-          'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
-          'app.asar.unpacked/node_modules/window-addon/window-addon-x64.node',
-          'app.asar.unpacked/node_modules/window-addon/window-addon-arm64.node',
-        ],
-        artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
-        compression: 'store',
-        darkModeSupport: true,
-      };
-    }
+  // if (process.platform === 'darwin') {
+  //   // 只在 CI 环境中启用签名
+  //   if (process.env.CI) {
+  //     console.log('Signing for macOS in CI');
+  //     config.mac = {
+  //       icon: 'buildResources/icon.icns',
+  //       identity: process.env.APPLE_IDENTITY,
+  //       target: [
+  //         {
+  //           target: 'dmg',
+  //           arch: ['x64', 'arm64'],
+  //         },
+  //       ],
+  //       category: 'public.app-category.developer-tools',
+  //       hardenedRuntime: true,
+  //       gatekeeperAssess: true,
+  //       entitlements: 'buildResources/entitlements.mac.plist',
+  //       entitlementsInherit: 'buildResources/entitlements.mac.plist',
+  //       signIgnore: [
+  //         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-arm64/node_sqlite3.node',
+  //         'node_modules/sqlite3/lib/binding/napi-v6-darwin-unknown-x64/node_sqlite3.node',
+  //         'app.asar.unpacked/node_modules/window-addon/window-addon-x64.node',
+  //         'app.asar.unpacked/node_modules/window-addon/window-addon-arm64.node',
+  //       ],
+  //       artifactName: '${productName}-${version}-${arch}-${os}-' + getBuildTime() + '.${ext}',
+  //       compression: 'store',
+  //       darkModeSupport: true,
+  //     };
+  //   }
 
-    config.dmg = {
-      sign: false,
-      writeUpdateInfo: false,
-      format: 'ULFO',
-    };
-  }
+  //   config.dmg = {
+  //     sign: false,
+  //     writeUpdateInfo: false,
+  //     format: 'ULFO',
+  //   };
+  // }
 
   return config;
 };

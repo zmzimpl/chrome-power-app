@@ -1,6 +1,5 @@
 // import {ipcRenderer} from 'electron';
 import type {SafeAny} from '../../../shared/types/db';
-const activeWindow = require('active-win');
 
 let windowAddon: unknown;
 if (process.env.MODE === 'development') {
@@ -29,30 +28,9 @@ export const arrangeWindows = async () => {
   }
 };
 
-export const startGroupControl = async (masterProcessId?: number, slaveProcessIds?: number[]) => {
-  let master = masterProcessId;
-  let slaves = slaveProcessIds;
-  if (!masterProcessId) {
-    const windows = await activeWindow.getOpenWindows({
-      screenRecordingPermission: true,
-    });
-    const chromeWindows = windows.filter((f: {title: string}) =>
-      f.title.includes('By ChromePower'),
-    );
-    master = chromeWindows[0].owner.processId;
-    slaves = chromeWindows
-      .slice(1)
-      .map((window: {owner: {processId: number}}) => window.owner.processId);
-  }
-  console.log('master', master);
-  console.log('slaves', slaves);
-  try {
-    const result = (windowAddon as unknown as SafeAny)!.startGroupControl(master, slaves);
-    console.log('result', result);
-  } catch (error) {
-    console.error(error);
-  }
-};
+// export const startGroupControl = async (masterProcessId?: number, slaveProcessIds?: number[]) => {
+  
+// };
 
 // 创建一个函数，用于接收来自原生插件的消息
 // function controlActionCallback(action: SafeAny) {

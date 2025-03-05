@@ -8,13 +8,13 @@
 
 首款开源~~指纹浏览器~~ Chrome 多开管理工具。基于 Puppeteer、Electron、React 开发。
 
-此软件遵循AGPL协议，因此如果你想对其进行修改发布，请保持开源。
+此软件遵循 AGPL 协议，因此如果你想对其进行修改发布，请保持开源。
 
 Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimpl/chrome-power-chromium)
 
 ## 免责声明
 
-本代码仅用于技术交流、学习，请勿用于非法、商业用途。本代码不保存任何用户数据，同时也不对用户数据负责，请知悉。
+本代码仅用于技术交流、学习，请勿用于非法、商业用途。本代码只承诺不保存任何用户数据，不对用户数据负任何责任，请知悉。
 
 ## 开始
 
@@ -47,7 +47,7 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 
 - 安装依赖 `npm i`
 - 运行调试 `npm run watch`
-- （非必要）打包部署 `npm run publish`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
+- （非必要）打包部署 `npm run package`，注意打包时要把开发环境停掉，不然会导致 sqlite3 的包打包不了
 
 ## API 文档
 
@@ -58,6 +58,10 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 ### Windows 10 安装之后闪退
 
 如遇闪退，尝试在安装完成之后，右键启动程序 - 属性，在目标的末尾加入 --no-sandbox 或者 --in-process-gpu，再尝试启动
+
+### 代理无法使用
+
+目前代理只支持 socks5 和 http, 请检查代理格式是否正确，本地代理是否开启 TUN mode 和 Global mode。请在检查后提起 issue 或者联系作者。
 
 ## 打赏
 

@@ -124,7 +124,7 @@ const Proxy = () => {
       dataIndex: 'host',
       key: 'host',
       render: (_, recorder) => (
-        <Space size={12}>{recorder.proxy && recorder.proxy.split(':')[0]}</Space>
+        <Space size={12}>{recorder.proxy}</Space>
       ),
     },
     {

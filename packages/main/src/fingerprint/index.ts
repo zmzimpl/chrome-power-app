@@ -142,6 +142,22 @@ export async function openFingerprintWindow(id: number, headless = false) {
     const proxyData = await ProxyDB.getById(windowData.proxy_id);
     const proxyType = proxyData?.proxy_type?.toLowerCase();
     const settings = getSettings();
+    const windowInfo = Object.entries(windowData)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('<br>');
+    let firstHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>${windowData.group_name || 'global'}:${windowData.name}:${proxyData.ip_country}</title>
+    </head>
+    <body>
+        <h3>${windowInfo}</h3>
+    </body>
+    </html>`;
+    const encodedHTML = encodeURIComponent(firstHtml);
+    // 构造 data: URI
+    firstHtml = `data:text/html;charset=utf-8,${encodedHTML}`;
 
     const cachePath = settings.profileCachePath;
 
@@ -208,13 +224,16 @@ export async function openFingerprintWindow(id: number, headless = false) {
       }
 
       const isMac = process.platform === 'darwin';
+
       const launchParamter = settings.useLocalChrome
         ? [
+          firstHtml,
             `--remote-debugging-port=${chromePort}`,
             `--user-data-dir=${windowDataDir}`,
             '--no-first-run',
           ]
         : [
+          firstHtml,
             // Mac 特定参数
             ...(isMac ? ['--args'] : []),
 

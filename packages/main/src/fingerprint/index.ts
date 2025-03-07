@@ -250,6 +250,15 @@ export async function openFingerprintWindow(id: number, headless = false) {
         }
       }
 
+      // 处理用户自定义的 Chrome 启动参数
+      if (settings.chromeArgs) {
+        const customArgs = settings.chromeArgs
+          .split('\n')
+          .map(arg => arg.trim())
+          .filter(arg => arg && !arg.startsWith('#')); // 过滤空行和注释行
+        launchParamter.push(...customArgs);
+      }
+                  
       // 添加调试参数（如果需要）
       if (process.env.NODE_ENV === 'development') {
         // launchParamter.push(

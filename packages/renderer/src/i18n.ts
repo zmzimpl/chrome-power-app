@@ -171,6 +171,8 @@ i18n
           arrange_columns: 'Columns',
           arrange_spacing: 'Spacing',
           arrange_height: 'Height',
+          settings_chrome_args: 'Chrome launch arguments',
+          settings_chrome_args_placeholder: 'One argument per line, for example:\n--disable-gpu\n--no-sandbox',
         },
       },
       zh: {
@@ -334,6 +336,8 @@ i18n
           arrange_columns: '列数',
           arrange_spacing: '间距',
           arrange_height: '高度',
+          settings_chrome_args: 'Chrome 启动参数',
+          settings_chrome_args_placeholder: '每行一个参数，例如:\n--disable-gpu\n--no-sandbox',
         },
       },
     },

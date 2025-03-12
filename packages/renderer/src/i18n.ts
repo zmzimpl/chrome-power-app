@@ -89,6 +89,7 @@ i18n
           proxy_import_column_status: 'Status',
 
           arrange_windows: 'Auto arrange',
+          auto_sync: 'Auto sync',
 
           settings_cache_path: 'Cache path',
           settings_choose_cache_path: 'Choose path',
@@ -171,6 +172,8 @@ i18n
           arrange_columns: 'Columns',
           arrange_spacing: 'Spacing',
           arrange_height: 'Height',
+          settings_chrome_args: 'Chrome launch arguments',
+          settings_chrome_args_placeholder: 'One argument per line, for example:\n--disable-gpu\n--no-sandbox',
         },
       },
       zh: {
@@ -254,6 +257,7 @@ i18n
           proxy_import_column_status: '状态',
 
           arrange_windows: '自动排列',
+          auto_sync: '自动同步',
 
           settings_cache_path: '缓存目录',
           settings_choose_cache_path: '选择路径',
@@ -334,6 +338,8 @@ i18n
           arrange_columns: '列数',
           arrange_spacing: '间距',
           arrange_height: '高度',
+          settings_chrome_args: 'Chrome 启动参数',
+          settings_chrome_args_placeholder: '每行一个参数，例如:\n--disable-gpu\n--no-sandbox',
         },
       },
     },

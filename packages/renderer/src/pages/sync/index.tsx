@@ -237,6 +237,15 @@ const Sync = () => {
                 {t('arrange_windows')}
               </Button>
             </div>
+            <div className="mt-4">
+              <Button
+                block
+                type="primary"
+                onClick={handleArrangeWindows}
+              >
+                {t('auto_sync')}
+              </Button>
+            </div>
           </Col>
         </Row>
       </Card>

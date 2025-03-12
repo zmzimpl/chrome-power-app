@@ -252,6 +252,15 @@ export async function openFingerprintWindow(id: number, headless = false) {
             ...(isMac ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
           ];
 
+      // 处理用户自定义的 Chrome 启动参数
+      if (settings.chromeArgs) {
+        const customArgs = settings.chromeArgs
+          .split('\n')
+          .map(arg => arg.trim())
+          .filter(arg => arg && !arg.startsWith('#')); // 过滤空行和注释行
+        launchParamter.push(...customArgs);
+      }
+
       if (finalProxy) {
         launchParamter.push(`--proxy-server=${finalProxy}`);
       }

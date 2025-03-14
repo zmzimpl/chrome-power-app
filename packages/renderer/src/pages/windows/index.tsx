@@ -1,4 +1,4 @@
-import type {MenuProps} from 'antd';
+import type { MenuProps } from 'antd';
 import {
   Button,
   Card,
@@ -14,10 +14,10 @@ import {
   Typography,
   message,
 } from 'antd';
-import type {ColumnsType} from 'antd/es/table';
-import type {MenuInfo} from 'rc-menu/lib/interface';
-import {useEffect, useMemo, useState} from 'react';
-import _, {debounce} from 'lodash';
+import type { ColumnsType } from 'antd/es/table';
+import type { MenuInfo } from 'rc-menu/lib/interface';
+import { useEffect, useMemo, useState } from 'react';
+import _, { debounce } from 'lodash';
 
 import {
   CloseOutlined,
@@ -32,27 +32,27 @@ import {
   // ExportOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
-import type {DB} from '../../../../shared/types/db';
-import {GroupBridge, ProxyBridge, TagBridge, WindowBridge} from '#preload';
-import type {SearchProps} from 'antd/es/input';
-import {containsKeyword} from '/@/utils/str';
-import {useNavigate} from 'react-router-dom';
-import {MESSAGE_CONFIG, WINDOW_STATUS} from '/@/constants';
-import {useTranslation} from 'react-i18next';
+import type { DB } from '../../../../shared/types/db';
+import { GroupBridge, ProxyBridge, TagBridge, WindowBridge } from '#preload';
+import type { SearchProps } from 'antd/es/input';
+import { containsKeyword } from '/@/utils/str';
+import { useNavigate } from 'react-router-dom';
+import { MESSAGE_CONFIG, WINDOW_STATUS } from '/@/constants';
+import { useTranslation } from 'react-i18next';
 
-const {Text} = Typography;
+const { Text } = Typography;
 
 const Windows = () => {
   const OFFSET = 266;
   const [searchValue, setSearchValue] = useState(''); // Note: Set SOME_OFFSET based on your design
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET); // Note: Set SOME_OFFSET based on your design
-  const {t, i18n} = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedRow, setSelectedRow] = useState<DB.Window>();
   const [windowData, setWindowData] = useState<DB.Window[]>([]);
   const [windowDataCopy, setWindowDataCopy] = useState<DB.Window[]>([]);
-  const [groupOptions, setGroupOptions] = useState<DB.Group[]>([{id: -1, name: 'All'}]);
+  const [groupOptions, setGroupOptions] = useState<DB.Group[]>([{ id: -1, name: 'All' }]);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [tagMap, setTagMap] = useState(new Map<number, DB.Tag>());
   const [messageApi, contextHolder] = message.useMessage(MESSAGE_CONFIG);
@@ -276,7 +276,7 @@ const Windows = () => {
 
   const fetchGroupData = async () => {
     const data = await GroupBridge?.getAll();
-    data.splice(0, 0, {id: -1, name: 'All'});
+    data.splice(0, 0, { id: -1, name: 'All' });
     setGroupOptions(data);
   };
 
@@ -314,14 +314,14 @@ const Windows = () => {
   useEffect(() => {
     const handleWindowClosed = (_: Electron.IpcRendererEvent, id: number) => {
       setWindowData(windowData =>
-        windowData.map(window => (window.id === id ? {...window, status: 1} : window)),
+        windowData.map(window => (window.id === id ? { ...window, status: 1 } : window)),
       );
     };
 
     const handleWindowOpened = (_: Electron.IpcRendererEvent, id: number) => {
       if (id) {
         setWindowData(windowData =>
-          windowData.map(window => (window.id === id ? {...window, status: 2} : window)),
+          windowData.map(window => (window.id === id ? { ...window, status: 2 } : window)),
         );
       } else {
         messageApi.error('Failed to open window');
@@ -457,27 +457,66 @@ const Windows = () => {
     }
   };
 
+  // 搜索
   const onSearch: SearchProps['onSearch'] = (value: string) => {
+
     if (value) {
       const keyword = value.toLowerCase();
-      setWindowData(
-        [...windowDataCopy].filter(
-          f =>
-            containsKeyword(f.group_name, keyword) ||
-            containsKeyword(f.name, keyword) ||
-            containsKeyword(f.id, keyword) ||
-            containsKeyword(f.ip, keyword) ||
-            containsKeyword(f.profile_id, keyword) ||
-            containsKeyword(f.proxy, keyword) ||
-            (f.tags &&
-              ((f.tags instanceof Array &&
-                f.tags.some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword))) ||
-                f.tags
-                  .toString()
-                  .split(',')
-                  .some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword)))), // Changed this line for tag check
-        ),
-      );
+      // 使用正则表达式匹配英文逗号（,）和中文逗号（，）
+      const keywordItem = keyword.split(/[,，]/);
+
+      // 判断输入的关键字是否包含英文逗号（,）和中文逗号（，）
+      if (keyword.includes(",") || keyword.includes("，")) {
+        //字符串按逗号分割成数组
+        const keywordArray = keyword.split(/[,，]/).filter(item => item.trim() !== '');
+        let result: DB.Window[] = [];
+        // 遍历关键字数组,将得到的结果加入到result数组中
+        for (let index = 0; index < keywordArray.length; index++) {
+          const element = keywordArray[index];
+          result.push(...[...windowDataCopy].filter(
+            f =>
+              // containsKeyword(f.group_name, element) || // 检查 分组 是否包含关键字
+              containsKeyword(f.name, element)  // 检查 名称 是否包含关键字
+              // containsKeyword(f.id, element) || // 检查 id 是否包含关键字
+              // containsKeyword(f.ip, element) || // 检查 ip 是否包含关键字
+              // // containsKeyword(f.profile_id, element) || // 检查 缓存目录 是否包含关键字
+              // containsKeyword(f.proxy, element) || // 检查 proxy 是否包含关键字
+              // (f.tags && // 检查 标签 是否存在
+              //   ((f.tags instanceof Array && // 如果 标签 是数组
+              //     f.tags.some(tag => containsKeyword(tagMap.get(Number(tag))?.name, element))) || // 检查数组中的每个 标签
+              //     f.tags
+              //       .toString() // 将 标签 转换为字符串
+              //       .split(',') // 按逗号分割
+              //       .some(tag => containsKeyword(tagMap.get(Number(tag))?.name, element)))) // 检查分割后的每个 标签
+          ));
+        }
+        // 使用 filter 和 map 去除重复项
+        result = result.filter((item, index, self) =>
+          index === self.findIndex((t) => (
+            t.id === item.id // 假设 id 是唯一标识
+          ))
+        );
+        setWindowData(result);
+      } else {
+        setWindowData(
+          [...windowDataCopy].filter(
+            f =>
+            //   containsKeyword(f.group_name, keyword) || // 检查 分组 是否包含关键字
+              containsKeyword(f.name, keyword) // 检查 名称 是否包含关键字
+          //     containsKeyword(f.id, keyword) || // 检查 id 是否包含关键字
+          //     containsKeyword(f.ip, keyword) || // 检查 ip 是否包含关键字
+          //     // containsKeyword(f.profile_id, keyword) || // 检查 缓存目录 是否包含关键字
+          //     containsKeyword(f.proxy, keyword) || // 检查 proxy 是否包含关键字
+          //     (f.tags && // 检查 标签 是否存在
+          //       ((f.tags instanceof Array && // 如果 标签 是数组
+          //         f.tags.some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword))) || // 检查数组中的每个 标签
+          //         f.tags
+          //           .toString() // 将 标签 转换为字符串
+          //           .split(',') // 按逗号分割
+          //           .some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword)))) // 检查分割后的每个 标签
+          // 
+          ));
+      }
     } else {
       fetchWindowData();
     }
@@ -487,8 +526,11 @@ const Windows = () => {
     onSearch(value);
   }, 500);
 
+  //处理输入框的方法
   const handleSearchValueChange = (value: string) => {
+    // 处理输入框的值
     setSearchValue(value.trim());
+    // 防抖并处理结果
     debounceSearch(value.trim());
   };
 
@@ -508,8 +550,8 @@ const Windows = () => {
           <Select
             defaultValue={-1}
             defaultActiveFirstOption={true}
-            style={{width: 120}}
-            fieldNames={{value: 'id', label: 'name'}}
+            style={{ width: 120 }}
+            fieldNames={{ value: 'id', label: 'name' }}
             onChange={handleGroupChange}
             options={groupOptions}
           />
@@ -574,7 +616,7 @@ const Windows = () => {
           loading={loading}
           rowSelection={rowSelection}
           dataSource={windowData}
-          scroll={{x: 1500, y: tableScrollY}}
+          scroll={{ x: 1500, y: tableScrollY }}
           pagination={{
             rootClassName: 'pagination-wrapper',
             pageSize: pageSize,
@@ -590,7 +632,7 @@ const Windows = () => {
         title={
           <>
             <ExclamationCircleFilled
-              style={{color: '#faad14', fontSize: '22px', marginRight: '12px'}}
+              style={{ color: '#faad14', fontSize: '22px', marginRight: '12px' }}
             ></ExclamationCircleFilled>
             <span>Delete Windows</span>
           </>
@@ -645,7 +687,7 @@ const Windows = () => {
             setSelectedProxy(value);
           }}
           filterOption={filterProxyOption}
-          fieldNames={{label: 'proxy', value: 'id'}}
+          fieldNames={{ label: 'proxy', value: 'id' }}
           optionRender={option => {
             return (
               <Row justify="space-between">
@@ -656,16 +698,16 @@ const Windows = () => {
                 <Col span={16}>
                   <Space direction="vertical">
                     <Text
-                      style={{width: 300}}
-                      ellipsis={{tooltip: `${option.data.proxy}  ${option.data.remark}`}}
+                      style={{ width: 300 }}
+                      ellipsis={{ tooltip: `${option.data.proxy}  ${option.data.remark}` }}
                     >
                       {option.data.proxy}
                     </Text>
                     {option.data.remark && (
                       <Text
                         mark
-                        style={{width: 300}}
-                        ellipsis={{tooltip: `${option.data.proxy}  ${option.data.remark}`}}
+                        style={{ width: 300 }}
+                        ellipsis={{ tooltip: `${option.data.proxy}  ${option.data.remark}` }}
                       >
                         {option.data.remark}
                       </Text>

@@ -149,7 +149,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
     <!DOCTYPE html>
     <html>
     <head>
-        <title>${windowData.group_name || 'global'}:${windowData.name}:${proxyData.ip_country}</title>
+        <title>${windowData.group_name || 'global'}:${windowData.name}:${proxyData?.ip_country}</title>
     </head>
     <body>
         <h3>${windowInfo}</h3>
@@ -251,6 +251,15 @@ export async function openFingerprintWindow(id: number, headless = false) {
             // Mac 特定安全参数
             ...(isMac ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
           ];
+
+      // 处理用户自定义的 Chrome 启动参数
+      if (settings.chromeArgs) {
+        const customArgs = settings.chromeArgs
+          .split('\n')
+          .map(arg => arg.trim())
+          .filter(arg => arg && !arg.startsWith('#')); // 过滤空行和注释行
+        launchParamter.push(...customArgs);
+      }
 
       if (finalProxy) {
         launchParamter.push(`--proxy-server=${finalProxy}`);

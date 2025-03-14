@@ -36,6 +36,7 @@ import {PIN_URL} from '../../../../shared/constants';
 import {MESSAGE_CONFIG} from '/@/constants';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
+import { getDbPath } from '../../../../main/src/utils/get-db-path'; // 导出代理的函数
 
 type ProxyFormProps = {
   proxy_type?: string;
@@ -481,7 +482,7 @@ const Proxy = () => {
             {t('proxy_new_proxy')}
           </Button>
           <Button
-            // onClick={() => newProxy()}
+            onClick={() => getDbPath()}
             type="primary"
           >
             导出代理

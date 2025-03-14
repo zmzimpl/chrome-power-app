@@ -23,12 +23,12 @@ const logger = createLogger(API_LOGGER_LABEL);
 export async function createShortcutWithIcon(exePath: string, args: string[], iconPath: string, shortcutPath: string) {
   try {
     const shortcutDir = path.dirname(shortcutPath);
-    
+
     // 确保目录存在
     if (!fs.existsSync(shortcutDir)) {
       fs.mkdirSync(shortcutDir, { recursive: true });
     }
-    
+
     // PowerShell 脚本创建快捷方式
     const escapedArgs = args.map(arg => arg.replace(/"/g, '`"')).join(' ');
     const psScript = `
@@ -38,14 +38,14 @@ export async function createShortcutWithIcon(exePath: string, args: string[], ic
       $Shortcut.Arguments = "${escapedArgs}"
       $Shortcut.IconLocation = "${iconPath.replace(/\\/g, '\\\\')}"
       $Shortcut.WorkingDirectory = "${path.dirname(exePath).replace(/\\/g, '\\\\')}"
-      
+
       # 添加这行来设置快捷方式为管理员权限运行
       $bytes = [System.IO.File]::ReadAllBytes("${shortcutPath.replace(/\\/g, '\\\\')}")
       $bytes[0x15] = $bytes[0x15] -bor 0x20 # 设置管理员权限标志
       [System.IO.File]::WriteAllBytes("${shortcutPath.replace(/\\/g, '\\\\')}", $bytes)
-      
+
       $Shortcut.Save()
-      
+
       # 验证文件是否创建成功
       if (Test-Path "${shortcutPath.replace(/\\/g, '\\\\')}") {
         Write-Output "快捷方式创建成功"
@@ -58,12 +58,12 @@ export async function createShortcutWithIcon(exePath: string, args: string[], ic
     // 将脚本写入临时文件以避免命令行长度限制
     const tempScriptPath = path.join(os.tmpdir(), `create_shortcut_${Date.now()}.ps1`);
     fs.writeFileSync(tempScriptPath, psScript);
-    
+
     return new Promise((resolve, reject) => {
       exec(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`, (error, stdout, stderr) => {
         // 清理临时脚本文件
         try { fs.unlinkSync(tempScriptPath); } catch (e) { /* 忽略删除失败 */ }
-        
+
         if (error) {
           logger.error(`创建快捷方式失败: ${stderr}`);
           reject(error);
@@ -234,7 +234,7 @@ export async function testProxy(proxy: DB.Proxy) {
       });
       const endTime = Date.now();
       const elapsedTime = endTime - startTime; // Calculate the time taken for the request
-      if (response.status === 200) {
+      if (response.status >= 200 && response.status < 300) {
         result.connectivity.push({
           name: pin.n,
           status: 'connected',

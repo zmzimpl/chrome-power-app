@@ -10,6 +10,7 @@ export interface SettingOptions {
   localChromePath: string;
   chromiumBinPath: string;
   automationConnect: boolean;
+  chromeArgs?: string;
 }
 
 export type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';

@@ -101,6 +101,7 @@ const Proxy = () => {
     },
   ];
 
+  // 设置页面显示的行数
   const [pageSize, setPageSize] = useState(20);
 
   function getStatus(checking: boolean, check_result: string, index: number) {
@@ -220,8 +221,19 @@ const Proxy = () => {
   ];
 
   useEffect(() => {
+    // 组件加载时从 localStorage 读取 pageSize
+    const storedPageSize = localStorage.getItem('pageSizeProxy');
+    if (storedPageSize) {
+      setPageSize(Number(storedPageSize)); // 将字符串转换为数字
+    }
     fetchProxyData();
   }, []);
+
+  // 更新 pageSize 时保存到 localStorage
+  const handlePageSizeChange = (newPage: number, newPageSize: number) => {
+    setPageSize(newPageSize);
+    localStorage.setItem('pageSizeProxy', newPageSize.toString()); // 保存到 localStorage
+  };
 
   const recorderAction = (info: MenuInfo, recorder: DB.Proxy) => {
     switch (info.key) {
@@ -468,6 +480,12 @@ const Proxy = () => {
           >
             {t('proxy_new_proxy')}
           </Button>
+          <Button
+            // onClick={() => newProxy()}
+            type="primary"
+          >
+            导出代理
+          </Button>
           <Dropdown
             menu={{
               items: moreActionDropdownItems,
@@ -497,11 +515,9 @@ const Proxy = () => {
           pagination={{
             rootClassName: 'pagination-wrapper',
             pageSize: pageSize,
-            pageSizeOptions: [20, 50, 100],
+            pageSizeOptions: [20, 50, 100, 200, 500],
             showSizeChanger: true,
-            onChange: (page, pageSize) => {
-              setPageSize(pageSize);
-            },
+            onChange:  handlePageSizeChange, // 改变页面显示的行数
           }}
         />
       </Card>

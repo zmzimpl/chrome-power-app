@@ -244,6 +244,7 @@ const Windows = () => {
     ];
   }, [tagMap, i18n.language]);
 
+  // 设置页面显示的行数
   const [pageSize, setPageSize] = useState(20);
 
   const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
@@ -305,11 +306,22 @@ const Windows = () => {
   };
 
   useEffect(() => {
+    // 组件加载时从 localStorage 读取 pageSize
+    const storedPageSize = localStorage.getItem('pageSizeWindows');
+    if (storedPageSize) {
+      setPageSize(Number(storedPageSize)); // 将字符串转换为数字
+    }
     fetchTagData();
     fetchProxies();
     fetchGroupData();
     fetchWindowData();
   }, []);
+
+  // 改变页面显示的行数
+  const handlePageSizeChange = (newPage: number, newPageSize: number) => {
+    setPageSize(newPageSize);
+    localStorage.setItem('pageSizeWindows', newPageSize.toString()); // 保存到 localStorage
+  };
 
   useEffect(() => {
     const handleWindowClosed = (_: Electron.IpcRendererEvent, id: number) => {
@@ -620,11 +632,9 @@ const Windows = () => {
           pagination={{
             rootClassName: 'pagination-wrapper',
             pageSize: pageSize,
-            pageSizeOptions: [20, 50, 100],
+            pageSizeOptions: [20, 50, 100, 200, 500],
             showSizeChanger: true,
-            onChange: (page, pageSize) => {
-              setPageSize(pageSize);
-            },
+            onChange:  handlePageSizeChange, // 改变页面显示的行数
           }}
         />
       </Card>

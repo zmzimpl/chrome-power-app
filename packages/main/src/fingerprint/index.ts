@@ -149,7 +149,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
     <!DOCTYPE html>
     <html>
     <head>
-        <title>${windowData.group_name || 'global'}:${windowData.name}:${proxyData.ip_country}</title>
+        <title>${windowData.group_name || 'global'}:${windowData.name}:${proxyData?.ip_country}</title>
     </head>
     <body>
         <h3>${windowInfo}</h3>

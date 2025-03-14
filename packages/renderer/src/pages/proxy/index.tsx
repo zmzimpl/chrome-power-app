@@ -2127,7 +2127,7 @@ const Proxy = () => {
   ];
 
   // 设置页面显示的行数
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(6);
 
   function getStatus(checking: boolean, check_result: string, index: number) {
     if (checking) return 'processing';
@@ -2565,7 +2565,7 @@ const Proxy = () => {
           pagination={{
             rootClassName: 'pagination-wrapper',
             pageSize: pageSize,
-            pageSizeOptions: [20, 50, 100, 200, 500],
+            pageSizeOptions: [6,8,12,50,100,500],
             showSizeChanger: true,
             onChange: handlePageSizeChange, // 改变页面显示的行数
           }}

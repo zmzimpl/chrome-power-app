@@ -245,7 +245,7 @@ const Windows = () => {
   }, [tagMap, i18n.language]);
 
   // 设置页面显示的行数
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(6);
 
   const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
     setSelectedRowKeys(newSelectedRowKeys as number[]);
@@ -632,7 +632,7 @@ const Windows = () => {
           pagination={{
             rootClassName: 'pagination-wrapper',
             pageSize: pageSize,
-            pageSizeOptions: [20, 50, 100, 200, 500],
+            pageSizeOptions: [6,8,12,50,100,500],
             showSizeChanger: true,
             onChange:  handlePageSizeChange, // 改变页面显示的行数
           }}

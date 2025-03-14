@@ -14,6 +14,6 @@ export function getDbPath() {
     // 默认的开发数据库位置，或其他你选择的位置
     dbPath = join(__dirname, 'dev-db.sqlite3');
   }
-
+  console.log('dbPath',dbPath);
   return dbPath;
 }

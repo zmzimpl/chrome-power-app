@@ -39,6 +39,7 @@ import { containsKeyword } from '/@/utils/str';
 import { useNavigate } from 'react-router-dom';
 import { MESSAGE_CONFIG, WINDOW_STATUS } from '/@/constants';
 import { useTranslation } from 'react-i18next';
+import localeToZhMap from '../../utils/proxy_contry_to_Chinese';
 
 const { Text } = Typography;
 
@@ -108,6 +109,7 @@ const Windows = () => {
       icon: <DeleteOutlined />,
     },
   ];
+
   const columns: ColumnsType<DB.Window> = useMemo(() => {
     return [
       {
@@ -118,11 +120,23 @@ const Windows = () => {
         fixed: 'left',
       },
       {
-        title: t('window_column_profile_id'),
+        title: t('window_column_name'),
         width: 100,
-        dataIndex: 'profile_id',
-        key: 'profile_id',
-        fixed: 'left',
+        dataIndex: 'name',
+        key: 'name',
+      },
+      {
+        title: t('window_column_last_open'),
+        dataIndex: 'opened_at',
+        key: 'opened_at',
+        width: 150,
+        render: value => {
+          if (!value) return '';
+          const utcDate = new Date(value + 'Z');
+
+          const localDateStr = utcDate.toLocaleString();
+          return localDateStr;
+        },
       },
       {
         title: t('window_column_group'),
@@ -130,18 +144,6 @@ const Windows = () => {
         dataIndex: 'group_name',
         key: 'group_name',
         // fixed: 'left',
-      },
-      {
-        title: t('window_column_name'),
-        width: 100,
-        dataIndex: 'name',
-        key: 'name',
-      },
-      {
-        title: t('window_column_remark'),
-        dataIndex: 'remark',
-        key: 'remark',
-        width: 150,
       },
       {
         title: t('window_column_tags'),
@@ -175,17 +177,28 @@ const Windows = () => {
         width: 350,
       },
       {
-        title: t('window_column_last_open'),
-        dataIndex: 'opened_at',
-        key: 'opened_at',
+        title: '代理国家',
+        dataIndex: 'ip_country',
+        key: 'ip_country',
         width: 150,
         render: value => {
           if (!value) return '';
-          const utcDate = new Date(value + 'Z');
-
-          const localDateStr = utcDate.toLocaleString();
-          return localDateStr;
+          const newValue = value ? localeToZhMap.get(value) || value : '';
+          return newValue;
         },
+      },
+      {
+        title: t('window_column_remark'),
+        dataIndex: 'remark',
+        key: 'remark',
+        width: 150,
+      },
+      {
+        title: '缓存目录',
+        width: 100,
+        dataIndex: 'profile_id',
+        key: 'profile_id',
+        fixed: 'left',
       },
       {
         title: t('window_column_created_at'),
@@ -247,9 +260,11 @@ const Windows = () => {
   // 设置页面显示的行数
   const [pageSize, setPageSize] = useState(6);
 
+  // 当选中的行发生变化时触发的函数
   const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
     setSelectedRowKeys(newSelectedRowKeys as number[]);
   };
+  //行选择功能
   const rowSelection = {
     selectedRowKeys,
     onChange: onSelectChange,
@@ -331,6 +346,7 @@ const Windows = () => {
     };
 
     const handleWindowOpened = (_: Electron.IpcRendererEvent, id: number) => {
+      
       if (id) {
         setWindowData(windowData =>
           windowData.map(window => (window.id === id ? { ...window, status: 2 } : window)),
@@ -344,7 +360,7 @@ const Windows = () => {
 
     WindowBridge?.onWindowClosed(handleWindowClosed);
     WindowBridge?.onWindowOpened(handleWindowOpened);
-
+    
     return () => {
       WindowBridge?.offWindowClosed(handleWindowClosed);
       WindowBridge?.offWindowOpened(handleWindowOpened);
@@ -621,6 +637,7 @@ const Windows = () => {
         className="content-card"
         bordered={false}
       >
+        {/* 表格 */}
         <Table
           className="content-table"
           columns={columns}

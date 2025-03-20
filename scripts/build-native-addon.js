@@ -11,10 +11,14 @@
 
 const { execSync } = require('child_process');
 const path = require('path');
+const dotenv = require('dotenv');
+
+// 加载环境变量
+dotenv.config();
 
 // 获取平台和架构信息
 const platform = process.platform;
-const arch = process.arch;
+const arch = process.env.ELECTRON_ARCH || process.arch;
 
 console.log(`构建原生模块 (平台: ${platform}, 架构: ${arch})`);
 
@@ -38,9 +42,12 @@ try {
     if (arch === 'arm64') {
       console.log('在 macOS (arm64) 构建原生模块...');
       execSync('npm run build:native-addon:mac-arm64', { stdio: 'inherit' });
-    } else {
+    } else if (arch === 'x64') {
       console.log('在 macOS (x64) 构建原生模块...');
       execSync('npm run build:native-addon:mac-x64', { stdio: 'inherit' });
+    } else {
+      console.log(`在 macOS (${arch}) 构建原生模块...`);
+      execSync('npm run build:native-addon', { stdio: 'inherit' });
     }
   } else {
     // 其他平台的处理
@@ -81,4 +88,4 @@ try {
 } catch (error) {
   console.error('构建过程中发生错误:', error);
   process.exit(1);
-} 
+}

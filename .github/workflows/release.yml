@@ -130,21 +130,6 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 30
           command: npm ci --verbose
-          
-      # 特别构建原生模块 - 基于架构
-      # - name: Build native modules for macOS
-      #   if: startsWith(matrix.platform, 'mac')
-      #   run: |
-      #     if [ "${{ matrix.platform }}" == "mac-arm64" ]; then
-      #       echo "Building native modules for ARM64"
-      #       npm run build:native-addon:mac-arm64
-      #     elif [ "${{ matrix.platform }}" == "mac-x64" ]; then
-      #       echo "Building native modules for x64"
-      #       npm run build:native-addon:mac-x64
-      #     fi
-          
-      #     # 检查编译的模块
-      #     ls -la ./packages/main/src/native-addon/build/Release/
 
       # 安装Apple证书
       - name: Install Apple certificates
@@ -208,6 +193,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           BUILD_TIME: ${{ github.run_number }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+          ELECTRON_ARCH: x64
 
       - name: Build and Publish for macOS arm64
         if: matrix.platform == 'mac-arm64'
@@ -222,6 +208,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           BUILD_TIME: ${{ github.run_number }}
           APPLE_IDENTITY: ${{ secrets.APPLE_IDENTITY }}
+          ELECTRON_ARCH: arm64
       
       # # macOS特定：签名原生模块（如果需要）
       # - name: Sign native modules (macOS)

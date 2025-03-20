@@ -300,10 +300,26 @@ export async function openFingerprintWindow(id: number, headless = false) {
         //   '--enable-blink-features=IdleDetection',
         // );
       }
+      // const iconPath = await generateChromeIcon(windowDataDir, id);
 
 
       let chromeInstance;
       try {
+        // if (isMac) {
+        //   chromeInstance = spawn(driverPath, launchParamter);
+        // } else {
+        //   try {
+        //     const shortcutPath = path.join(windowDataDir, `chrome-${windowData.id}.lnk`);
+        //     await createShortcutWithIcon(driverPath, launchParamter, iconPath, shortcutPath);
+        //     console.log('shortcutPath', shortcutPath);
+        //     console.log('driverPath', driverPath);
+        //     chromeInstance = spawn('cmd.exe', ['/c', 'start', '', shortcutPath]);
+        //     console.log('chromeInstance', chromeInstance);
+        //   } catch (error) {
+        //     logger.error(error);
+        //     chromeInstance = spawn(driverPath, launchParamter);
+        //   }
+        // }
         chromeInstance = spawn(driverPath, launchParamter);
       } catch (error) {
         logger.error(error);

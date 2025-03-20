@@ -1,11 +1,11 @@
-// 不检查 eslint
 /* eslint-disable */
+// @ts-nocheck
 
 import puppeteer from 'puppeteer';
-
-export async function createBrowser() {
+import {openProfile} from './demo/profiles.js';
+export async function createBrowser(wsEndpoint) {
   const browser = await puppeteer.connect({
-    browserWSEndpoint: 'ws://localhost:9222/devtools/browser/05efd11e-4025-4eb3-ab97-9e335efa354a',
+    browserWSEndpoint: wsEndpoint,
     defaultViewport: null,
   });
   return browser;
@@ -18,10 +18,18 @@ async function randomWait(min, max) {
 }
 
 // 主要的自动化脚本函数
-export async function autoScript(browser) {}
+export async function autoScript(browser) {
+  try {
+    
+  } catch (error) {
+    console.error('自动化脚本执行出错:', error);
+  }
+}
 
 (async () => {
-  const browser = await createBrowser();
+  const openResult = await openProfile(77);
+  console.log(openResult);
+  const browser = await createBrowser(openResult.browser.webSocketDebuggerUrl);
   await autoScript(browser);
   // await browser.close(); // Only if you want to close the external Chrome instance.
 })();

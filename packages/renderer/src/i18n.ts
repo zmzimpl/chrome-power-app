@@ -28,6 +28,7 @@ i18n
           new_window: 'New window',
           edit_window: 'Edit window',
 
+          window_export: 'Export',
           window_open: 'Open',
           window_close: 'Close',
           window_edit: 'Edit',
@@ -59,6 +60,7 @@ i18n
           window_import_from_ads: 'Import AdsPower file',
           window_import_from_ads_tip: 'Click to upload(Txt/Excel)',
 
+          proxy_export: 'Export',
           proxy_check: 'Check',
           proxy_new_proxy: 'New proxy',
           proxy_edit: 'Edit',
@@ -193,6 +195,7 @@ i18n
           new_window: '新建窗口',
           edit_window: '编辑窗口',
 
+          window_export: '导出',
           window_open: '打开',
           window_close: '关闭',
           window_edit: '编辑',
@@ -224,6 +227,7 @@ i18n
           window_import_from_ads: '导入 AdsPower 文件',
           window_import_from_ads_tip: '点击上传(Txt/Excel)',
 
+          proxy_export: '导出',
           proxy_check: '检查',
           proxy_new_proxy: '新建代理',
           proxy_edit: '编辑',

@@ -7,20 +7,21 @@ export default function Start() {
   const [search] = useSearchParams();
 
   const [windowInfo, setWindowInfo] = useState({
-    name: '--',
-    group_name: '--',
-    opened_at: '--',
-    profile_id: '--',
-    remark: '--',
+    id: '',
+    name: '',
+    group_name: '',
+    opened_at: '',
+    profile_id: '',
+    remark: '',
     tags_name: [],
   });
   const [moreInfo, setMoreInfo] = useState({
-    ip: '--',
-    country: '--',
+    ip: '',
+    country: '',
     ll: [],
-    userAgent: '--',
-    language: '--',
-    timeZone: '--',
+    userAgent: '',
+    language: '',
+    timeZone: '',
   });
   const PIN_URL = [
     {
@@ -28,21 +29,13 @@ export default function Start() {
       n: 'GG',
     },
     {
-      name: 'Wikipedia',
-      n: 'Wiki',
+      name: 'Discord',
+      n: 'DC',
     },
     {
-      name: 'Facebook',
-      n: 'FB',
-    },
-    {
-      name: 'Detectme',
-      n: 'Dm',
-    },
-    {
-      name: 'Whoer',
-      n: 'Wh',
-    },
+      name: 'Twitter',
+      n: 'X',
+    }
   ];
   const [pings, setPings] = useState<{status: string}[]>([]);
   const [checking, setChecking] = useState(false);
@@ -97,6 +90,15 @@ export default function Start() {
   useEffect(() => {
     fetchInfo();
   }, [search]);
+
+  useEffect(() => {
+    // 当 IP 信息更新时，更新标题
+    const windowId = search.get('windowId');
+    if (windowId) {
+      document.title = `(#${windowId}) ${windowInfo.name || '未命名'} ${moreInfo.ip ? `| IP:${moreInfo.ip}` : ''} ｜ Chrome Power`;
+    }
+  }, [moreInfo.ip, windowInfo.name]);
+
   return (
     <main className="h-full bg-gradient-to-r from-purple-200 via-blue-300 to-pink-200 border-purple-200 mx-[25%]">
       <header className="h-24 flex flex-col rounded-md items-center justify-center shadow-md bg-indigo-400 ">
@@ -159,6 +161,10 @@ export default function Start() {
               <h2 className="text-lg font-semibold text-gray-800">窗口信息</h2>
               <div className="mt-2">
                 <div className="flex justify-between py-1">
+                  <span className="text-gray-400">ID</span>
+                  <span className="text-gray-800">{windowInfo.id}</span>
+                </div>
+                <div className="flex justify-between py-1">
                   <span className="text-gray-400">名称</span>
                   <span className="text-gray-800">{windowInfo.name}</span>
                 </div>
@@ -198,10 +204,10 @@ export default function Start() {
             <div className="mt-12">
               <h2 className="text-lg font-semibold text-gray-800">更多信息</h2>
               <div className="mt-2">
-                <div className="flex justify-between py-1">
+                {/* <div className="flex justify-between py-1">
                   <span className="text-gray-400">User Agent</span>
                   <span className="text-gray-800 max-w-xs	text-right">{moreInfo.userAgent}</span>
-                </div>
+                </div> */}
                 <div className="flex justify-between py-1">
                   <span className="text-gray-400">地理坐标</span>
                   <span className="text-gray-800">

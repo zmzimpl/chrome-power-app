@@ -15,6 +15,14 @@ export const CommonBridge = {
     const result = await ipcRenderer.invoke('data-share', key, value);
     return result;
   },
+  async saveDialog(options: Electron.SaveDialogOptions) {
+    const result = await ipcRenderer.invoke('common-save-dialog', options);
+    return result;
+  },
+  async saveFile(filePath: string, buffer: Uint8Array | ArrayBuffer) {
+    const result = await ipcRenderer.invoke('common-save-file', {filePath, buffer});
+    return result;
+  },
   async getSettings() {
     const result = await ipcRenderer.invoke('common-fetch-settings');
     return result;

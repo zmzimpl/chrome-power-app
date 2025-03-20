@@ -7,6 +7,8 @@ import type {SettingOptions} from '../../../shared/types/common';
 import {getSettings} from '../utils/get-settings';
 import {getOrigin} from '../server';
 import axios from 'axios';
+import {writeFile} from 'fs/promises';
+
 
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 
@@ -31,6 +33,17 @@ export const initCommonService = () => {
     } else {
       return null;
     }
+  });
+
+  // 添加 IPC 处理程序
+  ipcMain.handle('common-save-dialog', async (_, options) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (!win) return {canceled: true};
+    return dialog.showSaveDialog(win, options);
+  });
+
+  ipcMain.handle('common-save-file', async (_, {filePath, buffer}) => {
+    await writeFile(filePath, buffer);
   });
 
   ipcMain.handle('common-fetch-settings', async () => {

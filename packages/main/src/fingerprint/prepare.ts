@@ -186,15 +186,23 @@ export async function testProxy(proxy: DB.Proxy) {
         });
       }
     } catch (error) {
-      logger.error(`ping ${pin.name} failed:`, (error as AxiosError)?.message);
       const endTime = Date.now();
       const elapsedTime = endTime - startTime;
-      result.connectivity.push({
-        name: pin.n,
-        status: 'failed',
-        reason: (error as AxiosError)?.message,
-        elapsedTime: elapsedTime,
-      });
+      if (pin.n === 'X' && (error as AxiosError)?.response?.status === 400) {
+        result.connectivity.push({
+          name: pin.n,
+          status: 'connected',
+          elapsedTime: elapsedTime,
+        });
+      } else {
+        logger.error(`ping ${pin.name} failed:`, (error as AxiosError)?.message);
+        result.connectivity.push({
+          name: pin.n,
+          status: 'failed',
+          reason: (error as AxiosError)?.message,
+          elapsedTime: elapsedTime,
+        });
+      }
     }
   }
   if (proxy.id) {

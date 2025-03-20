@@ -3,7 +3,7 @@ import type {DB, SafeAny} from '../../../shared/types/db';
 import type {AxiosError} from 'axios';
 import {createLogger, getRequestProxy} from '../../../shared/utils/index';
 import api from '../../../shared/api/api';
-import {API_LOGGER_LABEL} from '../constants';
+import {PROXY_LOGGER_LABEL} from '../constants';
 import {HttpProxyAgent} from 'http-proxy-agent';
 import {HttpsProxyAgent} from 'https-proxy-agent';
 import {SocksProxyAgent} from 'socks-proxy-agent';
@@ -18,7 +18,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
-const logger = createLogger(API_LOGGER_LABEL);
+const logger = createLogger(PROXY_LOGGER_LABEL);
 
 export async function createShortcutWithIcon(exePath: string, args: string[], iconPath: string, shortcutPath: string) {
   try {

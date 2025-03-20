@@ -7,11 +7,15 @@ import { dialog } from 'electron';
 const logger = createLogger(MAIN_LOGGER_LABEL);
 let addon: unknown;
 if (!app.isPackaged) {
+  // 开发环境：直接从构建目录加载
   addon = require(path.join(__dirname, '../src/native-addon/build/Release/', 'window-addon.node'));
 } else {
+  // 生产环境：根据平台和架构选择正确路径
+  // const addonDir = `${process.platform}-${process.arch}`;
+  
   const addonPath = path.join(
     process.resourcesPath,
-    'app.asar.unpacked/node_modules/window-addon',
+    'app.asar.unpacked/node_modules/window-addon/',
     'window-addon.node',
   );
 
@@ -20,7 +24,7 @@ if (!app.isPackaged) {
   } catch (error) {
     logger.error('Failed to load addon:', error);
     logger.error('Attempted path:', addonPath);
-    logger.error('Process arch:', process.arch);
+    logger.error('Platform and arch:', process.platform, process.arch);
   }
 }
 

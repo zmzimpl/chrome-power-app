@@ -7,25 +7,30 @@ import type {DB} from '../../../../shared/types/db';
 import {WindowDB} from '/@/db/window';
 import {ProxyDB} from '/@/db/proxy';
 import {testProxy} from '../../fingerprint/prepare';
+import {createLogger} from '../../../../shared/utils/logger';
+import {PROXY_LOGGER_LABEL} from '/@/constants';
 
 const router = express.Router();
 
+const logger = createLogger(PROXY_LOGGER_LABEL);
+
 const getIPInfo = async (ip: string, gateway: 'ip2location' | 'geoip') => {
-  if (ip.includes(':')) {
-    return {
-      ip,
+  try {
+    if (ip.includes(':')) {
+      return {
+        ip,
     };
   }
   if (gateway === 'ip2location') {
     const ip2location = new IP2Location();
     const filePath = path.join(
-      import.meta.env.MODE === 'development' ? 'assets' : 'resources/app/assets',
+      import.meta.env.MODE === 'development' ? 'assets' : `${process.resourcesPath}/app/assets`,
       'IP2LOCATION-LITE-DB11.BIN',
     );
     ip2location.open(filePath);
     const ipInfo = ip2location.getAll(ip);
     const {latitude, longitude, countryShort} = ipInfo;
-    const timeZone = find(Number(latitude), Number(longitude));
+    const timeZone = latitude && longitude ? find(Number(latitude), Number(longitude)) : [];
     return {
       country: countryShort,
       ip,
@@ -38,9 +43,13 @@ const getIPInfo = async (ip: string, gateway: 'ip2location' | 'geoip') => {
     return {
       country,
       ip,
-      ll,
-      timeZone: timezone,
-    };
+        ll,
+        timeZone: timezone,
+      };
+    }
+  } catch (error) {
+    logger.error('| Proxy | getIPInfo | error:', error);
+    return {};
   }
 };
 

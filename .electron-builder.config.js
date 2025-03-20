@@ -15,6 +15,9 @@ function getBuildTime() {
   return process.env.BUILD_TIME || new Date().getTime();
 }
 
+console.log('ELECTRON_PLATFORM', process.env.ELECTRON_PLATFORM);
+console.log('ELECTRON_ARCH', process.env.ELECTRON_ARCH);
+
 module.exports = async function () {
   const {getVersion} = await import('./version/getVersion.mjs');
   const config = {
@@ -94,7 +97,7 @@ module.exports = async function () {
       target: [
         {
           target: 'dmg',
-          arch: ['x64', 'arm64'],
+          arch: [process.env.ELECTRON_ARCH || (process.arch === 'arm64' ? 'arm64' : 'x64')],
         },
       ],
       category: 'public.app-category.developer-tools',

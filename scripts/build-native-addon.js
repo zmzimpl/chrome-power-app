@@ -17,7 +17,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // 获取平台和架构信息
-const platform = process.platform;
+const platform = process.env.ELECTRON_PLATFORM || process.platform;
 const arch = process.env.ELECTRON_ARCH || process.arch;
 
 console.log(`构建原生模块 (平台: ${platform}, 架构: ${arch})`);

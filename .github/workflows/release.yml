@@ -130,7 +130,9 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 30
           command: npm ci --verbose
-
+        env:
+          ELECTRON_PLATFORM: ${{ startsWith(matrix.platform, 'mac') && 'darwin' || '' }}
+          ELECTRON_ARCH: ${{ matrix.arch }}
       # 安装Apple证书
       - name: Install Apple certificates
         if: startsWith(matrix.platform, 'mac')

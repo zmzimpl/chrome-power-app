@@ -16,7 +16,7 @@ import _, {debounce} from 'lodash';
 import {useEffect, useState} from 'react';
 import type {MenuInfo} from 'rc-menu/lib/interface';
 import type {DB} from '../../../../shared/types/db';
-import {ProxyBridge} from '#preload';
+import {CommonBridge, ProxyBridge} from '#preload';
 import type {SearchProps} from 'antd/es/input';
 import {containsKeyword} from '/@/utils/str';
 import {
@@ -30,12 +30,14 @@ import {
   EyeInvisibleTwoTone,
   WifiOutlined,
   SyncOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
 import {PIN_URL} from '../../../../shared/constants';
 import {MESSAGE_CONFIG} from '/@/constants';
 import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
+import * as ExcelJS from 'exceljs';
 
 type ProxyFormProps = {
   proxy_type?: string;
@@ -68,14 +70,14 @@ const Proxy = () => {
   const navigate = useNavigate();
 
   const moreActionDropdownItems: MenuProps['items'] = [
-    // {
-    //   key: 'export',
-    //   label: 'Export',
-    //   icon: <ExportOutlined />,
-    // },
-    // {
-    //   type: 'divider',
-    // },
+    {
+      key: 'export',
+      label: t('proxy_export'),
+      icon: <ExportOutlined />,
+    },
+    {
+      type: 'divider',
+    },
     {
       key: 'delete',
       danger: true,
@@ -279,9 +281,37 @@ const Proxy = () => {
         setSelectedRow(undefined);
         deleteProxy();
         break;
+      case 'export':
+        exportProxy();
+        break;
 
       default:
         break;
+    }
+  };
+
+  const exportProxy = async () => {
+    const data = proxyData.map(item => {
+      return {
+        ...item,
+        proxy: item.proxy,
+      };
+    });
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Proxy');
+    worksheet.addRow(['ID', 'Proxy', 'Proxy Type', 'IP', 'Remark', 'Checker']);
+    data.forEach(item => {
+      worksheet.addRow([item.id, item.proxy, item.proxy_type, item.ip, item.remark, item.ip_checker]);
+    });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const result = await CommonBridge?.saveDialog({
+      title: 'Export Proxy',
+      defaultPath: 'proxy.xlsx',
+      filters: [{name: 'Excel', extensions: ['xlsx']}],
+    });
+    if (result.filePath) {
+      await CommonBridge?.saveFile(result.filePath, buffer);
+      messageApi.success('Export successfully');
     }
   };
 

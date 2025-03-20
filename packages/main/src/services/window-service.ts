@@ -13,6 +13,7 @@ import path from 'path';
 import puppeteer from 'puppeteer';
 import {presetCookie} from '../puppeteer/helpers';
 import {ExtensionDB} from '../db/extension';
+import * as ExcelJS from 'exceljs';
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 export const initWindowService = () => {
   logger.info('init window service...');
@@ -68,6 +69,30 @@ export const initWindowService = () => {
 
   ipcMain.handle('window-getOpened', async () => {
     return await WindowDB.getOpenedWindows();
+  });
+
+  ipcMain.handle('window-export', async () => {
+    console.log('export windows');
+    try {
+      const windows = await WindowDB.all();
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Windows');
+      worksheet.addRow(['ID', 'Profile ID', 'Group', 'Name', 'Remark', 'Proxy', 'Last Open', 'Created At']);
+      windows.forEach(window => {
+        worksheet.addRow([window.id, window.profile_id, window.group_name, window.name, window.remark, window.proxy, window.opened_at, window.created_at]);
+      });
+      workbook.xlsx.writeFile('windows.xlsx');
+      return {
+        success: true,
+        message: 'Export windows successfully',
+      };
+    } catch (error) {
+      logger.error('export windows error', error);
+      return {
+        success: false,
+        message: 'Export windows failed',
+      };
+    }
   });
 
   ipcMain.handle('window-fingerprint', async (_, windowId: number) => {

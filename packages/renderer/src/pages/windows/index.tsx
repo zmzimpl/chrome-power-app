@@ -18,6 +18,7 @@ import type {ColumnsType} from 'antd/es/table';
 import type {MenuInfo} from 'rc-menu/lib/interface';
 import {useEffect, useMemo, useState} from 'react';
 import _, {debounce} from 'lodash';
+import * as ExcelJS from 'exceljs';
 
 import {
   CloseOutlined,
@@ -31,9 +32,10 @@ import {
   SyncOutlined,
   // ExportOutlined,
   ExclamationCircleFilled,
+  ExportOutlined,
 } from '@ant-design/icons';
 import type {DB} from '../../../../shared/types/db';
-import {GroupBridge, ProxyBridge, TagBridge, WindowBridge} from '#preload';
+import {CommonBridge, GroupBridge, ProxyBridge, TagBridge, WindowBridge} from '#preload';
 import type {SearchProps} from 'antd/es/input';
 import {containsKeyword} from '/@/utils/str';
 import {useNavigate} from 'react-router-dom';
@@ -44,14 +46,14 @@ const {Text} = Typography;
 
 const Windows = () => {
   const OFFSET = 266;
+  const [group, setGroup] = useState(-1);
   const [searchValue, setSearchValue] = useState(''); // Note: Set SOME_OFFSET based on your design
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET); // Note: Set SOME_OFFSET based on your design
   const {t, i18n} = useTranslation();
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedRow, setSelectedRow] = useState<DB.Window>();
-  const [windowData, setWindowData] = useState<DB.Window[]>([]);
-  const [windowDataCopy, setWindowDataCopy] = useState<DB.Window[]>([]);
+  const [rawWindowData, setRawWindowData] = useState<DB.Window[]>([]);
   const [groupOptions, setGroupOptions] = useState<DB.Group[]>([{id: -1, name: 'All'}]);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [tagMap, setTagMap] = useState(new Map<number, DB.Tag>());
@@ -67,14 +69,14 @@ const Windows = () => {
     //   label: 'Switching Group',
     //   icon: <SendOutlined />,
     // },
-    // {
-    //   key: 'export',
-    //   label: 'Export',
-    //   icon: <ExportOutlined />,
-    // },
-    // {
-    //   type: 'divider',
-    // },
+    {
+      key: 'export',
+      label: t('window_export'),
+      icon: <ExportOutlined />,
+    },
+    {
+      type: 'divider',
+    },
     {
       key: 'delete',
       danger: true,
@@ -254,15 +256,49 @@ const Windows = () => {
     onChange: onSelectChange,
   };
 
+  const windowData = useMemo(() => {
+    let filteredData = [...rawWindowData];
+    
+    // 按组过滤
+    if (group > -1) {
+      filteredData = filteredData.filter(item => item.group_id === group);
+    }
+    
+    // 按搜索关键词过滤
+    if (searchValue) {
+      const keyword = searchValue.toLowerCase();
+      filteredData = filteredData.filter(f =>
+        containsKeyword(f.group_name, keyword) ||
+        containsKeyword(f.name, keyword) ||
+        containsKeyword(f.id, keyword) ||
+        containsKeyword(f.ip, keyword) ||
+        containsKeyword(f.profile_id, keyword) ||
+        containsKeyword(f.proxy, keyword) ||
+        (f.tags &&
+          ((f.tags instanceof Array &&
+            f.tags.some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword))) ||
+            f.tags
+              .toString()
+              .split(',')
+              .some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword))))
+      );
+    }
+    
+    return filteredData;
+  }, [rawWindowData, group, searchValue, tagMap]);
+
   const fetchWindowData = async () => {
     setLoading(true);
-    const data = await WindowBridge?.getAll();
-    console.log(data);
-    setWindowData(data);
-    setWindowDataCopy(data);
-    setLoading(false);
-    setSelectedRowKeys([]);
-    setSelectedRow(undefined);
+    try {
+      const data = await WindowBridge?.getAll();
+      setRawWindowData(data);
+    } catch (error) {
+      messageApi.error('Failed to fetch window data');
+    } finally {
+      setLoading(false);
+      setSelectedRowKeys([]);
+      setSelectedRow(undefined);
+    }
   };
 
   const fetchTagData = async () => {
@@ -298,9 +334,70 @@ const Windows = () => {
         setSelectedRow(undefined);
         deleteWindows();
         break;
-
+      case 'export':
+        exportWindows();
+        break;
       default:
         break;
+    }
+  };
+
+  const exportWindows = async () => {
+    try {
+      // 导出窗口数据
+      const data = windowData.map(item => {
+        return {
+          ...item,
+          proxy: proxies.find(proxy => proxy.id === item.proxy_id)?.proxy,
+        };
+      });
+      
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Windows');
+      
+      // 添加表头
+      worksheet.addRow(['ID', 'Profile ID', 'Group', 'Name', 'Remark', 'Tags', 'Proxy', 'Last Open', 'Created At']);
+      
+      // 添加数据
+      data.forEach(item => {
+        worksheet.addRow([
+          item.id, 
+          item.profile_id, 
+          item.group_name, 
+          item.name, 
+          item.remark, 
+          item.tags ? item.tags.toString().split(',').map(tag => tagMap.get(Number(tag))?.name).join(',') : '',
+          item.proxy,
+          item.opened_at ? new Date(item.opened_at + 'Z').toLocaleString() : '',
+          item.created_at ? new Date(item.created_at + 'Z').toLocaleString() : ''
+        ]);
+      });
+
+      // 调整列宽
+      worksheet.columns.forEach(column => {
+        column.width = 20;
+      });
+
+      // 生成 buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+      
+      // 调用主进程的保存对话框
+      const result = await CommonBridge?.saveDialog({
+        title: 'Save Windows Data',
+        defaultPath: 'windows.xlsx',
+        filters: [
+          { name: 'Excel Files', extensions: ['xlsx'] }
+        ]
+      });
+
+      if (result.filePath) {
+        // 将 buffer 写入文件
+        await CommonBridge?.saveFile(result.filePath, buffer);
+        messageApi.success('Export successfully');
+      }
+    } catch (error) {
+      console.log('export windows error', error);
+      messageApi.error('Failed to export: ' + (error as Error).message);
     }
   };
 
@@ -313,14 +410,14 @@ const Windows = () => {
 
   useEffect(() => {
     const handleWindowClosed = (_: Electron.IpcRendererEvent, id: number) => {
-      setWindowData(windowData =>
+      setRawWindowData(windowData =>
         windowData.map(window => (window.id === id ? {...window, status: 1} : window)),
       );
     };
 
     const handleWindowOpened = (_: Electron.IpcRendererEvent, id: number) => {
       if (id) {
-        setWindowData(windowData =>
+        setRawWindowData(windowData =>
           windowData.map(window => (window.id === id ? {...window, status: 2} : window)),
         );
       } else {
@@ -446,50 +543,11 @@ const Windows = () => {
   }, []);
 
   const handleGroupChange = (value: number) => {
-    if (value > -1) {
-      setWindowData(
-        [...windowDataCopy].filter(
-          f => f.group_id === value, // Changed this line for tag check
-        ),
-      );
-    } else {
-      fetchWindowData();
-    }
+    setGroup(value);
   };
-
-  const onSearch: SearchProps['onSearch'] = (value: string) => {
-    if (value) {
-      const keyword = value.toLowerCase();
-      setWindowData(
-        [...windowDataCopy].filter(
-          f =>
-            containsKeyword(f.group_name, keyword) ||
-            containsKeyword(f.name, keyword) ||
-            containsKeyword(f.id, keyword) ||
-            containsKeyword(f.ip, keyword) ||
-            containsKeyword(f.profile_id, keyword) ||
-            containsKeyword(f.proxy, keyword) ||
-            (f.tags &&
-              ((f.tags instanceof Array &&
-                f.tags.some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword))) ||
-                f.tags
-                  .toString()
-                  .split(',')
-                  .some(tag => containsKeyword(tagMap.get(Number(tag))?.name, keyword)))), // Changed this line for tag check
-        ),
-      );
-    } else {
-      fetchWindowData();
-    }
-  };
-
-  const debounceSearch = debounce(value => {
-    onSearch(value);
-  }, 500);
 
   const handleSearchValueChange = (value: string) => {
     setSearchValue(value.trim());
-    debounceSearch(value.trim());
   };
 
   const filterProxyOption = (input: string, option?: DB.Proxy) => {
@@ -506,6 +564,7 @@ const Windows = () => {
         {contextHolder}
         <Space size={16}>
           <Select
+            value={group}
             defaultValue={-1}
             defaultActiveFirstOption={true}
             style={{width: 120}}

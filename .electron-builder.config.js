@@ -35,7 +35,7 @@ module.exports = async function () {
     ],
     extraResources: [
       {
-        from: 'packages/main/src/native-addon/build/Release/',
+        from: `packages/main/src/native-addon/build/Release/${process.platform}-${process.arch}/`,
         to: 'app.asar.unpacked/node_modules/window-addon/',
         filter: ['window-addon.node'],
       },

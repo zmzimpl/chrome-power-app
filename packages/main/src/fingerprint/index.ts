@@ -17,12 +17,13 @@ import {getProxyInfo} from './prepare';
 import * as ProxyChain from 'proxy-chain';
 import {getSettings} from '../utils/get-settings';
 // import {randomFingerprint} from '../services/window-service';
-import {bridgeMessageToUI, getMainWindow} from '../mainWindow';
+import {bridgeMessageToUI, getClientPort, getMainWindow} from '../mainWindow';
 import {Mutex} from 'async-mutex';
 // import {presetCookie} from '../puppeteer/helpers';
 import {existsSync, mkdirSync} from 'fs';
 import api from '../../../shared/api/api';
 import {ExtensionDB} from '../db/extension';
+import { getPort } from '../server';
 
 const mutex = new Mutex();
 
@@ -138,6 +139,44 @@ export async function openFingerprintWindow(id: number, headless = false) {
   const release = await mutex.acquire();
   try {
     const windowData = await WindowDB.getById(id);
+    
+    // 检查窗口是否已经打开
+    if (windowData.status === 2 && windowData.port) {
+      logger.info(`Window ${id} is already running on port ${windowData.port}`);
+      try {
+        const browserURL = `http://${HOST}:${windowData.port}`;
+        const {data} = await api.get(browserURL + '/json/version');
+        
+        // 如果能成功获取到浏览器信息，说明窗口仍然可用
+        if (data) {
+          logger.info(`Window ${id} is already running on port ${windowData.port}`);
+          // 获取浏览器实例，把窗口放到最前面
+          const browser = await puppeteer.connect({
+            browserWSEndpoint: data.webSocketDebuggerUrl,
+            defaultViewport: null,
+          });
+          const pages = await browser.pages();
+          if (pages.length > 0) {
+            await pages[0].bringToFront();
+            // 取消连接
+            await browser.disconnect();
+          }
+          return {
+            ...data,
+          };
+        }
+      } catch (error) {
+        // 如果获取失败，说明窗口虽然标记为打开但实际已关闭
+        logger.warn(`Window ${id} marked as running but not accessible, will reopen`);
+        await WindowDB.update(id, {
+          ...windowData,
+          status: 1,
+          port: null,
+          pid: null,
+        });
+      }
+    }
+
     const extensionData = await ExtensionDB.getExtensionsByWindowId(id);
     const proxyData = await ProxyDB.getById(windowData.proxy_id);
     const proxyType = proxyData?.proxy_type?.toLowerCase();
@@ -248,6 +287,9 @@ export async function openFingerprintWindow(id: number, headless = false) {
         if (!isMac) {
           launchParamter.push('--disable-gpu'); // 在 Mac 上不需要这个参数
         }
+      } else {
+        launchParamter.push('--new-window');
+        launchParamter.push(`http://localhost:${getClientPort()}/#/start?windowId=${id}&serverPort=${getPort()}`);
       }
 
       // 添加调试参数（如果需要）
@@ -259,6 +301,7 @@ export async function openFingerprintWindow(id: number, headless = false) {
         // );
       }
       // const iconPath = await generateChromeIcon(windowDataDir, id);
+
 
       let chromeInstance;
       try {

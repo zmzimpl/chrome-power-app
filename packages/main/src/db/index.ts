@@ -22,13 +22,6 @@ const initWindowStatus = async () => {
   }
 };
 
-// const deleteAll = async () => {
-// await TagDB.deleteAll();
-// await WindowDB.deleteAll();
-// await ProxyDB.deleteAll();
-// await GroupDB.deleteAll();
-// };
-
 const initializeDatabase = async () => {
   const userDataPath = app.getPath('userData');
 

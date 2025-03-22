@@ -55,6 +55,10 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 
 ## FAQ
 
+### 缓存目录如何设置
+
+在设置页面，点击缓存目录，选择你的缓存目录，然后点击确定。注意：缓存目录不要设置在 C 盘以及安装目录，否则更新可能导致缓存目录丢失。
+
 ### Windows 10 安装之后闪退
 
 如遇闪退，尝试在安装完成之后，右键启动程序 - 属性，在目标的末尾加入 --no-sandbox 或者 --in-process-gpu，再尝试启动
@@ -62,6 +66,10 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 ### 代理无法使用
 
 目前代理只支持 socks5 和 http, 请检查代理格式是否正确，本地代理是否开启 TUN mode 和 Global mode。请在检查后提起 issue 或者联系作者。
+
+### Mac 自动排列无法使用
+
+Mac 自动排列需要辅助功能权限，可以查看运行日志，如果提示缺少权限，请在设置 - 辅助功能中开启。
 
 ## 打赏
 

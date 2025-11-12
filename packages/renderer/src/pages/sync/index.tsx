@@ -57,29 +57,48 @@ interface SyncStatus {
 }
 
 const Sync = () => {
+  const defaultSyncOptions: SyncOptions = {
+    enableMouseSync: true,
+    enableKeyboardSync: true,
+    enableWheelSync: true,
+    enableCdpSync: false,
+    mouseMoveThrottleMs: 10,
+    mouseMoveThresholdPx: 2,
+    wheelThrottleMs: 50,
+    cdpSyncIntervalMs: 100,
+  };
+
+  const defaultConfig: SyncConfig = {
+    mainPid: null,
+    childPids: [],
+    spacing: 10,
+    columns: 3,
+    size: {width: 0, height: 0},
+    masterWindowId: null,
+    slaveWindowIds: [],
+    syncOptions: defaultSyncOptions,
+  };
+
   const [syncConfig, setSyncConfig] = useState<SyncConfig>(() => {
     const saved = localStorage.getItem('syncConfig');
-    return saved
-      ? JSON.parse(saved)
-      : {
-          mainPid: null,
-          childPids: [],
-          spacing: 10,
-          columns: 3,
-          size: {width: 0, height: 0},
-          masterWindowId: null,
-          slaveWindowIds: [],
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Merge with default config to ensure all fields exist
+        return {
+          ...defaultConfig,
+          ...parsed,
           syncOptions: {
-            enableMouseSync: true,
-            enableKeyboardSync: true,
-            enableWheelSync: true,
-            enableCdpSync: false,
-            mouseMoveThrottleMs: 10,
-            mouseMoveThresholdPx: 2,
-            wheelThrottleMs: 50,
-            cdpSyncIntervalMs: 100,
+            ...defaultSyncOptions,
+            ...(parsed.syncOptions || {}),
           },
         };
+      } catch (e) {
+        console.error('Failed to parse saved sync config:', e);
+        return defaultConfig;
+      }
+    }
+    return defaultConfig;
   });
 
   const OFFSET = 266;

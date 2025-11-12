@@ -743,7 +743,7 @@ private:
         }
 
         // For mousemove: Use PostMessage (doesn't move actual cursor)
-        // For clicks: Use SetCursorPos + SendInput (properly handles menus)
+        // For clicks: Use hybrid approach for better compatibility
         if (eventType == "mousemove") {
             RECT rect;
             GetWindowRect(mainWindow->hwnd, &rect);
@@ -752,38 +752,64 @@ private:
             LPARAM lParam = MAKELPARAM(clientX, clientY);
             PostMessage(mainWindow->hwnd, WM_MOUSEMOVE, 0, lParam);
         } else {
-            // Save current cursor position to restore later
+            // Strategy: Use PostMessage first (works for most cases)
+            // But also activate window and move cursor for menu support
+
+            // Save current cursor position
             POINT originalPos;
             GetCursorPos(&originalPos);
 
-            // Move cursor to target position
+            // Get window rectangle to calculate client coordinates
+            RECT rect;
+            GetWindowRect(mainWindow->hwnd, &rect);
+            int clientX = x - rect.left;
+            int clientY = y - rect.top;
+            LPARAM lParam = MAKELPARAM(clientX, clientY);
+
+            // Activate the target window (brings to foreground)
+            SetForegroundWindow(mainWindow->hwnd);
+
+            // Move cursor to target position (for menu support)
             SetCursorPos(x, y);
 
-            // Small delay to ensure cursor position is updated
-            Sleep(1);
+            // Small delay to ensure window activation and cursor movement
+            Sleep(5);
 
-            // Send mouse button event using SendInput (handles menus correctly)
-            INPUT input = {0};
-            input.type = INPUT_MOUSE;
-
+            // Send via both methods for maximum compatibility:
+            // 1. PostMessage - works for normal window clicks
+            // 2. SendInput - works for menu clicks
             if (eventType == "mousedown") {
+                PostMessage(mainWindow->hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
+                INPUT input = {0};
+                input.type = INPUT_MOUSE;
                 input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+                SendInput(1, &input, sizeof(INPUT));
             } else if (eventType == "mouseup") {
+                PostMessage(mainWindow->hwnd, WM_LBUTTONUP, 0, lParam);
+                INPUT input = {0};
+                input.type = INPUT_MOUSE;
                 input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+                SendInput(1, &input, sizeof(INPUT));
             } else if (eventType == "rightdown") {
+                PostMessage(mainWindow->hwnd, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
+                INPUT input = {0};
+                input.type = INPUT_MOUSE;
                 input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+                SendInput(1, &input, sizeof(INPUT));
             } else if (eventType == "rightup") {
+                PostMessage(mainWindow->hwnd, WM_RBUTTONUP, 0, lParam);
+                INPUT input = {0};
+                input.type = INPUT_MOUSE;
                 input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+                SendInput(1, &input, sizeof(INPUT));
             } else {
                 return Napi::Boolean::New(env, false);
             }
 
-            SendInput(1, &input, sizeof(INPUT));
-
             // Small delay to ensure event is processed
-            Sleep(1);
+            Sleep(5);
 
-            // Restore original cursor position
+            // Restore cursor position
             SetCursorPos(originalPos.x, originalPos.y);
         }
 

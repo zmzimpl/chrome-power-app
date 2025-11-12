@@ -742,22 +742,36 @@ private:
             return Napi::Boolean::New(env, false);
         }
 
-        RECT rect;
-        GetWindowRect(mainWindow->hwnd, &rect);
-        int clientX = x - rect.left;
-        int clientY = y - rect.top;
-        LPARAM lParam = MAKELPARAM(clientX, clientY);
-
+        // For mousemove: Use PostMessage (doesn't move actual cursor)
+        // For clicks: Use SetCursorPos + SendInput (properly handles menus)
         if (eventType == "mousemove") {
+            RECT rect;
+            GetWindowRect(mainWindow->hwnd, &rect);
+            int clientX = x - rect.left;
+            int clientY = y - rect.top;
+            LPARAM lParam = MAKELPARAM(clientX, clientY);
             PostMessage(mainWindow->hwnd, WM_MOUSEMOVE, 0, lParam);
-        } else if (eventType == "mousedown") {
-            PostMessage(mainWindow->hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
-        } else if (eventType == "mouseup") {
-            PostMessage(mainWindow->hwnd, WM_LBUTTONUP, 0, lParam);
-        } else if (eventType == "rightdown") {
-            PostMessage(mainWindow->hwnd, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
-        } else if (eventType == "rightup") {
-            PostMessage(mainWindow->hwnd, WM_RBUTTONUP, 0, lParam);
+        } else {
+            // Move cursor to target position
+            SetCursorPos(x, y);
+
+            // Send mouse button event using SendInput (handles menus correctly)
+            INPUT input = {0};
+            input.type = INPUT_MOUSE;
+
+            if (eventType == "mousedown") {
+                input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            } else if (eventType == "mouseup") {
+                input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            } else if (eventType == "rightdown") {
+                input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+            } else if (eventType == "rightup") {
+                input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+            } else {
+                return Napi::Boolean::New(env, false);
+            }
+
+            SendInput(1, &input, sizeof(INPUT));
         }
 
 #elif __APPLE__
@@ -890,8 +904,17 @@ private:
 
         // Send wheel event
         // Note: deltaY is already multiplied by WHEEL_DELTA (120) in TypeScript
+
+        // Get current cursor position (screen coordinates required for WM_MOUSEWHEEL)
+        POINT cursorPos;
+        GetCursorPos(&cursorPos);
+
+        // WM_MOUSEWHEEL: wParam = key state | delta, lParam = screen coords
         WPARAM wParam = MAKEWPARAM(0, deltaY);
-        PostMessage(mainWindow->hwnd, WM_MOUSEWHEEL, wParam, 0);
+        LPARAM lParam = MAKELPARAM(cursorPos.x, cursorPos.y);
+
+        // Use SendMessage instead of PostMessage for better reliability
+        SendMessage(mainWindow->hwnd, WM_MOUSEWHEEL, wParam, lParam);
 
 #elif __APPLE__
         CGEventRef event = CGEventCreateScrollWheelEvent(NULL, kCGScrollEventUnitPixel, 2, deltaY, deltaX);

@@ -752,8 +752,15 @@ private:
             LPARAM lParam = MAKELPARAM(clientX, clientY);
             PostMessage(mainWindow->hwnd, WM_MOUSEMOVE, 0, lParam);
         } else {
+            // Save current cursor position to restore later
+            POINT originalPos;
+            GetCursorPos(&originalPos);
+
             // Move cursor to target position
             SetCursorPos(x, y);
+
+            // Small delay to ensure cursor position is updated
+            Sleep(1);
 
             // Send mouse button event using SendInput (handles menus correctly)
             INPUT input = {0};
@@ -772,6 +779,12 @@ private:
             }
 
             SendInput(1, &input, sizeof(INPUT));
+
+            // Small delay to ensure event is processed
+            Sleep(1);
+
+            // Restore original cursor position
+            SetCursorPos(originalPos.x, originalPos.y);
         }
 
 #elif __APPLE__

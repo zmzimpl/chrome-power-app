@@ -326,50 +326,58 @@ class MultiWindowSyncService {
    * Handle mouse move events
    */
   private handleMouseMove(event: MouseEventData): void {
-    if (!this.isCapturing || !this.masterWindowBounds) return;
+    try {
+      if (!this.isCapturing || !this.masterWindowBounds) return;
 
-    const now = Date.now();
-    const {x, y} = event;
+      const now = Date.now();
+      const {x, y} = event;
 
-    // Check if mouse is in master window and update focus tracking
-    const inMaster = this.isMouseInMasterWindow(x, y);
-    if (inMaster) {
-      this.isMouseInMaster = true;
-      this.lastMouseCheckTime = now;
-    } else {
-      // Consider focus lost if mouse hasn't been in master for timeout period
-      if (now - this.lastMouseCheckTime > this.MOUSE_FOCUS_TIMEOUT_MS) {
-        this.isMouseInMaster = false;
+      // Check if mouse is in master window and update focus tracking
+      const inMaster = this.isMouseInMasterWindow(x, y);
+      if (inMaster) {
+        this.isMouseInMaster = true;
+        this.lastMouseCheckTime = now;
+      } else {
+        // Consider focus lost if mouse hasn't been in master for timeout period
+        if (now - this.lastMouseCheckTime > this.MOUSE_FOCUS_TIMEOUT_MS) {
+          this.isMouseInMaster = false;
+        }
       }
-    }
 
-    if (!this.syncOptions.enableMouseSync) return;
-    if (!inMaster) return;
+      if (!this.syncOptions.enableMouseSync) return;
+      if (!inMaster) return;
 
-    // Throttle by time and distance
-    const timeDiff = now - this.lastMouseMoveTime;
-    const distanceX = Math.abs(x - this.lastMousePosition.x);
-    const distanceY = Math.abs(y - this.lastMousePosition.y);
-    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+      // Throttle by time and distance
+      const timeDiff = now - this.lastMouseMoveTime;
+      const distanceX = Math.abs(x - this.lastMousePosition.x);
+      const distanceY = Math.abs(y - this.lastMousePosition.y);
+      const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
 
-    if (
-      timeDiff < (this.syncOptions.mouseMoveThrottleMs || 10) &&
-      distance < (this.syncOptions.mouseMoveThresholdPx || 2)
-    ) {
-      return;
-    }
+      if (
+        timeDiff < (this.syncOptions.mouseMoveThrottleMs || 10) &&
+        distance < (this.syncOptions.mouseMoveThresholdPx || 2)
+      ) {
+        return;
+      }
 
-    this.lastMouseMoveTime = now;
-    this.lastMousePosition = {x, y};
+      this.lastMouseMoveTime = now;
+      this.lastMousePosition = {x, y};
 
-    // Calculate relative position
-    const ratio = this.calculateRelativePosition(x, y);
-    if (!ratio) return;
+      // Calculate relative position
+      const ratio = this.calculateRelativePosition(x, y);
+      if (!ratio) return;
 
-    // Send to all slave windows
-    for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-      const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-      this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+      // Send to all slave windows
+      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+        try {
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+        } catch (error) {
+          logger.error(`Failed to send mouse move event to slave ${slavePid}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('Error in handleMouseMove:', error);
     }
   }
 
@@ -377,20 +385,28 @@ class MultiWindowSyncService {
    * Handle mouse down events
    */
   private handleMouseDown(event: MouseEventData): void {
-    if (!this.isCapturing || !this.masterWindowBounds) return;
-    if (!this.syncOptions.enableMouseSync) return;
+    try {
+      if (!this.isCapturing || !this.masterWindowBounds) return;
+      if (!this.syncOptions.enableMouseSync) return;
 
-    const {x, y, button} = event;
-    if (!this.isMouseInMasterWindow(x, y)) return;
+      const {x, y, button} = event;
+      if (!this.isMouseInMasterWindow(x, y)) return;
 
-    const ratio = this.calculateRelativePosition(x, y);
-    if (!ratio) return;
+      const ratio = this.calculateRelativePosition(x, y);
+      if (!ratio) return;
 
-    const eventType = button === 1 ? 'mousedown' : button === 2 ? 'rightdown' : 'mousedown';
+      const eventType = button === 1 ? 'mousedown' : button === 2 ? 'rightdown' : 'mousedown';
 
-    for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-      const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-      this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+        try {
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+        } catch (error) {
+          logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('Error in handleMouseDown:', error);
     }
   }
 
@@ -398,20 +414,28 @@ class MultiWindowSyncService {
    * Handle mouse up events
    */
   private handleMouseUp(event: MouseEventData): void {
-    if (!this.isCapturing || !this.masterWindowBounds) return;
-    if (!this.syncOptions.enableMouseSync) return;
+    try {
+      if (!this.isCapturing || !this.masterWindowBounds) return;
+      if (!this.syncOptions.enableMouseSync) return;
 
-    const {x, y, button} = event;
-    if (!this.isMouseInMasterWindow(x, y)) return;
+      const {x, y, button} = event;
+      if (!this.isMouseInMasterWindow(x, y)) return;
 
-    const ratio = this.calculateRelativePosition(x, y);
-    if (!ratio) return;
+      const ratio = this.calculateRelativePosition(x, y);
+      if (!ratio) return;
 
-    const eventType = button === 1 ? 'mouseup' : button === 2 ? 'rightup' : 'mouseup';
+      const eventType = button === 1 ? 'mouseup' : button === 2 ? 'rightup' : 'mouseup';
 
-    for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-      const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-      this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+        try {
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+        } catch (error) {
+          logger.error(`Failed to send mouse up event to slave ${slavePid}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('Error in handleMouseUp:', error);
     }
   }
 
@@ -423,38 +447,46 @@ class MultiWindowSyncService {
    * - Large scrolls (>3): Use multiplier for fast scrolling
    */
   private handleWheel(event: WheelEventData): void {
-    if (!this.isCapturing || !this.masterWindowBounds) return;
-    if (!this.syncOptions.enableWheelSync) return;
+    try {
+      if (!this.isCapturing || !this.masterWindowBounds) return;
+      if (!this.syncOptions.enableWheelSync) return;
 
-    const now = Date.now();
-    if (now - this.lastWheelTime < (this.syncOptions.wheelThrottleMs || 50)) return;
-    this.lastWheelTime = now;
+      const now = Date.now();
+      if (now - this.lastWheelTime < (this.syncOptions.wheelThrottleMs || 50)) return;
+      this.lastWheelTime = now;
 
-    const {x, y, rotation, amount} = event;
-    if (!this.isMouseInMasterWindow(x, y)) return;
+      const {x, y, rotation, amount} = event;
+      if (!this.isMouseInMasterWindow(x, y)) return;
 
-    // Optimized wheel handling based on amount
-    // amount is typically in range -3 to 3
-    let deltaY = rotation > 0 ? -amount : amount;
+      // Optimized wheel handling based on amount
+      // amount is typically in range -3 to 3
+      let deltaY = rotation > 0 ? -amount : amount;
 
-    // Apply layered scrolling strategy
-    const absAmount = Math.abs(amount);
-    if (absAmount <= 1) {
-      // Small scroll: use as-is
-      deltaY = deltaY;
-    } else if (absAmount <= 3) {
-      // Medium scroll: amplify slightly for better responsiveness
-      deltaY = deltaY * 1.5;
-    } else {
-      // Large scroll: use multiplier for fast scrolling
-      deltaY = deltaY * 2.0;
-    }
+      // Apply layered scrolling strategy
+      const absAmount = Math.abs(amount);
+      if (absAmount <= 1) {
+        // Small scroll: use as-is
+        deltaY = deltaY;
+      } else if (absAmount <= 3) {
+        // Medium scroll: amplify slightly for better responsiveness
+        deltaY = deltaY * 1.5;
+      } else {
+        // Large scroll: use multiplier for fast scrolling
+        deltaY = deltaY * 2.0;
+      }
 
-    // Round to integer
-    deltaY = Math.round(deltaY);
+      // Round to integer
+      deltaY = Math.round(deltaY);
 
-    for (const slavePid of this.slaveWindowPids) {
-      this.windowManager.sendWheelEvent(slavePid, 0, deltaY);
+      for (const slavePid of this.slaveWindowPids) {
+        try {
+          this.windowManager.sendWheelEvent(slavePid, 0, deltaY);
+        } catch (error) {
+          logger.error(`Failed to send wheel event to slave ${slavePid}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('Error in handleWheel:', error);
     }
   }
 
@@ -463,22 +495,42 @@ class MultiWindowSyncService {
    * Only synchronizes when mouse is in master window (indicating user focus)
    */
   private handleKeyDown(event: KeyboardEventData): void {
-    if (!this.isCapturing) return;
-    if (!this.syncOptions.enableKeyboardSync) return;
+    try {
+      if (!this.isCapturing) return;
+      if (!this.syncOptions.enableKeyboardSync) return;
 
-    // Only sync keyboard events when mouse is in master window
-    // This prevents keyboard input from other windows being synchronized
-    if (!this.isMouseInMaster) {
-      return;
-    }
+      // Only sync keyboard events when mouse is in master window
+      // This prevents keyboard input from other windows being synchronized
+      if (!this.isMouseInMaster) {
+        return;
+      }
 
-    // Use rawcode instead of keycode for system-native key codes
-    // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
-    // keycode is uiohook's cross-platform virtual code which doesn't map correctly
-    const {rawcode} = event;
+      // Validate window manager
+      if (!this.windowManager) {
+        logger.error('Window manager not initialized in handleKeyDown');
+        return;
+      }
 
-    for (const slavePid of this.slaveWindowPids) {
-      this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keydown');
+      // Use rawcode instead of keycode for system-native key codes
+      // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
+      // keycode is uiohook's cross-platform virtual code which doesn't map correctly
+      const {rawcode} = event;
+
+      // Validate rawcode
+      if (rawcode === undefined || rawcode === null) {
+        logger.warn('Invalid rawcode in handleKeyDown:', rawcode);
+        return;
+      }
+
+      for (const slavePid of this.slaveWindowPids) {
+        try {
+          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keydown');
+        } catch (error) {
+          logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('Error in handleKeyDown:', error);
     }
   }
 
@@ -487,22 +539,42 @@ class MultiWindowSyncService {
    * Only synchronizes when mouse is in master window (indicating user focus)
    */
   private handleKeyUp(event: KeyboardEventData): void {
-    if (!this.isCapturing) return;
-    if (!this.syncOptions.enableKeyboardSync) return;
+    try {
+      if (!this.isCapturing) return;
+      if (!this.syncOptions.enableKeyboardSync) return;
 
-    // Only sync keyboard events when mouse is in master window
-    // This prevents keyboard input from other windows being synchronized
-    if (!this.isMouseInMaster) {
-      return;
-    }
+      // Only sync keyboard events when mouse is in master window
+      // This prevents keyboard input from other windows being synchronized
+      if (!this.isMouseInMaster) {
+        return;
+      }
 
-    // Use rawcode instead of keycode for system-native key codes
-    // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
-    // keycode is uiohook's cross-platform virtual code which doesn't map correctly
-    const {rawcode} = event;
+      // Validate window manager
+      if (!this.windowManager) {
+        logger.error('Window manager not initialized in handleKeyUp');
+        return;
+      }
 
-    for (const slavePid of this.slaveWindowPids) {
-      this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keyup');
+      // Use rawcode instead of keycode for system-native key codes
+      // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
+      // keycode is uiohook's cross-platform virtual code which doesn't map correctly
+      const {rawcode} = event;
+
+      // Validate rawcode
+      if (rawcode === undefined || rawcode === null) {
+        logger.warn('Invalid rawcode in handleKeyUp:', rawcode);
+        return;
+      }
+
+      for (const slavePid of this.slaveWindowPids) {
+        try {
+          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keyup');
+        } catch (error) {
+          logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('Error in handleKeyUp:', error);
     }
   }
 

@@ -16,6 +16,7 @@ import {
   message,
   Tag,
   Tooltip,
+  Select,
 } from 'antd';
 import {SyncBridge, WindowBridge} from '#preload';
 import {useTranslation} from 'react-i18next';
@@ -33,7 +34,7 @@ import {
   DesktopOutlined,
 } from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
-import type {SyncOptions} from '../../../../preload/src/bridges/sync';
+import type {SyncOptions, MonitorInfo} from '../../../../preload/src/bridges/sync';
 
 const {Text, Title} = Typography;
 const {Panel} = Collapse;
@@ -114,6 +115,8 @@ const Sync = () => {
     slavePids: [],
   });
   const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(null);
+  const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
+  const [selectedMonitorIndex, setSelectedMonitorIndex] = useState<number>(0);
 
   const columns: ColumnsType<DB.Window> = useMemo(() => {
     return [
@@ -204,6 +207,17 @@ const Sync = () => {
     setSyncStatus(status);
   };
 
+  const fetchMonitors = async () => {
+    const result = await SyncBridge.getMonitors();
+    if (result.success && result.monitors.length > 0) {
+      setMonitors(result.monitors);
+      // Default to first monitor (non-primary if available, as sorted by native addon)
+      setSelectedMonitorIndex(0);
+    } else {
+      console.error('Failed to fetch monitors:', result.error);
+    }
+  };
+
   const saveSyncConfig = () => {
     localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
   };
@@ -211,6 +225,7 @@ const Sync = () => {
   useEffect(() => {
     fetchOpenedWindows();
     fetchSyncStatus();
+    fetchMonitors();
   }, []);
 
   useEffect(() => {
@@ -262,6 +277,7 @@ const Sync = () => {
         ...syncConfig,
         mainPid: selectedWindows[0].pid!,
         childPids: selectedWindows.slice(1).map(w => w.pid!),
+        monitorIndex: selectedMonitorIndex,
       };
     } else {
       message.warning('Please select windows to arrange');
@@ -645,6 +661,19 @@ const Sync = () => {
                     }}
                     onValuesChange={onArrangeValuesChange}
                   >
+                    <Form.Item label="Display / Monitor">
+                      <Select
+                        size="small"
+                        value={selectedMonitorIndex}
+                        onChange={setSelectedMonitorIndex}
+                        options={monitors.map(monitor => ({
+                          label: `${monitor.isPrimary ? '🖥️ Primary' : '🖥️ Secondary'} - ${monitor.width}x${monitor.height}`,
+                          value: monitor.index,
+                        }))}
+                        disabled={monitors.length === 0}
+                      />
+                    </Form.Item>
+
                     <Form.Item label="Columns" name="columns">
                       <InputNumber min={1} max={12} size="small" className="w-full" />
                     </Form.Item>

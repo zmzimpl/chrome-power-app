@@ -11,6 +11,15 @@ export interface SyncOptions {
   cdpSyncIntervalMs?: number;
 }
 
+export interface MonitorInfo {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isPrimary: boolean;
+  index: number;
+}
+
 export const SyncBridge = {
   // Window arrangement (legacy)
   arrangeWindows: (args: {
@@ -19,8 +28,14 @@ export const SyncBridge = {
     columns: number;
     size: {width: number; height: number};
     spacing: number;
+    monitorIndex?: number;
   }) => {
     return ipcRenderer.invoke('window-arrange', args);
+  },
+
+  // Get available monitors
+  getMonitors: (): Promise<{success: boolean; monitors: MonitorInfo[]; error?: string}> => {
+    return ipcRenderer.invoke('window-get-monitors');
   },
 
   // Multi-window synchronization

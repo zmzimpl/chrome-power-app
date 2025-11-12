@@ -54,7 +54,8 @@ public:
             InstanceMethod("sendMouseEvent", &WindowManager::SendMouseEvent),
             InstanceMethod("sendKeyboardEvent", &WindowManager::SendKeyboardEvent),
             InstanceMethod("sendWheelEvent", &WindowManager::SendWheelEvent),
-            InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds)
+            InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds),
+            InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -435,6 +436,36 @@ private:
     }
     #endif
 
+    // Expose GetMonitors to JavaScript
+    Napi::Value GetMonitorsJS(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+        Napi::Array result = Napi::Array::New(env);
+
+        auto monitors = GetMonitors();
+
+        for (size_t i = 0; i < monitors.size(); i++) {
+            Napi::Object monitorObj = Napi::Object::New(env);
+
+#ifdef _WIN32
+            monitorObj.Set("x", Napi::Number::New(env, monitors[i].rect.left));
+            monitorObj.Set("y", Napi::Number::New(env, monitors[i].rect.top));
+            monitorObj.Set("width", Napi::Number::New(env, monitors[i].rect.right - monitors[i].rect.left));
+            monitorObj.Set("height", Napi::Number::New(env, monitors[i].rect.bottom - monitors[i].rect.top));
+#elif __APPLE__
+            monitorObj.Set("x", Napi::Number::New(env, monitors[i].bounds.origin.x));
+            monitorObj.Set("y", Napi::Number::New(env, monitors[i].bounds.origin.y));
+            monitorObj.Set("width", Napi::Number::New(env, monitors[i].bounds.size.width));
+            monitorObj.Set("height", Napi::Number::New(env, monitors[i].bounds.size.height));
+#endif
+            monitorObj.Set("isPrimary", Napi::Boolean::New(env, monitors[i].isPrimary));
+            monitorObj.Set("index", Napi::Number::New(env, i));
+
+            result[i] = monitorObj;
+        }
+
+        return result;
+    }
+
     Napi::Value ArrangeWindows(const Napi::CallbackInfo& info) {
         Napi::Env env = info.Env();
 
@@ -448,6 +479,12 @@ private:
         int columns = info[2].As<Napi::Number>().Int32Value();
         Napi::Object size = info[3].As<Napi::Object>();
         int spacing = info[4].As<Napi::Number>().Int32Value();
+
+        // Optional 6th argument: monitor index (defaults to 0)
+        int monitorIndex = 0;
+        if (info.Length() >= 6 && info[5].IsNumber()) {
+            monitorIndex = info[5].As<Napi::Number>().Int32Value();
+        }
 
         int width = size.Get("width").As<Napi::Number>().Int32Value();
         int height = size.Get("height").As<Napi::Number>().Int32Value();
@@ -464,9 +501,15 @@ private:
             return env.Null();
         }
 
+        // Validate monitor index
+        if (monitorIndex < 0 || monitorIndex >= static_cast<int>(monitors.size())) {
+            throw Napi::Error::New(env, "Invalid monitor index");
+            return env.Null();
+        }
+
 #ifdef _WIN32
-        // Use the first monitor (preferably a non-primary one)
-        const auto& monitor = monitors[0];
+        // Use the selected monitor
+        const auto& monitor = monitors[monitorIndex];
         int screenWidth = monitor.rect.right - monitor.rect.left;
         int screenHeight = monitor.rect.bottom - monitor.rect.top;
         int screenX = monitor.rect.left;
@@ -550,8 +593,8 @@ private:
             }
         }
 #elif __APPLE__
-        // Use the first monitor (preferably a non-primary one)
-        const auto& monitor = monitors[0];
+        // Use the selected monitor
+        const auto& monitor = monitors[monitorIndex];
         float screenWidth = monitor.bounds.size.width;
         float screenHeight = monitor.bounds.size.height;
         float screenX = monitor.bounds.origin.x;

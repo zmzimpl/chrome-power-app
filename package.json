@@ -37,9 +37,10 @@
     "rebuild-deps:mac": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64",
     "rebuild-deps:mac-x64": "npm rebuild sqlite3 --build-from-source --arch=x64",
     "rebuild-deps:mac-arm64": "npm rebuild sqlite3 --build-from-source --arch=arm64",
-    "rebuild-iohook": "electron-rebuild -f -w @tkomde/iohook",
+    "rebuild-iohook": "electron-rebuild -f -w @tkomde/iohook && node scripts/fix-iohook-path.js",
     "rebuild-iohook:manual": "node scripts/patch-iohook.js && cd node_modules/@tkomde/iohook && node build.js --runtime=electron --version=27.0.0 --abi=118 --upload=false",
-    "patch-iohook": "node scripts/patch-iohook.js"
+    "patch-iohook": "node scripts/patch-iohook.js",
+    "fix-iohook-path": "node scripts/fix-iohook-path.js"
   },
   "devDependencies": {
     "@iconify/react": "^4.1.1",

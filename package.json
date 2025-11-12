@@ -113,6 +113,7 @@
     "socks": "^2.7.1",
     "socks-proxy-agent": "^8.0.2",
     "sqlite3": "^5.1.6",
+    "uiohook-napi": "^1.5.4",
     "user-agents": "^1.1.148",
     "winston": "^3.11.0",
     "xlsx": "^0.18.5"

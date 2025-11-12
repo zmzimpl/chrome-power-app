@@ -742,24 +742,40 @@ private:
             return Napi::Boolean::New(env, false);
         }
 
-        // Use PostMessage for all mouse events (simple and non-intrusive)
-        // This works for normal window clicks but not for popup menus
+        // Try to find popup menu window at the click position
+        // Context menus are typically class "#32768"
+        HWND targetWindow = mainWindow->hwnd;
+        HWND menuWindow = WindowFromPoint(POINT{x, y});
+
+        if (menuWindow && menuWindow != mainWindow->hwnd) {
+            // Check if it's a menu window
+            char className[256] = {0};
+            GetClassNameA(menuWindow, className, sizeof(className));
+
+            // "#32768" is the standard menu class
+            if (strcmp(className, "#32768") == 0) {
+                targetWindow = menuWindow;
+            }
+        }
+
+        // Calculate coordinates relative to target window
         RECT rect;
-        GetWindowRect(mainWindow->hwnd, &rect);
+        GetWindowRect(targetWindow, &rect);
         int clientX = x - rect.left;
         int clientY = y - rect.top;
         LPARAM lParam = MAKELPARAM(clientX, clientY);
 
+        // Send event to target window (either main window or menu)
         if (eventType == "mousemove") {
-            PostMessage(mainWindow->hwnd, WM_MOUSEMOVE, 0, lParam);
+            PostMessage(targetWindow, WM_MOUSEMOVE, 0, lParam);
         } else if (eventType == "mousedown") {
-            PostMessage(mainWindow->hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
+            PostMessage(targetWindow, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
         } else if (eventType == "mouseup") {
-            PostMessage(mainWindow->hwnd, WM_LBUTTONUP, 0, lParam);
+            PostMessage(targetWindow, WM_LBUTTONUP, 0, lParam);
         } else if (eventType == "rightdown") {
-            PostMessage(mainWindow->hwnd, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
+            PostMessage(targetWindow, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
         } else if (eventType == "rightup") {
-            PostMessage(mainWindow->hwnd, WM_RBUTTONUP, 0, lParam);
+            PostMessage(targetWindow, WM_RBUTTONUP, 0, lParam);
         } else {
             return Napi::Boolean::New(env, false);
         }

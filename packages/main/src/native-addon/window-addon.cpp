@@ -50,7 +50,11 @@ class WindowManager : public Napi::ObjectWrap<WindowManager> {
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports) {
         Napi::Function func = DefineClass(env, "WindowManager", {
-            InstanceMethod("arrangeWindows", &WindowManager::ArrangeWindows)
+            InstanceMethod("arrangeWindows", &WindowManager::ArrangeWindows),
+            InstanceMethod("sendMouseEvent", &WindowManager::SendMouseEvent),
+            InstanceMethod("sendKeyboardEvent", &WindowManager::SendKeyboardEvent),
+            InstanceMethod("sendWheelEvent", &WindowManager::SendWheelEvent),
+            InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -586,6 +590,257 @@ private:
 #endif
 
         return env.Null();
+    }
+
+    // Get window bounds by PID
+    Napi::Value GetWindowBounds(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 1) {
+            throw Napi::TypeError::New(env, "Wrong number of arguments");
+        }
+
+        int pid = info[0].As<Napi::Number>().Int32Value();
+        Napi::Object result = Napi::Object::New(env);
+
+#ifdef _WIN32
+        auto windows = FindWindowsByPid(pid);
+        if (!windows.empty()) {
+            WindowInfo* mainWindow = nullptr;
+            for (auto& win : windows) {
+                if (!win.isExtension) {
+                    mainWindow = &win;
+                    break;
+                }
+            }
+
+            if (mainWindow) {
+                RECT rect;
+                if (GetWindowRect(mainWindow->hwnd, &rect)) {
+                    result.Set("x", Napi::Number::New(env, rect.left));
+                    result.Set("y", Napi::Number::New(env, rect.top));
+                    result.Set("width", Napi::Number::New(env, rect.right - rect.left));
+                    result.Set("height", Napi::Number::New(env, rect.bottom - rect.top));
+                    result.Set("success", Napi::Boolean::New(env, true));
+                }
+            }
+        }
+#elif __APPLE__
+        auto windows = GetWindowsForPid(pid);
+        if (!windows.empty()) {
+            WindowInfo* mainWindow = nullptr;
+            for (auto& win : windows) {
+                if (!win.isExtension) {
+                    mainWindow = &win;
+                    break;
+                }
+            }
+
+            if (mainWindow) {
+                CGPoint position;
+                CGSize size;
+                AXValueRef posRef, sizeRef;
+
+                if (AXUIElementCopyAttributeValue(mainWindow->window, kAXPositionAttribute, (CFTypeRef*)&posRef) == kAXErrorSuccess) {
+                    AXValueGetValue(posRef, (AXValueType)kAXValueCGPointType, &position);
+                    CFRelease(posRef);
+
+                    if (AXUIElementCopyAttributeValue(mainWindow->window, kAXSizeAttribute, (CFTypeRef*)&sizeRef) == kAXErrorSuccess) {
+                        AXValueGetValue(sizeRef, (AXValueType)kAXValueCGSizeType, &size);
+                        CFRelease(sizeRef);
+
+                        result.Set("x", Napi::Number::New(env, position.x));
+                        result.Set("y", Napi::Number::New(env, position.y));
+                        result.Set("width", Napi::Number::New(env, size.width));
+                        result.Set("height", Napi::Number::New(env, size.height));
+                        result.Set("success", Napi::Boolean::New(env, true));
+                    }
+                }
+                CFRelease(mainWindow->window);
+            }
+        }
+#endif
+
+        if (!result.Has("success")) {
+            result.Set("success", Napi::Boolean::New(env, false));
+        }
+
+        return result;
+    }
+
+    // Send mouse event to window
+    Napi::Value SendMouseEvent(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 4) {
+            throw Napi::TypeError::New(env, "Wrong number of arguments: pid, x, y, eventType");
+        }
+
+        int pid = info[0].As<Napi::Number>().Int32Value();
+        int x = info[1].As<Napi::Number>().Int32Value();
+        int y = info[2].As<Napi::Number>().Int32Value();
+        std::string eventType = info[3].As<Napi::String>().Utf8Value();
+
+#ifdef _WIN32
+        auto windows = FindWindowsByPid(pid);
+        if (windows.empty()) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        WindowInfo* mainWindow = nullptr;
+        for (auto& win : windows) {
+            if (!win.isExtension) {
+                mainWindow = &win;
+                break;
+            }
+        }
+
+        if (!mainWindow) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        RECT rect;
+        GetWindowRect(mainWindow->hwnd, &rect);
+        int clientX = x - rect.left;
+        int clientY = y - rect.top;
+        LPARAM lParam = MAKELPARAM(clientX, clientY);
+
+        if (eventType == "mousemove") {
+            PostMessage(mainWindow->hwnd, WM_MOUSEMOVE, 0, lParam);
+        } else if (eventType == "mousedown") {
+            PostMessage(mainWindow->hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
+        } else if (eventType == "mouseup") {
+            PostMessage(mainWindow->hwnd, WM_LBUTTONUP, 0, lParam);
+        } else if (eventType == "rightdown") {
+            PostMessage(mainWindow->hwnd, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
+        } else if (eventType == "rightup") {
+            PostMessage(mainWindow->hwnd, WM_RBUTTONUP, 0, lParam);
+        }
+
+#elif __APPLE__
+        CGPoint point = CGPointMake(x, y);
+        CGEventType cgEventType;
+        CGMouseButton button = kCGMouseButtonLeft;
+
+        if (eventType == "mousemove") {
+            cgEventType = kCGEventMouseMoved;
+        } else if (eventType == "mousedown") {
+            cgEventType = kCGEventLeftMouseDown;
+        } else if (eventType == "mouseup") {
+            cgEventType = kCGEventLeftMouseUp;
+        } else if (eventType == "rightdown") {
+            cgEventType = kCGEventRightMouseDown;
+            button = kCGMouseButtonRight;
+        } else if (eventType == "rightup") {
+            cgEventType = kCGEventRightMouseUp;
+            button = kCGMouseButtonRight;
+        } else {
+            return Napi::Boolean::New(env, false);
+        }
+
+        CGEventRef event = CGEventCreateMouseEvent(NULL, cgEventType, point, button);
+        if (event) {
+            CGEventPost(kCGHIDEventTap, event);
+            CFRelease(event);
+        }
+#endif
+
+        return Napi::Boolean::New(env, true);
+    }
+
+    // Send keyboard event to window
+    Napi::Value SendKeyboardEvent(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 3) {
+            throw Napi::TypeError::New(env, "Wrong number of arguments: pid, keyCode, eventType");
+        }
+
+        int pid = info[0].As<Napi::Number>().Int32Value();
+        int keyCode = info[1].As<Napi::Number>().Int32Value();
+        std::string eventType = info[2].As<Napi::String>().Utf8Value();
+
+#ifdef _WIN32
+        auto windows = FindWindowsByPid(pid);
+        if (windows.empty()) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        WindowInfo* mainWindow = nullptr;
+        for (auto& win : windows) {
+            if (!win.isExtension) {
+                mainWindow = &win;
+                break;
+            }
+        }
+
+        if (!mainWindow) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        if (eventType == "keydown") {
+            PostMessage(mainWindow->hwnd, WM_KEYDOWN, keyCode, 0);
+        } else if (eventType == "keyup") {
+            PostMessage(mainWindow->hwnd, WM_KEYUP, keyCode, 0);
+        }
+
+#elif __APPLE__
+        CGEventRef event;
+        bool isKeyDown = (eventType == "keydown");
+
+        event = CGEventCreateKeyboardEvent(NULL, (CGKeyCode)keyCode, isKeyDown);
+        if (event) {
+            CGEventPost(kCGHIDEventTap, event);
+            CFRelease(event);
+        }
+#endif
+
+        return Napi::Boolean::New(env, true);
+    }
+
+    // Send wheel event to window
+    Napi::Value SendWheelEvent(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 3) {
+            throw Napi::TypeError::New(env, "Wrong number of arguments: pid, deltaX, deltaY");
+        }
+
+        int pid = info[0].As<Napi::Number>().Int32Value();
+        int deltaX = info[1].As<Napi::Number>().Int32Value();
+        int deltaY = info[2].As<Napi::Number>().Int32Value();
+
+#ifdef _WIN32
+        auto windows = FindWindowsByPid(pid);
+        if (windows.empty()) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        WindowInfo* mainWindow = nullptr;
+        for (auto& win : windows) {
+            if (!win.isExtension) {
+                mainWindow = &win;
+                break;
+            }
+        }
+
+        if (!mainWindow) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        // Send wheel event
+        WPARAM wParam = MAKEWPARAM(0, deltaY * 120); // 120 is WHEEL_DELTA
+        PostMessage(mainWindow->hwnd, WM_MOUSEWHEEL, wParam, 0);
+
+#elif __APPLE__
+        CGEventRef event = CGEventCreateScrollWheelEvent(NULL, kCGScrollEventUnitPixel, 2, deltaY, deltaX);
+        if (event) {
+            CGEventPost(kCGHIDEventTap, event);
+            CFRelease(event);
+        }
+#endif
+
+        return Napi::Boolean::New(env, true);
     }
 };
 

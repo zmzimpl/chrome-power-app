@@ -453,15 +453,30 @@ class MultiWindowSyncService {
    */
   private handleWheel(event: WheelEventData): void {
     try {
-      if (!this.isCapturing || !this.masterWindowBounds) return;
-      if (!this.syncOptions.enableWheelSync) return;
+      if (!this.isCapturing || !this.masterWindowBounds) {
+        logger.debug('Wheel event skipped: not capturing or no master bounds');
+        return;
+      }
+      if (!this.syncOptions.enableWheelSync) {
+        logger.debug('Wheel event skipped: wheel sync disabled');
+        return;
+      }
 
       const now = Date.now();
-      if (now - this.lastWheelTime < (this.syncOptions.wheelThrottleMs || 50)) return;
+      if (now - this.lastWheelTime < (this.syncOptions.wheelThrottleMs || 50)) {
+        logger.debug('Wheel event throttled');
+        return;
+      }
       this.lastWheelTime = now;
 
       const {x, y, rotation, amount} = event;
-      if (!this.isMouseInMasterWindow(x, y)) return;
+      const inMaster = this.isMouseInMasterWindow(x, y);
+      if (!inMaster) {
+        logger.debug(`Wheel event skipped: mouse not in master (${x}, ${y})`);
+        return;
+      }
+
+      logger.info('Processing wheel event', {x, y, rotation, amount, slavePids: Array.from(this.slaveWindowPids)});
 
       // Optimized wheel handling based on amount
       // amount is typically in range -3 to 3
@@ -483,9 +498,12 @@ class MultiWindowSyncService {
       // Round to integer
       deltaY = Math.round(deltaY);
 
+      logger.info(`Sending wheel event to ${this.slaveWindowPids.size} slaves with deltaY=${deltaY}`);
+
       for (const slavePid of this.slaveWindowPids) {
         try {
           this.windowManager.sendWheelEvent(slavePid, 0, deltaY);
+          logger.debug(`Wheel event sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send wheel event to slave ${slavePid}:`, error);
         }
@@ -501,12 +519,21 @@ class MultiWindowSyncService {
    */
   private handleKeyDown(event: KeyboardEventData): void {
     try {
-      if (!this.isCapturing) return;
-      if (!this.syncOptions.enableKeyboardSync) return;
+      logger.info('handleKeyDown called', {isCapturing: this.isCapturing, isMouseInMaster: this.isMouseInMaster, event});
+
+      if (!this.isCapturing) {
+        logger.debug('Keydown skipped: not capturing');
+        return;
+      }
+      if (!this.syncOptions.enableKeyboardSync) {
+        logger.debug('Keydown skipped: keyboard sync disabled');
+        return;
+      }
 
       // Only sync keyboard events when mouse is in master window
       // This prevents keyboard input from other windows being synchronized
       if (!this.isMouseInMaster) {
+        logger.debug('Keydown skipped: mouse not in master');
         return;
       }
 
@@ -519,7 +546,9 @@ class MultiWindowSyncService {
       // Use rawcode instead of keycode for system-native key codes
       // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
       // keycode is uiohook's cross-platform virtual code which doesn't map correctly
-      const {rawcode} = event;
+      const {rawcode, keycode} = event;
+
+      logger.info('Processing keydown', {rawcode, keycode, slavePids: Array.from(this.slaveWindowPids)});
 
       // Validate rawcode
       if (rawcode === undefined || rawcode === null) {
@@ -527,9 +556,12 @@ class MultiWindowSyncService {
         return;
       }
 
+      logger.info(`Sending keydown to ${this.slaveWindowPids.size} slaves with rawcode=${rawcode}`);
+
       for (const slavePid of this.slaveWindowPids) {
         try {
           this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keydown');
+          logger.debug(`Keydown sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
         }
@@ -545,12 +577,19 @@ class MultiWindowSyncService {
    */
   private handleKeyUp(event: KeyboardEventData): void {
     try {
-      if (!this.isCapturing) return;
-      if (!this.syncOptions.enableKeyboardSync) return;
+      if (!this.isCapturing) {
+        logger.debug('Keyup skipped: not capturing');
+        return;
+      }
+      if (!this.syncOptions.enableKeyboardSync) {
+        logger.debug('Keyup skipped: keyboard sync disabled');
+        return;
+      }
 
       // Only sync keyboard events when mouse is in master window
       // This prevents keyboard input from other windows being synchronized
       if (!this.isMouseInMaster) {
+        logger.debug('Keyup skipped: mouse not in master');
         return;
       }
 
@@ -563,7 +602,9 @@ class MultiWindowSyncService {
       // Use rawcode instead of keycode for system-native key codes
       // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
       // keycode is uiohook's cross-platform virtual code which doesn't map correctly
-      const {rawcode} = event;
+      const {rawcode, keycode} = event;
+
+      logger.info('Processing keyup', {rawcode, keycode});
 
       // Validate rawcode
       if (rawcode === undefined || rawcode === null) {
@@ -574,6 +615,7 @@ class MultiWindowSyncService {
       for (const slavePid of this.slaveWindowPids) {
         try {
           this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keyup');
+          logger.debug(`Keyup sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);
         }

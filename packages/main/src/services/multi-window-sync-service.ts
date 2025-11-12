@@ -89,6 +89,12 @@ class MultiWindowSyncService {
   private isCapturing: boolean = false;
   private windowManager: SafeAny = null;
 
+  // Focus tracking - tracks if mouse is currently in master window
+  // Used to determine if keyboard events should be synchronized
+  private isMouseInMaster: boolean = false;
+  private lastMouseCheckTime: number = 0;
+  private readonly MOUSE_FOCUS_TIMEOUT_MS = 500; // Consider focus lost after 500ms without mouse movement in master
+
   // Extension window tracking
   private extensionWindows: Map<number, ExtensionWindow[]> = new Map();
   private extensionMonitorInterval: NodeJS.Timeout | null = null;
@@ -209,6 +215,10 @@ class MultiWindowSyncService {
       this.slaveWindowBounds.clear();
       this.extensionWindows.clear();
 
+      // Reset focus tracking
+      this.isMouseInMaster = false;
+      this.lastMouseCheckTime = 0;
+
       logger.info('Multi-window sync stopped');
       return {success: true};
     } catch (error) {
@@ -317,13 +327,24 @@ class MultiWindowSyncService {
    */
   private handleMouseMove(event: MouseEventData): void {
     if (!this.isCapturing || !this.masterWindowBounds) return;
-    if (!this.syncOptions.enableMouseSync) return;
 
     const now = Date.now();
     const {x, y} = event;
 
-    // Check if mouse is in master window
-    if (!this.isMouseInMasterWindow(x, y)) return;
+    // Check if mouse is in master window and update focus tracking
+    const inMaster = this.isMouseInMasterWindow(x, y);
+    if (inMaster) {
+      this.isMouseInMaster = true;
+      this.lastMouseCheckTime = now;
+    } else {
+      // Consider focus lost if mouse hasn't been in master for timeout period
+      if (now - this.lastMouseCheckTime > this.MOUSE_FOCUS_TIMEOUT_MS) {
+        this.isMouseInMaster = false;
+      }
+    }
+
+    if (!this.syncOptions.enableMouseSync) return;
+    if (!inMaster) return;
 
     // Throttle by time and distance
     const timeDiff = now - this.lastMouseMoveTime;
@@ -439,10 +460,17 @@ class MultiWindowSyncService {
 
   /**
    * Handle key down events
+   * Only synchronizes when mouse is in master window (indicating user focus)
    */
   private handleKeyDown(event: KeyboardEventData): void {
     if (!this.isCapturing) return;
     if (!this.syncOptions.enableKeyboardSync) return;
+
+    // Only sync keyboard events when mouse is in master window
+    // This prevents keyboard input from other windows being synchronized
+    if (!this.isMouseInMaster) {
+      return;
+    }
 
     const {keycode} = event;
 
@@ -453,10 +481,17 @@ class MultiWindowSyncService {
 
   /**
    * Handle key up events
+   * Only synchronizes when mouse is in master window (indicating user focus)
    */
   private handleKeyUp(event: KeyboardEventData): void {
     if (!this.isCapturing) return;
     if (!this.syncOptions.enableKeyboardSync) return;
+
+    // Only sync keyboard events when mouse is in master window
+    // This prevents keyboard input from other windows being synchronized
+    if (!this.isMouseInMaster) {
+      return;
+    }
 
     const {keycode} = event;
 

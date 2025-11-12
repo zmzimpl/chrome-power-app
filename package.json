@@ -125,6 +125,11 @@
   "build": {
     "directories": {
       "buildResources": "buildResources"
+    },
+    "electronRebuild": {
+      "exclude": [
+        "@tkomde/iohook"
+      ]
     }
   },
   "optionalDependencies": {

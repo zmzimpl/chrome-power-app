@@ -821,10 +821,27 @@ private:
             return Napi::Boolean::New(env, false);
         }
 
+        // Build lParam for extended keys
+        // Bit 24: Extended-key flag (1 for extended keys like arrows, Insert, Delete, etc.)
+        // Check if this is an extended key based on the VK code
+        bool isExtendedKey = (
+            keyCode == VK_INSERT || keyCode == VK_DELETE || keyCode == VK_HOME ||
+            keyCode == VK_END || keyCode == VK_PRIOR || keyCode == VK_NEXT ||
+            keyCode == VK_LEFT || keyCode == VK_UP || keyCode == VK_RIGHT || keyCode == VK_DOWN ||
+            keyCode == VK_NUMLOCK || keyCode == VK_DIVIDE
+        );
+
+        LPARAM lParam = 1; // Repeat count = 1
+        if (isExtendedKey) {
+            lParam |= (1 << 24); // Set extended-key flag
+        }
+
         if (eventType == "keydown") {
-            PostMessage(mainWindow->hwnd, WM_KEYDOWN, keyCode, 0);
+            PostMessage(mainWindow->hwnd, WM_KEYDOWN, keyCode, lParam);
         } else if (eventType == "keyup") {
-            PostMessage(mainWindow->hwnd, WM_KEYUP, keyCode, 0);
+            lParam |= (1 << 30); // Previous key state (1 = key was down)
+            lParam |= (1 << 31); // Transition state (1 = key is being released)
+            PostMessage(mainWindow->hwnd, WM_KEYUP, keyCode, lParam);
         }
 
 #elif __APPLE__

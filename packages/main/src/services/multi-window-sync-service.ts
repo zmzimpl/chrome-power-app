@@ -546,10 +546,11 @@ class MultiWindowSyncService {
     uIOhook.on('mousedown', this.handleMouseDown.bind(this));
     uIOhook.on('mouseup', this.handleMouseUp.bind(this));
     uIOhook.on('wheel', this.handleWheel.bind(this));
+    // Only listen to keydown and synthesize complete key press (down + up)
     uIOhook.on('keydown', this.handleKeyDown.bind(this));
-    uIOhook.on('keyup', this.handleKeyUp.bind(this));
+    // Note: keyup listener removed to prevent duplicate input
 
-    logger.info('Event listeners setup complete');
+    logger.info('Event listeners setup complete (keyup listener disabled to prevent duplicates)');
   }
 
   /**
@@ -850,20 +851,33 @@ class MultiWindowSyncService {
       // Convert to system-native keycode
       const nativeKeycode = convertKeyCode(keycode);
 
-      logger.info('⬇️  Keydown', {
+      logger.info('⌨️  Key press', {
         eventCounter: this.keyEventCounter,
         uiohookKeycode: keycode,
         nativeKeycode,
         slaveCount: this.slaveWindowPids.size
       });
 
-      // Send to slave windows
+      // Send complete key press to slave windows (keydown + keyup)
+      // This prevents duplicate input issues
       for (const slavePid of this.slaveWindowPids) {
         try {
+          // Send keydown
           this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown');
-          logger.debug(`  → Sent to slave ${slavePid}`);
+
+          // Immediately send keyup to complete the key press
+          // Small timeout ensures proper event sequencing
+          setTimeout(() => {
+            try {
+              this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup');
+            } catch (error) {
+              logger.error(`Failed to send keyup to slave ${slavePid}:`, error);
+            }
+          }, 10);
+
+          logger.debug(`  → Sent key press to slave ${slavePid}`);
         } catch (error) {
-          logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
+          logger.error(`Failed to send keydown to slave ${slavePid}:`, error);
         }
       }
     } catch (error) {

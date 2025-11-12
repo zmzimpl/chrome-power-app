@@ -889,7 +889,8 @@ private:
         }
 
         // Send wheel event
-        WPARAM wParam = MAKEWPARAM(0, deltaY * 120); // 120 is WHEEL_DELTA
+        // Note: deltaY is already multiplied by WHEEL_DELTA (120) in TypeScript
+        WPARAM wParam = MAKEWPARAM(0, deltaY);
         PostMessage(mainWindow->hwnd, WM_MOUSEWHEEL, wParam, 0);
 
 #elif __APPLE__

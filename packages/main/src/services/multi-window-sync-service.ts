@@ -568,7 +568,7 @@ class MultiWindowSyncService {
       for (const slavePid of this.slaveWindowPids) {
         try {
           this.windowManager.sendWheelEvent(slavePid, 0, deltaY);
-          logger.debug(`Wheel event sent to slave ${slavePid}`);
+          logger.info(`✓ Wheel event sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send wheel event to slave ${slavePid}:`, error);
         }

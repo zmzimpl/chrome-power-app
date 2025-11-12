@@ -469,10 +469,11 @@ class MultiWindowSyncService {
 
   /**
    * Handle wheel events (with optimized scrolling strategy)
-   * Based on Chrome-Manager's layered wheel handling:
-   * - Small scrolls (≤1): Send directly
-   * - Medium scrolls (2-3): Amplify for smoother scrolling
-   * - Large scrolls (>3): Use multiplier for fast scrolling
+   * @tkomde/iohook wheel event structure:
+   * - rotation: scroll amount with direction (positive = scroll down, negative = scroll up)
+   * - amount: absolute scroll amount (always positive)
+   * - direction: 3 for vertical, 4 for horizontal
+   * - x, y: mouse position
    */
   private handleWheel(event: WheelEventData): void {
     try {
@@ -492,36 +493,50 @@ class MultiWindowSyncService {
       }
       this.lastWheelTime = now;
 
-      const {x, y, rotation, amount} = event;
+      const {x, y, rotation, amount, direction} = event;
       const inMaster = this.isMouseInMasterWindow(x, y);
       if (!inMaster) {
         logger.debug(`Wheel event skipped: mouse not in master (${x}, ${y})`);
         return;
       }
 
-      logger.info('Processing wheel event', {x, y, rotation, amount, slavePids: Array.from(this.slaveWindowPids)});
+      logger.info('Processing wheel event', {
+        x,
+        y,
+        rotation,
+        amount,
+        direction,
+        slavePids: Array.from(this.slaveWindowPids),
+      });
 
-      // Optimized wheel handling based on amount
-      // amount is typically in range -3 to 3
-      let deltaY = rotation > 0 ? -amount : amount;
+      // Skip horizontal scrolling for now (can be added later if needed)
+      if (direction === 4) {
+        logger.debug('Horizontal scroll event skipped');
+        return;
+      }
 
-      // Apply layered scrolling strategy
+      // Calculate deltaY from rotation
+      // rotation is positive for scroll down, negative for scroll up
+      // Windows expects negative values for scroll down
+      let deltaY = -rotation;
+
+      // Apply scroll amplification based on amount
       const absAmount = Math.abs(amount);
       if (absAmount <= 1) {
-        // Small scroll: use as-is (no amplification)
-        // deltaY remains unchanged
+        // Small scroll: use 1:1 mapping
+        deltaY = deltaY * 120; // Standard wheel delta is 120 units per notch
       } else if (absAmount <= 3) {
-        // Medium scroll: amplify slightly for better responsiveness
-        deltaY = deltaY * 1.5;
+        // Medium scroll: slight amplification for better feel
+        deltaY = deltaY * 150;
       } else {
-        // Large scroll: use multiplier for fast scrolling
-        deltaY = deltaY * 2.0;
+        // Large scroll: amplify for fast scrolling
+        deltaY = deltaY * 200;
       }
 
       // Round to integer
       deltaY = Math.round(deltaY);
 
-      logger.info(`Sending wheel event to ${this.slaveWindowPids.size} slaves with deltaY=${deltaY}`);
+      logger.info(`Sending wheel event: deltaY=${deltaY} (rotation=${rotation}, amount=${amount})`);
 
       for (const slavePid of this.slaveWindowPids) {
         try {

@@ -55,7 +55,7 @@
     "@typescript-eslint/eslint-plugin": "6.7.2",
     "autoprefixer": "^10.4.16",
     "cross-env": "7.0.3",
-    "electron": "^27.0.0",
+    "electron": "^31.0.0",
     "electron-builder": "^25.1.8",
     "electron-devtools-installer": "^3.2.0",
     "eslint": "8.50.0",
@@ -132,7 +132,7 @@
   },
   "iohook": {
     "targets": [
-      "electron-118"
+      "electron-125"
     ],
     "platforms": [
       "win32",

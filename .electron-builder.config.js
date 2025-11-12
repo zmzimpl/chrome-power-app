@@ -27,6 +27,7 @@ module.exports = async function () {
       output: 'dist',
       buildResources: 'buildResources',
     },
+    nodeGypRebuild: false, // Disable node-gyp rebuild, use prebuilt binaries
     files: [
       'packages/**/dist/**',
       'packages/**/assets/**',

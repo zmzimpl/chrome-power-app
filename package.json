@@ -31,7 +31,7 @@
     "typecheck:preload": "tsc --noEmit -p packages/preload/tsconfig.json",
     "typecheck:renderer": "tsc --noEmit -p packages/renderer/tsconfig.json",
     "typecheck": "npm run typecheck:main && npm run typecheck:preload",
-    "postinstall": "electron-builder install-app-deps && cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs && node scripts/build-native-addon.js",
+    "postinstall": "electron-builder install-app-deps || echo 'Warning: Some native modules failed to rebuild, but using prebuilt binaries' && cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs && node scripts/build-native-addon.js",
     "format": "npx prettier --write \"**/*.{js,mjs,cjs,ts,mts,cts,vue,json}\"",
     "rebuild-deps": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64",
     "rebuild-deps:mac": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64",
@@ -125,11 +125,6 @@
   "build": {
     "directories": {
       "buildResources": "buildResources"
-    },
-    "electronRebuild": {
-      "exclude": [
-        "@tkomde/iohook"
-      ]
     }
   },
   "optionalDependencies": {

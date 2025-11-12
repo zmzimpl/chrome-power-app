@@ -389,7 +389,8 @@ class MultiWindowSyncService {
 
   // Keyboard event deduplication
   private lastKeyEvent: {keycode: number; type: 'keydown' | 'keyup'; time: number} | null = null;
-  private readonly KEY_DEDUP_THRESHOLD_MS = 20; // Ignore duplicate events within 20ms
+  private readonly KEY_DEDUP_THRESHOLD_MS = 50; // Ignore duplicate events within 50ms
+  private keyEventCounter: number = 0; // Counter to track event frequency
 
   constructor() {
     if (windowAddon) {
@@ -538,12 +539,17 @@ class MultiWindowSyncService {
   private setupEventListeners(): void {
     if (!uIOhook) return;
 
+    // Remove any existing listeners first to prevent duplicates
+    this.removeEventListeners();
+
     uIOhook.on('mousemove', this.handleMouseMove.bind(this));
     uIOhook.on('mousedown', this.handleMouseDown.bind(this));
     uIOhook.on('mouseup', this.handleMouseUp.bind(this));
     uIOhook.on('wheel', this.handleWheel.bind(this));
     uIOhook.on('keydown', this.handleKeyDown.bind(this));
     uIOhook.on('keyup', this.handleKeyUp.bind(this));
+
+    logger.info('Event listeners setup complete');
   }
 
   /**
@@ -818,13 +824,23 @@ class MultiWindowSyncService {
         return;
       }
 
+      // Increment event counter
+      this.keyEventCounter++;
+
       // Deduplication: Check if this is a duplicate event
       const now = Date.now();
-      if (this.lastKeyEvent &&
+      const isDuplicate = this.lastKeyEvent &&
           this.lastKeyEvent.keycode === keycode &&
           this.lastKeyEvent.type === 'keydown' &&
-          now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS) {
-        logger.debug('Duplicate keydown event ignored', {keycode, timeSinceLast: now - this.lastKeyEvent.time});
+          now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS;
+
+      if (isDuplicate) {
+        logger.warn('⚠️  DUPLICATE keydown detected and ignored', {
+          keycode,
+          timeSinceLast: now - this.lastKeyEvent!.time,
+          threshold: this.KEY_DEDUP_THRESHOLD_MS,
+          eventCounter: this.keyEventCounter
+        });
         return;
       }
 
@@ -834,16 +850,18 @@ class MultiWindowSyncService {
       // Convert to system-native keycode
       const nativeKeycode = convertKeyCode(keycode);
 
-      logger.debug('Keydown', {
+      logger.info('⬇️  Keydown', {
+        eventCounter: this.keyEventCounter,
         uiohookKeycode: keycode,
         nativeKeycode,
-        platform: process.platform
+        slaveCount: this.slaveWindowPids.size
       });
 
       // Send to slave windows
       for (const slavePid of this.slaveWindowPids) {
         try {
           this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown');
+          logger.debug(`  → Sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
         }
@@ -890,13 +908,23 @@ class MultiWindowSyncService {
         return;
       }
 
+      // Increment event counter
+      this.keyEventCounter++;
+
       // Deduplication: Check if this is a duplicate event
       const now = Date.now();
-      if (this.lastKeyEvent &&
+      const isDuplicate = this.lastKeyEvent &&
           this.lastKeyEvent.keycode === keycode &&
           this.lastKeyEvent.type === 'keyup' &&
-          now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS) {
-        logger.debug('Duplicate keyup event ignored', {keycode, timeSinceLast: now - this.lastKeyEvent.time});
+          now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS;
+
+      if (isDuplicate) {
+        logger.warn('⚠️  DUPLICATE keyup detected and ignored', {
+          keycode,
+          timeSinceLast: now - this.lastKeyEvent!.time,
+          threshold: this.KEY_DEDUP_THRESHOLD_MS,
+          eventCounter: this.keyEventCounter
+        });
         return;
       }
 
@@ -906,15 +934,18 @@ class MultiWindowSyncService {
       // Convert to system-native keycode
       const nativeKeycode = convertKeyCode(keycode);
 
-      logger.debug('Keyup', {
+      logger.info('⬆️  Keyup', {
+        eventCounter: this.keyEventCounter,
         uiohookKeycode: keycode,
-        nativeKeycode
+        nativeKeycode,
+        slaveCount: this.slaveWindowPids.size
       });
 
       // Send to slave windows
       for (const slavePid of this.slaveWindowPids) {
         try {
           this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup');
+          logger.debug(`  → Sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);
         }

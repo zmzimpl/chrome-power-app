@@ -523,7 +523,12 @@ class MultiWindowSyncService {
    */
   private handleKeyDown(event: KeyboardEventData): void {
     try {
-      logger.info('handleKeyDown called', {isCapturing: this.isCapturing, isMouseInMaster: this.isMouseInMaster, event});
+      // Log complete event object to see all available fields
+      logger.info('=== KEYDOWN EVENT DEBUG ===');
+      logger.info('Full event object:', event);
+      logger.info('Event as any:', (event as any));
+      logger.info('All event keys:', Object.keys(event));
+      logger.info('State:', {isCapturing: this.isCapturing, isMouseInMaster: this.isMouseInMaster});
 
       if (!this.isCapturing) {
         logger.debug('Keydown skipped: not capturing');
@@ -547,8 +552,17 @@ class MultiWindowSyncService {
         return;
       }
 
+      // Check all possible key code fields
+      const eventAny = event as any;
+      logger.info('Checking for key code fields:', {
+        keycode: eventAny.keycode,
+        rawcode: eventAny.rawcode,
+        scancode: eventAny.scancode,
+        code: eventAny.code,
+        key: eventAny.key,
+      });
+
       // Use keycode from uiohook-napi
-      // Note: uiohook-napi provides cross-platform keycodes that should work correctly
       const {keycode} = event;
 
       logger.info('Processing keydown', {keycode, slavePids: Array.from(this.slaveWindowPids)});

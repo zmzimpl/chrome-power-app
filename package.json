@@ -128,5 +128,19 @@
   },
   "optionalDependencies": {
     "dmg-license": "^1.0.11"
+  },
+  "iohook": {
+    "targets": [
+      "electron-118"
+    ],
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "arches": [
+      "x64",
+      "arm64"
+    ]
   }
 }

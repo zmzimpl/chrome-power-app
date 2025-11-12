@@ -472,10 +472,13 @@ class MultiWindowSyncService {
       return;
     }
 
-    const {keycode} = event;
+    // Use rawcode instead of keycode for system-native key codes
+    // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
+    // keycode is uiohook's cross-platform virtual code which doesn't map correctly
+    const {rawcode} = event;
 
     for (const slavePid of this.slaveWindowPids) {
-      this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keydown');
+      this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keydown');
     }
   }
 
@@ -493,10 +496,13 @@ class MultiWindowSyncService {
       return;
     }
 
-    const {keycode} = event;
+    // Use rawcode instead of keycode for system-native key codes
+    // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
+    // keycode is uiohook's cross-platform virtual code which doesn't map correctly
+    const {rawcode} = event;
 
     for (const slavePid of this.slaveWindowPids) {
-      this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keyup');
+      this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keyup');
     }
   }
 

@@ -104,25 +104,30 @@ const UIOHOOK_TO_WINDOWS_VK: Record<number, number> = {
   53: 0xBF,  // Slash (/)
   41: 0xC0,  // Backquote (`)
 
-  // Numpad numbers
-  82: 0x60,  // Numpad 0
-  79: 0x61,  // Numpad 1
-  80: 0x62,  // Numpad 2
-  81: 0x63,  // Numpad 3
-  75: 0x64,  // Numpad 4
-  76: 0x65,  // Numpad 5
-  77: 0x66,  // Numpad 6
-  71: 0x67,  // Numpad 7
-  72: 0x68,  // Numpad 8
-  73: 0x69,  // Numpad 9
+  // Numpad numbers - CONFLICT WARNING
+  // Almost all numpad number keys conflict with extended keys (arrows, Insert, Delete, etc.)
+  // Extended keys take priority as they are more commonly used
+  // Only Numpad 5 (center key) is non-conflicting
+  76: 0x65,  // Numpad 5 (only non-conflicting numpad number)
 
   // Numpad operators
   55: 0x6A,    // Numpad Multiply (*)
   78: 0x6B,    // Numpad Add (+)
-  83: 0x6C,    // Numpad Separator
   74: 0x6D,    // Numpad Subtract (-)
   3637: 0x6F,  // Numpad Divide (/) - 0x0E35
   3612: 0x0D,  // Numpad Enter - 0x0E1C (same as regular Enter)
+
+  // Note: The following numpad keys conflict with extended keys and cannot be mapped:
+  // 71 (Numpad 7) = Home
+  // 72 (Numpad 8) = Up Arrow
+  // 73 (Numpad 9) = Page Up
+  // 75 (Numpad 4) = Left Arrow
+  // 77 (Numpad 6) = Right Arrow
+  // 79 (Numpad 1) = End
+  // 80 (Numpad 2) = Down Arrow
+  // 81 (Numpad 3) = Page Down
+  // 82 (Numpad 0) = Insert
+  // 83 (Numpad .) = Delete
 
   // Common keys
   57: 0x20,   // Space
@@ -139,18 +144,35 @@ const UIOHOOK_TO_WINDOWS_VK: Record<number, number> = {
   100: 0x12,  // Right Alt (0x0038 with extended bit)
 
   // Arrow keys (extended keys - 0xE0xx)
+  // Full extended key codes (may not be used by uiohook-napi)
   57416: 0x26, // Up (0xE048)
   57424: 0x28, // Down (0xE050)
   57419: 0x25, // Left (0xE04B)
   57421: 0x27, // Right (0xE04D)
+  // Base scan codes (what uiohook-napi actually returns)
+  72: 0x26,    // Up (base code 0x48 = 72)
+  80: 0x28,    // Down (base code 0x50 = 80) - conflicts with Numpad 2 but this takes priority
+  75: 0x25,    // Left (base code 0x4B = 75) - conflicts with Numpad 4 but this takes priority
+  77: 0x27,    // Right (base code 0x4D = 77) - conflicts with Numpad 6 but this takes priority
 
-  // Edit keys
+  // Edit/navigation keys (extended keys)
+  // Full extended key codes (may not be used by uiohook-napi)
   57427: 0x2E,   // Delete (0xE053)
   57426: 0x2D,   // Insert (0xE052)
   57415: 0x24,   // Home (0xE047)
   57423: 0x23,   // End (0xE04F)
   57417: 0x21,   // Page Up (0xE049)
   57425: 0x22,   // Page Down (0xE051)
+  // Base scan codes (what uiohook-napi actually returns) - THESE ARE USED
+  83: 0x2E,      // Delete (base code 0x53 = 83)
+  82: 0x2D,      // Insert (base code 0x52 = 82)
+  71: 0x24,      // Home (base code 0x47 = 71)
+  79: 0x23,      // End (base code 0x4F = 79)
+  73: 0x21,      // Page Up (base code 0x49 = 73)
+  81: 0x22,      // Page Down (base code 0x51 = 81)
+
+  // Numlock
+  69: 0x90,      // Num Lock (base code 0x45 = 69)
 
   // Function keys
   59: 0x70,  // F1
@@ -222,25 +244,14 @@ const UIOHOOK_TO_MACOS_CGKEY: Record<number, number> = {
   53: 44,  // Slash (/)
   41: 50,  // Backquote (`)
 
-  // Numpad numbers
-  82: 82,  // Numpad 0
-  79: 83,  // Numpad 1
-  80: 84,  // Numpad 2
-  81: 85,  // Numpad 3
-  75: 86,  // Numpad 4
-  76: 87,  // Numpad 5
-  77: 88,  // Numpad 6
-  71: 89,  // Numpad 7
-  72: 91,  // Numpad 8
-  73: 92,  // Numpad 9
-
-  // Numpad operators
+  // Numpad operators (non-conflicting only)
   55: 67,    // Numpad Multiply (*)
   78: 69,    // Numpad Add (+)
-  83: 65,    // Numpad Decimal/Separator
   74: 78,    // Numpad Subtract (-)
+  76: 87,    // Numpad 5 (center key, non-conflicting)
   3637: 75,  // Numpad Divide (/)
   3612: 76,  // Numpad Enter
+  // Note: Most numpad numbers conflict with extended keys, prioritizing extended keys
 
   // Common keys
   57: 49,   // Space
@@ -255,19 +266,36 @@ const UIOHOOK_TO_MACOS_CGKEY: Record<number, number> = {
   56: 58,   // Left Alt/Option
   100: 61,  // Right Alt/Option
 
-  // Arrow keys
+  // Arrow keys (extended keys)
+  // Full extended key codes (may not be used)
   57416: 126, // Up
   57424: 125, // Down
   57419: 123, // Left
   57421: 124, // Right
+  // Base scan codes (what uiohook-napi actually returns)
+  72: 126,    // Up (base code 0x48 = 72)
+  80: 125,    // Down (base code 0x50 = 80)
+  75: 123,    // Left (base code 0x4B = 75)
+  77: 124,    // Right (base code 0x4D = 77)
 
-  // Edit keys
+  // Edit/navigation keys (extended keys)
+  // Full extended key codes (may not be used)
   57427: 117,  // Delete (Forward Delete)
   57426: 114,  // Insert/Help
   57415: 115,  // Home
   57423: 119,  // End
   57417: 116,  // Page Up
   57425: 121,  // Page Down
+  // Base scan codes (what uiohook-napi actually returns) - THESE ARE USED
+  83: 117,     // Delete (base code 0x53 = 83)
+  82: 114,     // Insert/Help (base code 0x52 = 82)
+  71: 115,     // Home (base code 0x47 = 71)
+  79: 119,     // End (base code 0x4F = 79)
+  73: 116,     // Page Up (base code 0x49 = 73)
+  81: 121,     // Page Down (base code 0x51 = 81)
+
+  // Numlock
+  69: 71,      // Clear/Num Lock (base code 0x45 = 69)
 
   // Function keys
   59: 122,  // F1

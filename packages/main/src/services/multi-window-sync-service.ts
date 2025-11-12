@@ -31,7 +31,8 @@ interface MouseEventData {
 }
 
 interface KeyboardEventData {
-  keycode: number; // uiohook-napi virtual keycode
+  keycode?: number; // @tkomde/iohook virtual keycode (fallback)
+  rawcode?: number; // @tkomde/iohook native OS keycode (preferred)
   type: string;
   altKey?: boolean;
   ctrlKey?: boolean;
@@ -47,292 +48,6 @@ interface WheelEventData {
   direction: number;
   amount: number;
 }
-
-// uiohook-napi keycode to Windows Virtual-Key Code mapping
-// Based on libuiohook keycodes: https://github.com/kwhat/libuiohook/blob/master/include/uiohook.h
-const UIOHOOK_TO_WINDOWS_VK: Record<number, number> = {
-  // Letters (A-Z)
-  30: 0x41, // A
-  48: 0x42, // B
-  46: 0x43, // C
-  32: 0x44, // D
-  18: 0x45, // E
-  33: 0x46, // F
-  34: 0x47, // G
-  35: 0x48, // H
-  23: 0x49, // I
-  36: 0x4A, // J
-  37: 0x4B, // K
-  38: 0x4C, // L
-  50: 0x4D, // M
-  49: 0x4E, // N
-  24: 0x4F, // O
-  25: 0x50, // P
-  16: 0x51, // Q
-  19: 0x52, // R
-  31: 0x53, // S
-  20: 0x54, // T
-  22: 0x55, // U
-  47: 0x56, // V
-  17: 0x57, // W
-  45: 0x58, // X
-  21: 0x59, // Y
-  44: 0x5A, // Z
-
-  // Numbers (0-9)
-  11: 0x30, // 0
-  2: 0x31,  // 1
-  3: 0x32,  // 2
-  4: 0x33,  // 3
-  5: 0x34,  // 4
-  6: 0x35,  // 5
-  7: 0x36,  // 6
-  8: 0x37,  // 7
-  9: 0x38,  // 8
-  10: 0x39, // 9
-
-  // Punctuation marks
-  12: 0xBD,  // Minus (-)
-  13: 0xBB,  // Equals (=)
-  26: 0xDB,  // Open Bracket ([)
-  27: 0xDD,  // Close Bracket (])
-  43: 0xDC,  // Backslash (\)
-  39: 0xBA,  // Semicolon (;)
-  40: 0xDE,  // Quote (')
-  51: 0xBC,  // Comma (,)
-  52: 0xBE,  // Period (.)
-  53: 0xBF,  // Slash (/)
-  41: 0xC0,  // Backquote (`)
-
-  // Numpad numbers - CONFLICT WARNING
-  // Almost all numpad number keys conflict with extended keys (arrows, Insert, Delete, etc.)
-  // Extended keys take priority as they are more commonly used
-  // Only Numpad 5 (center key) is non-conflicting
-  76: 0x65,  // Numpad 5 (only non-conflicting numpad number)
-
-  // Numpad operators
-  55: 0x6A,    // Numpad Multiply (*)
-  78: 0x6B,    // Numpad Add (+)
-  74: 0x6D,    // Numpad Subtract (-)
-  3637: 0x6F,  // Numpad Divide (/) - 0x0E35
-  3612: 0x0D,  // Numpad Enter - 0x0E1C (same as regular Enter)
-
-  // Note: The following numpad keys conflict with extended keys and cannot be mapped:
-  // 71 (Numpad 7) = Home
-  // 72 (Numpad 8) = Up Arrow
-  // 73 (Numpad 9) = Page Up
-  // 75 (Numpad 4) = Left Arrow
-  // 77 (Numpad 6) = Right Arrow
-  // 79 (Numpad 1) = End
-  // 80 (Numpad 2) = Down Arrow
-  // 81 (Numpad 3) = Page Down
-  // 82 (Numpad 0) = Insert
-  // 83 (Numpad .) = Delete
-
-  // Common keys
-  57: 0x20,   // Space
-  28: 0x0D,   // Enter
-  14: 0x08,   // Backspace
-  15: 0x09,   // Tab
-  1: 0x1B,    // Escape
-  58: 0x14,   // Caps Lock
-  42: 0x10,   // Left Shift
-  54: 0x10,   // Right Shift
-  29: 0x11,   // Left Ctrl
-  97: 0x11,   // Right Ctrl (0x001D with extended bit)
-  56: 0x12,   // Left Alt
-  100: 0x12,  // Right Alt (0x0038 with extended bit)
-
-  // Arrow keys (extended keys - 0xE0xx)
-  // Full extended key codes (may not be used by uiohook-napi)
-  57416: 0x26, // Up (0xE048)
-  57424: 0x28, // Down (0xE050)
-  57419: 0x25, // Left (0xE04B)
-  57421: 0x27, // Right (0xE04D)
-  // Base scan codes (what uiohook-napi actually returns)
-  72: 0x26,    // Up (base code 0x48 = 72)
-  80: 0x28,    // Down (base code 0x50 = 80) - conflicts with Numpad 2 but this takes priority
-  75: 0x25,    // Left (base code 0x4B = 75) - conflicts with Numpad 4 but this takes priority
-  77: 0x27,    // Right (base code 0x4D = 77) - conflicts with Numpad 6 but this takes priority
-
-  // Edit/navigation keys (extended keys)
-  // Full extended key codes (may not be used by uiohook-napi)
-  57427: 0x2E,   // Delete (0xE053)
-  57426: 0x2D,   // Insert (0xE052)
-  57415: 0x24,   // Home (0xE047)
-  57423: 0x23,   // End (0xE04F)
-  57417: 0x21,   // Page Up (0xE049)
-  57425: 0x22,   // Page Down (0xE051)
-  // Base scan codes (what uiohook-napi actually returns) - THESE ARE USED
-  83: 0x2E,      // Delete (base code 0x53 = 83)
-  82: 0x2D,      // Insert (base code 0x52 = 82)
-  71: 0x24,      // Home (base code 0x47 = 71)
-  79: 0x23,      // End (base code 0x4F = 79)
-  73: 0x21,      // Page Up (base code 0x49 = 73)
-  81: 0x22,      // Page Down (base code 0x51 = 81)
-
-  // Numlock
-  69: 0x90,      // Num Lock (base code 0x45 = 69)
-
-  // Function keys
-  59: 0x70,  // F1
-  60: 0x71,  // F2
-  61: 0x72,  // F3
-  62: 0x73,  // F4
-  63: 0x74,  // F5
-  64: 0x75,  // F6
-  65: 0x76,  // F7
-  66: 0x77,  // F8
-  67: 0x78,  // F9
-  68: 0x79,  // F10
-  87: 0x7A,  // F11
-  88: 0x7B,  // F12
-};
-
-// uiohook-napi keycode to macOS CGKeyCode mapping
-const UIOHOOK_TO_MACOS_CGKEY: Record<number, number> = {
-  // Letters (A-Z) - QWERTY layout
-  30: 0,   // A
-  48: 11,  // B
-  46: 8,   // C
-  32: 2,   // D
-  18: 14,  // E
-  33: 3,   // F
-  34: 5,   // G
-  35: 4,   // H
-  23: 34,  // I
-  36: 38,  // J
-  37: 40,  // K
-  38: 37,  // L
-  50: 46,  // M
-  49: 45,  // N
-  24: 31,  // O
-  25: 35,  // P
-  16: 12,  // Q
-  19: 15,  // R
-  31: 1,   // S
-  20: 17,  // T
-  22: 32,  // U
-  47: 9,   // V
-  17: 13,  // W
-  45: 7,   // X
-  21: 16,  // Y
-  44: 6,   // Z
-
-  // Numbers (0-9)
-  11: 29,  // 0
-  2: 18,   // 1
-  3: 19,   // 2
-  4: 20,   // 3
-  5: 21,   // 4
-  6: 23,   // 5
-  7: 22,   // 6
-  8: 26,   // 7
-  9: 28,   // 8
-  10: 25,  // 9
-
-  // Punctuation marks
-  12: 27,  // Minus (-)
-  13: 24,  // Equals (=)
-  26: 33,  // Open Bracket ([)
-  27: 30,  // Close Bracket (])
-  43: 42,  // Backslash (\)
-  39: 41,  // Semicolon (;)
-  40: 39,  // Quote (')
-  51: 43,  // Comma (,)
-  52: 47,  // Period (.)
-  53: 44,  // Slash (/)
-  41: 50,  // Backquote (`)
-
-  // Numpad operators (non-conflicting only)
-  55: 67,    // Numpad Multiply (*)
-  78: 69,    // Numpad Add (+)
-  74: 78,    // Numpad Subtract (-)
-  76: 87,    // Numpad 5 (center key, non-conflicting)
-  3637: 75,  // Numpad Divide (/)
-  3612: 76,  // Numpad Enter
-  // Note: Most numpad numbers conflict with extended keys, prioritizing extended keys
-
-  // Common keys
-  57: 49,   // Space
-  28: 36,   // Enter
-  14: 51,   // Backspace
-  15: 48,   // Tab
-  1: 53,    // Escape
-  58: 57,   // Caps Lock
-  42: 56,   // Left Shift
-  54: 60,   // Right Shift
-  29: 59,   // Left Ctrl
-  56: 58,   // Left Alt/Option
-  100: 61,  // Right Alt/Option
-
-  // Arrow keys (extended keys)
-  // Full extended key codes (may not be used)
-  57416: 126, // Up
-  57424: 125, // Down
-  57419: 123, // Left
-  57421: 124, // Right
-  // Base scan codes (what uiohook-napi actually returns)
-  72: 126,    // Up (base code 0x48 = 72)
-  80: 125,    // Down (base code 0x50 = 80)
-  75: 123,    // Left (base code 0x4B = 75)
-  77: 124,    // Right (base code 0x4D = 77)
-
-  // Edit/navigation keys (extended keys)
-  // Full extended key codes (may not be used)
-  57427: 117,  // Delete (Forward Delete)
-  57426: 114,  // Insert/Help
-  57415: 115,  // Home
-  57423: 119,  // End
-  57417: 116,  // Page Up
-  57425: 121,  // Page Down
-  // Base scan codes (what uiohook-napi actually returns) - THESE ARE USED
-  83: 117,     // Delete (base code 0x53 = 83)
-  82: 114,     // Insert/Help (base code 0x52 = 82)
-  71: 115,     // Home (base code 0x47 = 71)
-  79: 119,     // End (base code 0x4F = 79)
-  73: 116,     // Page Up (base code 0x49 = 73)
-  81: 121,     // Page Down (base code 0x51 = 81)
-
-  // Numlock
-  69: 71,      // Clear/Num Lock (base code 0x45 = 69)
-
-  // Function keys
-  59: 122,  // F1
-  60: 120,  // F2
-  61: 99,   // F3
-  62: 118,  // F4
-  63: 96,   // F5
-  64: 97,   // F6
-  65: 98,   // F7
-  66: 100,  // F8
-  67: 101,  // F9
-  68: 109,  // F10
-  87: 103,  // F11
-  88: 111,  // F12
-};
-
-/**
- * Convert uiohook keycode to system-native keycode
- */
-function convertKeyCode(uiohookKeycode: number): number {
-  if (process.platform === 'win32') {
-    const vkCode = UIOHOOK_TO_WINDOWS_VK[uiohookKeycode];
-    if (vkCode !== undefined) {
-      return vkCode;
-    }
-  } else if (process.platform === 'darwin') {
-    const cgKeyCode = UIOHOOK_TO_MACOS_CGKEY[uiohookKeycode];
-    if (cgKeyCode !== undefined) {
-      return cgKeyCode;
-    }
-  }
-
-  // Fallback: return original keycode
-  logger.warn(`No keycode mapping found for uiohook keycode ${uiohookKeycode} on platform ${process.platform}`);
-  return uiohookKeycode;
-}
-
 
 interface SyncOptions {
   enableMouseSync?: boolean;
@@ -362,14 +77,20 @@ try {
   logger.error('Failed to load window addon:', error);
 }
 
-// Load uiohook-napi
+// Load @tkomde/iohook
 let uIOhook: SafeAny;
 try {
-  const uiohookModule = require('uiohook-napi');
-  uIOhook = uiohookModule.uIOhook;
-  logger.info('uiohook-napi loaded successfully');
+  const iohook = require('@tkomde/iohook');
+  uIOhook = iohook;
+  // Enable rawcode mode to get native OS keycodes directly
+  if (typeof iohook.useRawcode === 'function') {
+    iohook.useRawcode(true);
+    logger.info('@tkomde/iohook loaded successfully with rawcode enabled');
+  } else {
+    logger.info('@tkomde/iohook loaded successfully (rawcode mode not available)');
+  }
 } catch (error) {
-  logger.error('Failed to load uiohook-napi:', error);
+  logger.error('Failed to load @tkomde/iohook:', error);
 }
 
 class MultiWindowSyncService {
@@ -440,7 +161,7 @@ class MultiWindowSyncService {
       }
 
       if (!uIOhook) {
-        return {success: false, error: 'uiohook-napi not loaded'};
+        return {success: false, error: '@tkomde/iohook not loaded'};
       }
 
       if (!this.windowManager) {
@@ -787,8 +508,8 @@ class MultiWindowSyncService {
       // Apply layered scrolling strategy
       const absAmount = Math.abs(amount);
       if (absAmount <= 1) {
-        // Small scroll: use as-is
-        deltaY = deltaY;
+        // Small scroll: use as-is (no amplification)
+        // deltaY remains unchanged
       } else if (absAmount <= 3) {
         // Medium scroll: amplify slightly for better responsiveness
         deltaY = deltaY * 1.5;
@@ -844,21 +565,26 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Get keycode from uiohook-napi
-      const {keycode} = event;
+      // Get rawcode (native OS keycode) from @tkomde/iohook
+      // rawcode is the preferred field when useRawcode(true) is enabled
+      const {keycode, rawcode} = event;
+
+      // Use rawcode if available (native OS keycode), otherwise fallback to keycode
+      const nativeKeycode = rawcode ?? keycode;
 
       // Validate keycode
-      if (keycode === undefined || keycode === null) {
-        logger.warn('Invalid keycode in handleKeyDown:', keycode);
+      if (nativeKeycode === undefined || nativeKeycode === null) {
+        logger.warn('Invalid keycode/rawcode in handleKeyDown:', {keycode, rawcode});
         return;
       }
 
-      // DEBUG: Log complete event object to understand what uiohook-napi provides
+      // DEBUG: Log complete event object
       logger.info('🔍 DEBUG: Complete keyboard event', {
         keycode,
+        rawcode,
+        nativeKeycode,
         allEventFields: Object.keys(event),
         fullEvent: event,
-        eventAsAny: (event as any)
       });
 
       // Increment event counter
@@ -867,31 +593,29 @@ class MultiWindowSyncService {
       // Deduplication: Check if this is a duplicate event
       const now = Date.now();
       const isDuplicate = this.lastKeyEvent &&
-          this.lastKeyEvent.keycode === keycode &&
+          this.lastKeyEvent.keycode === nativeKeycode &&
           this.lastKeyEvent.type === 'keydown' &&
           now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS;
 
       if (isDuplicate) {
         logger.warn('⚠️  DUPLICATE keydown detected and ignored', {
-          keycode,
+          nativeKeycode,
           timeSinceLast: now - this.lastKeyEvent!.time,
           threshold: this.KEY_DEDUP_THRESHOLD_MS,
-          eventCounter: this.keyEventCounter
+          eventCounter: this.keyEventCounter,
         });
         return;
       }
 
       // Update last key event
-      this.lastKeyEvent = {keycode, type: 'keydown', time: now};
-
-      // Convert to system-native keycode
-      const nativeKeycode = convertKeyCode(keycode);
+      this.lastKeyEvent = {keycode: nativeKeycode, type: 'keydown', time: now};
 
       logger.info('⌨️  Key press', {
         eventCounter: this.keyEventCounter,
-        uiohookKeycode: keycode,
+        rawcode,
+        keycode,
         nativeKeycode,
-        slaveCount: this.slaveWindowPids.size
+        slaveCount: this.slaveWindowPids.size,
       });
 
       // Send complete key press to slave windows (keydown + keyup)
@@ -924,6 +648,7 @@ class MultiWindowSyncService {
   /**
    * Handle key up events
    * Only synchronizes when mouse is in master window (indicating user focus)
+   * NOTE: This listener is currently disabled (see setupEventListeners) to prevent duplicate input
    */
   private handleKeyUp(event: KeyboardEventData): void {
     try {
@@ -949,12 +674,16 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Get keycode from uiohook-napi
-      const {keycode} = event;
+      // Get rawcode (native OS keycode) from @tkomde/iohook
+      // rawcode is the preferred field when useRawcode(true) is enabled
+      const {keycode, rawcode} = event;
+
+      // Use rawcode if available (native OS keycode), otherwise fallback to keycode
+      const nativeKeycode = rawcode ?? keycode;
 
       // Validate keycode
-      if (keycode === undefined || keycode === null) {
-        logger.warn('Invalid keycode in handleKeyUp:', keycode);
+      if (nativeKeycode === undefined || nativeKeycode === null) {
+        logger.warn('Invalid keycode/rawcode in handleKeyUp:', {keycode, rawcode});
         return;
       }
 
@@ -964,31 +693,29 @@ class MultiWindowSyncService {
       // Deduplication: Check if this is a duplicate event
       const now = Date.now();
       const isDuplicate = this.lastKeyEvent &&
-          this.lastKeyEvent.keycode === keycode &&
+          this.lastKeyEvent.keycode === nativeKeycode &&
           this.lastKeyEvent.type === 'keyup' &&
           now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS;
 
       if (isDuplicate) {
         logger.warn('⚠️  DUPLICATE keyup detected and ignored', {
-          keycode,
+          nativeKeycode,
           timeSinceLast: now - this.lastKeyEvent!.time,
           threshold: this.KEY_DEDUP_THRESHOLD_MS,
-          eventCounter: this.keyEventCounter
+          eventCounter: this.keyEventCounter,
         });
         return;
       }
 
       // Update last key event
-      this.lastKeyEvent = {keycode, type: 'keyup', time: now};
-
-      // Convert to system-native keycode
-      const nativeKeycode = convertKeyCode(keycode);
+      this.lastKeyEvent = {keycode: nativeKeycode, type: 'keyup', time: now};
 
       logger.info('⬆️  Keyup', {
         eventCounter: this.keyEventCounter,
-        uiohookKeycode: keycode,
+        rawcode,
+        keycode,
         nativeKeycode,
-        slaveCount: this.slaveWindowPids.size
+        slaveCount: this.slaveWindowPids.size,
       });
 
       // Send to slave windows

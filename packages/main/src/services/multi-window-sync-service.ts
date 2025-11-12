@@ -302,8 +302,8 @@ class MultiWindowSyncService {
     uIOhook.on('mouseup', this.handleMouseUp.bind(this));
     logger.debug('✓ mouseup listener registered');
 
-    uIOhook.on('wheel', this.handleWheel.bind(this));
-    logger.debug('✓ wheel listener registered');
+    uIOhook.on('mousewheel', this.handleWheel.bind(this));
+    logger.debug('✓ mousewheel listener registered');
 
     // Only listen to keydown and synthesize complete key press (down + up)
     uIOhook.on('keydown', this.handleKeyDown.bind(this));
@@ -331,7 +331,7 @@ class MultiWindowSyncService {
     uIOhook.removeAllListeners('mousemove');
     uIOhook.removeAllListeners('mousedown');
     uIOhook.removeAllListeners('mouseup');
-    uIOhook.removeAllListeners('wheel');
+    uIOhook.removeAllListeners('mousewheel');
     uIOhook.removeAllListeners('keydown');
     uIOhook.removeAllListeners('keyup');
     uIOhook.removeAllListeners('input');

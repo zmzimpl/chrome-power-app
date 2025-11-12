@@ -163,6 +163,11 @@ class MultiWindowSyncService {
       // Get window bounds
       await this.updateWindowBounds();
 
+      // Initialize focus tracking - assume user is focused on master window when starting sync
+      // This allows keyboard input to work immediately without requiring mouse movement first
+      this.isMouseInMaster = true;
+      this.lastMouseCheckTime = Date.now();
+
       // Set up event listeners
       this.setupEventListeners();
 

@@ -31,7 +31,8 @@ interface MouseEventData {
 }
 
 interface KeyboardEventData {
-  keycode: number;
+  keycode?: number;
+  rawcode?: number; // Native OS keycode from @tkomde/iohook
   type: string;
   altKey?: boolean;
   ctrlKey?: boolean;
@@ -48,120 +49,7 @@ interface WheelEventData {
   amount: number;
 }
 
-// UIOHook keycode to Windows Virtual-Key Code mapping
-// Based on uiohook keycodes: https://github.com/kwhat/libuiohook/blob/master/include/uiohook.h
-const UIOHOOK_TO_WINDOWS_VK: Record<number, number> = {
-  // Letters (A-Z): uiohook 30-55 -> Windows VK 0x41-0x5A
-  30: 0x41, 31: 0x42, 32: 0x43, 33: 0x44, 34: 0x45, 35: 0x46, 36: 0x47, 37: 0x48,
-  38: 0x49, 39: 0x4A, 40: 0x4B, 41: 0x4C, 42: 0x4D, 43: 0x4E, 44: 0x4F, 45: 0x50,
-  46: 0x51, 47: 0x52, 48: 0x53, 49: 0x54, 50: 0x55, 51: 0x56, 52: 0x57, 53: 0x58,
-  54: 0x59, 55: 0x5A,
-
-  // Numbers (0-9): uiohook 2-11 -> Windows VK 0x30-0x39
-  11: 0x30, 2: 0x31, 3: 0x32, 4: 0x33, 5: 0x34, 6: 0x35, 7: 0x36, 8: 0x37,
-  9: 0x38, 10: 0x39,
-
-  // Function keys: F1-F12
-  59: 0x70, 60: 0x71, 61: 0x72, 62: 0x73, 63: 0x74, 64: 0x75,
-  65: 0x76, 66: 0x77, 67: 0x78, 68: 0x79, 69: 0x7A, 70: 0x7B,
-
-  // Special keys
-  1: 0x1B,    // Escape
-  28: 0x0D,   // Enter
-  14: 0x08,   // Backspace
-  15: 0x09,   // Tab
-  57: 0x20,   // Space
-  42: 0x10,   // Left Shift
-  54: 0x10,   // Right Shift
-  29: 0x11,   // Left Ctrl
-  97: 0x11,   // Right Ctrl
-  56: 0x12,   // Left Alt
-  100: 0x12,  // Right Alt
-
-  // Arrow keys
-  103: 0x26,  // Up
-  108: 0x28,  // Down
-  105: 0x25,  // Left
-  106: 0x27,  // Right
-
-  // Other keys
-  83: 0x2E,   // Delete
-  82: 0x2D,   // Insert
-  71: 0x24,   // Home
-  79: 0x23,   // End
-  73: 0x21,   // Page Up
-  81: 0x22,   // Page Down
-  58: 0x14,   // Caps Lock
-  69: 0x90,   // Num Lock
-  70: 0x91,   // Scroll Lock
-};
-
-// UIOHook keycode to macOS CGKeyCode mapping
-const UIOHOOK_TO_MACOS_CGKEY: Record<number, number> = {
-  // Letters (A-Z)
-  30: 0, 31: 11, 32: 8, 33: 2, 34: 14, 35: 3, 36: 5, 37: 4,
-  38: 34, 39: 38, 40: 40, 41: 37, 42: 46, 43: 45, 44: 31, 45: 35,
-  46: 12, 47: 15, 48: 1, 49: 17, 50: 32, 51: 9, 52: 13, 53: 7,
-  54: 16, 55: 6,
-
-  // Numbers (0-9)
-  11: 29, 2: 18, 3: 19, 4: 20, 5: 21, 6: 23, 7: 22, 8: 26, 9: 28, 10: 25,
-
-  // Function keys: F1-F12
-  59: 122, 60: 120, 61: 99, 62: 118, 63: 96, 64: 97,
-  65: 98, 66: 100, 67: 101, 68: 109, 69: 103, 70: 111,
-
-  // Special keys
-  1: 53,    // Escape
-  28: 36,   // Enter
-  14: 51,   // Backspace
-  15: 48,   // Tab
-  57: 49,   // Space
-  42: 56,   // Left Shift
-  54: 60,   // Right Shift
-  29: 59,   // Left Ctrl
-  97: 62,   // Right Ctrl
-  56: 58,   // Left Alt/Option
-  100: 61,  // Right Alt/Option
-
-  // Arrow keys
-  103: 126, // Up
-  108: 125, // Down
-  105: 123, // Left
-  106: 124, // Right
-
-  // Other keys
-  83: 117,  // Delete
-  82: 114,  // Insert/Help
-  71: 115,  // Home
-  79: 119,  // End
-  73: 116,  // Page Up
-  81: 121,  // Page Down
-  58: 57,   // Caps Lock
-};
-
-/**
- * Convert UIOHook keycode to system-native keycode
- */
-function convertKeyCode(uiohookKeycode: number): number {
-  if (process.platform === 'win32') {
-    const vkCode = UIOHOOK_TO_WINDOWS_VK[uiohookKeycode];
-    if (vkCode) {
-      logger.debug(`Converted uiohook keycode ${uiohookKeycode} to Windows VK ${vkCode} (0x${vkCode.toString(16)})`);
-      return vkCode;
-    }
-  } else if (process.platform === 'darwin') {
-    const cgKeyCode = UIOHOOK_TO_MACOS_CGKEY[uiohookKeycode];
-    if (cgKeyCode !== undefined) {
-      logger.debug(`Converted uiohook keycode ${uiohookKeycode} to macOS CGKeyCode ${cgKeyCode}`);
-      return cgKeyCode;
-    }
-  }
-
-  // Fallback: return original keycode if no mapping found
-  logger.warn(`No keycode mapping found for uiohook keycode ${uiohookKeycode} on platform ${process.platform}, using original`);
-  return uiohookKeycode;
-}
+// No keycode mapping needed - @tkomde/iohook provides rawcode directly
 
 interface SyncOptions {
   enableMouseSync?: boolean;
@@ -191,13 +79,17 @@ try {
   logger.error('Failed to load window addon:', error);
 }
 
-// Load uiohook-napi
-let uIOhook: SafeAny;
+// Load @tkomde/iohook
+let iohook: SafeAny;
 try {
-  const uiohookModule = require('uiohook-napi');
-  uIOhook = uiohookModule.uIOhook;
+  iohook = require('@tkomde/iohook');
+  // Configure iohook to use rawcode (native OS keycodes) instead of virtual keycodes
+  if (iohook) {
+    iohook.useRawcode(true);
+    logger.info('iohook loaded successfully, configured to use rawcode');
+  }
 } catch (error) {
-  logger.error('Failed to load uiohook-napi:', error);
+  logger.error('Failed to load @tkomde/iohook:', error);
 }
 
 class MultiWindowSyncService {
@@ -262,8 +154,8 @@ class MultiWindowSyncService {
         return {success: false, error: 'Sync already active'};
       }
 
-      if (!uIOhook) {
-        return {success: false, error: 'uiohook-napi not loaded'};
+      if (!iohook) {
+        return {success: false, error: 'iohook not loaded'};
       }
 
       if (!this.windowManager) {
@@ -291,7 +183,7 @@ class MultiWindowSyncService {
       this.setupEventListeners();
 
       // Start capturing events
-      uIOhook.start();
+      iohook.start();
       this.isCapturing = true;
 
       // Start extension window monitoring
@@ -325,8 +217,8 @@ class MultiWindowSyncService {
         return {success: true};
       }
 
-      if (uIOhook) {
-        uIOhook.stop();
+      if (iohook) {
+        iohook.stop();
       }
 
       this.removeEventListeners();
@@ -388,28 +280,28 @@ class MultiWindowSyncService {
    * Setup event listeners
    */
   private setupEventListeners(): void {
-    if (!uIOhook) return;
+    if (!iohook) return;
 
-    uIOhook.on('mousemove', this.handleMouseMove.bind(this));
-    uIOhook.on('mousedown', this.handleMouseDown.bind(this));
-    uIOhook.on('mouseup', this.handleMouseUp.bind(this));
-    uIOhook.on('wheel', this.handleWheel.bind(this));
-    uIOhook.on('keydown', this.handleKeyDown.bind(this));
-    uIOhook.on('keyup', this.handleKeyUp.bind(this));
+    iohook.on('mousemove', this.handleMouseMove.bind(this));
+    iohook.on('mousedown', this.handleMouseDown.bind(this));
+    iohook.on('mouseup', this.handleMouseUp.bind(this));
+    iohook.on('wheel', this.handleWheel.bind(this));
+    iohook.on('keydown', this.handleKeyDown.bind(this));
+    iohook.on('keyup', this.handleKeyUp.bind(this));
   }
 
   /**
    * Remove event listeners
    */
   private removeEventListeners(): void {
-    if (!uIOhook) return;
+    if (!iohook) return;
 
-    uIOhook.removeAllListeners('mousemove');
-    uIOhook.removeAllListeners('mousedown');
-    uIOhook.removeAllListeners('mouseup');
-    uIOhook.removeAllListeners('wheel');
-    uIOhook.removeAllListeners('keydown');
-    uIOhook.removeAllListeners('keyup');
+    iohook.removeAllListeners('mousemove');
+    iohook.removeAllListeners('mousedown');
+    iohook.removeAllListeners('mouseup');
+    iohook.removeAllListeners('wheel');
+    iohook.removeAllListeners('keydown');
+    iohook.removeAllListeners('keyup');
   }
 
   /**
@@ -667,41 +559,24 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Check all possible key code fields
-      const eventAny = event as any;
-      logger.info('Checking for key code fields:', {
-        keycode: eventAny.keycode,
-        rawcode: eventAny.rawcode,
-        scancode: eventAny.scancode,
-        code: eventAny.code,
-        key: eventAny.key,
-      });
+      // Use rawcode from @tkomde/iohook (native OS keycode)
+      const {rawcode} = event;
 
-      // Use keycode from uiohook-napi and convert to system keycode
-      const {keycode: uiohookKeycode} = event;
-
-      // Validate keycode
-      if (uiohookKeycode === undefined || uiohookKeycode === null) {
-        logger.warn('Invalid keycode in handleKeyDown:', uiohookKeycode);
+      // Validate rawcode
+      if (rawcode === undefined || rawcode === null) {
+        logger.warn('Invalid rawcode in handleKeyDown:', rawcode);
         return;
       }
 
-      // Convert uiohook keycode to system-native keycode
-      const systemKeycode = convertKeyCode(uiohookKeycode);
-
-      logger.info('Processing keydown', {
-        uiohookKeycode,
-        systemKeycode,
+      logger.debug('Processing keydown', {
+        rawcode,
         platform: process.platform,
-        slavePids: Array.from(this.slaveWindowPids)
+        slaveCount: this.slaveWindowPids.size
       });
-
-      logger.info(`Sending keydown to ${this.slaveWindowPids.size} slaves with systemKeycode=${systemKeycode}`);
 
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, systemKeycode, 'keydown');
-          logger.debug(`Keydown sent to slave ${slavePid}`);
+          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keydown');
         } catch (error) {
           logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
         }
@@ -739,29 +614,24 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Use keycode from uiohook-napi
-      const {keycode: uiohookKeycode} = event;
+      // Use rawcode from @tkomde/iohook (native OS keycode)
+      const {rawcode} = event;
 
-      // Validate keycode
-      if (uiohookKeycode === undefined || uiohookKeycode === null) {
-        logger.warn('Invalid keycode in handleKeyUp:', uiohookKeycode);
+      // Validate rawcode
+      if (rawcode === undefined || rawcode === null) {
+        logger.warn('Invalid rawcode in handleKeyUp:', rawcode);
         return;
       }
 
-      // Convert uiohook keycode to system-native keycode
-      const systemKeycode = convertKeyCode(uiohookKeycode);
-
-      logger.info('Processing keyup', {
-        uiohookKeycode,
-        systemKeycode,
+      logger.debug('Processing keyup', {
+        rawcode,
         platform: process.platform,
-        slavePids: Array.from(this.slaveWindowPids)
+        slaveCount: this.slaveWindowPids.size
       });
 
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, systemKeycode, 'keyup');
-          logger.debug(`Keyup sent to slave ${slavePid} with systemKeycode=${systemKeycode}`);
+          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keyup');
         } catch (error) {
           logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);
         }

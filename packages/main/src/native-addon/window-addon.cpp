@@ -742,75 +742,26 @@ private:
             return Napi::Boolean::New(env, false);
         }
 
-        // For mousemove: Use PostMessage (doesn't move actual cursor)
-        // For clicks: Use hybrid approach for better compatibility
+        // Use PostMessage for all mouse events (simple and non-intrusive)
+        // This works for normal window clicks but not for popup menus
+        RECT rect;
+        GetWindowRect(mainWindow->hwnd, &rect);
+        int clientX = x - rect.left;
+        int clientY = y - rect.top;
+        LPARAM lParam = MAKELPARAM(clientX, clientY);
+
         if (eventType == "mousemove") {
-            RECT rect;
-            GetWindowRect(mainWindow->hwnd, &rect);
-            int clientX = x - rect.left;
-            int clientY = y - rect.top;
-            LPARAM lParam = MAKELPARAM(clientX, clientY);
             PostMessage(mainWindow->hwnd, WM_MOUSEMOVE, 0, lParam);
+        } else if (eventType == "mousedown") {
+            PostMessage(mainWindow->hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
+        } else if (eventType == "mouseup") {
+            PostMessage(mainWindow->hwnd, WM_LBUTTONUP, 0, lParam);
+        } else if (eventType == "rightdown") {
+            PostMessage(mainWindow->hwnd, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
+        } else if (eventType == "rightup") {
+            PostMessage(mainWindow->hwnd, WM_RBUTTONUP, 0, lParam);
         } else {
-            // Strategy: Use PostMessage first (works for most cases)
-            // But also activate window and move cursor for menu support
-
-            // Save current cursor position
-            POINT originalPos;
-            GetCursorPos(&originalPos);
-
-            // Get window rectangle to calculate client coordinates
-            RECT rect;
-            GetWindowRect(mainWindow->hwnd, &rect);
-            int clientX = x - rect.left;
-            int clientY = y - rect.top;
-            LPARAM lParam = MAKELPARAM(clientX, clientY);
-
-            // Activate the target window (brings to foreground)
-            SetForegroundWindow(mainWindow->hwnd);
-
-            // Move cursor to target position (for menu support)
-            SetCursorPos(x, y);
-
-            // Small delay to ensure window activation and cursor movement
-            Sleep(5);
-
-            // Send via both methods for maximum compatibility:
-            // 1. PostMessage - works for normal window clicks
-            // 2. SendInput - works for menu clicks
-            if (eventType == "mousedown") {
-                PostMessage(mainWindow->hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
-                INPUT input = {0};
-                input.type = INPUT_MOUSE;
-                input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-                SendInput(1, &input, sizeof(INPUT));
-            } else if (eventType == "mouseup") {
-                PostMessage(mainWindow->hwnd, WM_LBUTTONUP, 0, lParam);
-                INPUT input = {0};
-                input.type = INPUT_MOUSE;
-                input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-                SendInput(1, &input, sizeof(INPUT));
-            } else if (eventType == "rightdown") {
-                PostMessage(mainWindow->hwnd, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
-                INPUT input = {0};
-                input.type = INPUT_MOUSE;
-                input.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-                SendInput(1, &input, sizeof(INPUT));
-            } else if (eventType == "rightup") {
-                PostMessage(mainWindow->hwnd, WM_RBUTTONUP, 0, lParam);
-                INPUT input = {0};
-                input.type = INPUT_MOUSE;
-                input.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-                SendInput(1, &input, sizeof(INPUT));
-            } else {
-                return Napi::Boolean::New(env, false);
-            }
-
-            // Small delay to ensure event is processed
-            Sleep(5);
-
-            // Restore cursor position
-            SetCursorPos(originalPos.x, originalPos.y);
+            return Napi::Boolean::New(env, false);
         }
 
 #elif __APPLE__

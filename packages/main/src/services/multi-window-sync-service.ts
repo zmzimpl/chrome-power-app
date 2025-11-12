@@ -91,6 +91,39 @@ const UIOHOOK_TO_WINDOWS_VK: Record<number, number> = {
   9: 0x38,  // 8
   10: 0x39, // 9
 
+  // Punctuation marks
+  12: 0xBD,  // Minus (-)
+  13: 0xBB,  // Equals (=)
+  26: 0xDB,  // Open Bracket ([)
+  27: 0xDD,  // Close Bracket (])
+  43: 0xDC,  // Backslash (\)
+  39: 0xBA,  // Semicolon (;)
+  40: 0xDE,  // Quote (')
+  51: 0xBC,  // Comma (,)
+  52: 0xBE,  // Period (.)
+  53: 0xBF,  // Slash (/)
+  41: 0xC0,  // Backquote (`)
+
+  // Numpad numbers
+  82: 0x60,  // Numpad 0
+  79: 0x61,  // Numpad 1
+  80: 0x62,  // Numpad 2
+  81: 0x63,  // Numpad 3
+  75: 0x64,  // Numpad 4
+  76: 0x65,  // Numpad 5
+  77: 0x66,  // Numpad 6
+  71: 0x67,  // Numpad 7
+  72: 0x68,  // Numpad 8
+  73: 0x69,  // Numpad 9
+
+  // Numpad operators
+  55: 0x6A,    // Numpad Multiply (*)
+  78: 0x6B,    // Numpad Add (+)
+  83: 0x6C,    // Numpad Separator
+  74: 0x6D,    // Numpad Subtract (-)
+  3637: 0x6F,  // Numpad Divide (/) - 0x0E35
+  3612: 0x0D,  // Numpad Enter - 0x0E1C (same as regular Enter)
+
   // Common keys
   57: 0x20,   // Space
   28: 0x0D,   // Enter
@@ -175,6 +208,39 @@ const UIOHOOK_TO_MACOS_CGKEY: Record<number, number> = {
   8: 26,   // 7
   9: 28,   // 8
   10: 25,  // 9
+
+  // Punctuation marks
+  12: 27,  // Minus (-)
+  13: 24,  // Equals (=)
+  26: 33,  // Open Bracket ([)
+  27: 30,  // Close Bracket (])
+  43: 42,  // Backslash (\)
+  39: 41,  // Semicolon (;)
+  40: 39,  // Quote (')
+  51: 43,  // Comma (,)
+  52: 47,  // Period (.)
+  53: 44,  // Slash (/)
+  41: 50,  // Backquote (`)
+
+  // Numpad numbers
+  82: 82,  // Numpad 0
+  79: 83,  // Numpad 1
+  80: 84,  // Numpad 2
+  81: 85,  // Numpad 3
+  75: 86,  // Numpad 4
+  76: 87,  // Numpad 5
+  77: 88,  // Numpad 6
+  71: 89,  // Numpad 7
+  72: 91,  // Numpad 8
+  73: 92,  // Numpad 9
+
+  // Numpad operators
+  55: 67,    // Numpad Multiply (*)
+  78: 69,    // Numpad Add (+)
+  83: 65,    // Numpad Decimal/Separator
+  74: 78,    // Numpad Subtract (-)
+  3637: 75,  // Numpad Divide (/)
+  3612: 76,  // Numpad Enter
 
   // Common keys
   57: 49,   // Space

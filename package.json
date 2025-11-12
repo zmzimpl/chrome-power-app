@@ -71,7 +71,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.7",
-    "@tkomde/iohook": "^1.1.7",
+    "uiohook-napi": "^1.5.4",
     "@types/portscanner": "^2.1.2",
     "@vitejs/plugin-react": "^4.0.4",
     "agent-base": "^7.1.0",

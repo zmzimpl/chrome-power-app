@@ -31,8 +31,7 @@ interface MouseEventData {
 }
 
 interface KeyboardEventData {
-  keycode?: number;
-  rawcode?: number; // Native OS keycode from @tkomde/iohook
+  keycode: number; // uiohook-napi virtual keycode
   type: string;
   altKey?: boolean;
   ctrlKey?: boolean;
@@ -79,17 +78,14 @@ try {
   logger.error('Failed to load window addon:', error);
 }
 
-// Load @tkomde/iohook
-let iohook: SafeAny;
+// Load uiohook-napi
+let uIOhook: SafeAny;
 try {
-  iohook = require('@tkomde/iohook');
-  // Configure iohook to use rawcode (native OS keycodes) instead of virtual keycodes
-  if (iohook) {
-    iohook.useRawcode(true);
-    logger.info('iohook loaded successfully, configured to use rawcode');
-  }
+  const uiohookModule = require('uiohook-napi');
+  uIOhook = uiohookModule.uIOhook;
+  logger.info('uiohook-napi loaded successfully');
 } catch (error) {
-  logger.error('Failed to load @tkomde/iohook:', error);
+  logger.error('Failed to load uiohook-napi:', error);
 }
 
 class MultiWindowSyncService {
@@ -154,8 +150,8 @@ class MultiWindowSyncService {
         return {success: false, error: 'Sync already active'};
       }
 
-      if (!iohook) {
-        return {success: false, error: 'iohook not loaded'};
+      if (!uIOhook) {
+        return {success: false, error: 'uiohook-napi not loaded'};
       }
 
       if (!this.windowManager) {
@@ -183,7 +179,7 @@ class MultiWindowSyncService {
       this.setupEventListeners();
 
       // Start capturing events
-      iohook.start();
+      uIOhook.start();
       this.isCapturing = true;
 
       // Start extension window monitoring
@@ -217,8 +213,8 @@ class MultiWindowSyncService {
         return {success: true};
       }
 
-      if (iohook) {
-        iohook.stop();
+      if (uIOhook) {
+        uIOhook.stop();
       }
 
       this.removeEventListeners();
@@ -280,28 +276,28 @@ class MultiWindowSyncService {
    * Setup event listeners
    */
   private setupEventListeners(): void {
-    if (!iohook) return;
+    if (!uIOhook) return;
 
-    iohook.on('mousemove', this.handleMouseMove.bind(this));
-    iohook.on('mousedown', this.handleMouseDown.bind(this));
-    iohook.on('mouseup', this.handleMouseUp.bind(this));
-    iohook.on('wheel', this.handleWheel.bind(this));
-    iohook.on('keydown', this.handleKeyDown.bind(this));
-    iohook.on('keyup', this.handleKeyUp.bind(this));
+    uIOhook.on('mousemove', this.handleMouseMove.bind(this));
+    uIOhook.on('mousedown', this.handleMouseDown.bind(this));
+    uIOhook.on('mouseup', this.handleMouseUp.bind(this));
+    uIOhook.on('wheel', this.handleWheel.bind(this));
+    uIOhook.on('keydown', this.handleKeyDown.bind(this));
+    uIOhook.on('keyup', this.handleKeyUp.bind(this));
   }
 
   /**
    * Remove event listeners
    */
   private removeEventListeners(): void {
-    if (!iohook) return;
+    if (!uIOhook) return;
 
-    iohook.removeAllListeners('mousemove');
-    iohook.removeAllListeners('mousedown');
-    iohook.removeAllListeners('mouseup');
-    iohook.removeAllListeners('wheel');
-    iohook.removeAllListeners('keydown');
-    iohook.removeAllListeners('keyup');
+    uIOhook.removeAllListeners('mousemove');
+    uIOhook.removeAllListeners('mousedown');
+    uIOhook.removeAllListeners('mouseup');
+    uIOhook.removeAllListeners('wheel');
+    uIOhook.removeAllListeners('keydown');
+    uIOhook.removeAllListeners('keyup');
   }
 
   /**
@@ -559,24 +555,31 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Use rawcode from @tkomde/iohook (native OS keycode)
-      const {rawcode} = event;
+      // Get keycode from uiohook-napi
+      const {keycode} = event;
 
-      // Validate rawcode
-      if (rawcode === undefined || rawcode === null) {
-        logger.warn('Invalid rawcode in handleKeyDown:', rawcode);
+      // Validate keycode
+      if (keycode === undefined || keycode === null) {
+        logger.warn('Invalid keycode in handleKeyDown:', keycode);
         return;
       }
 
-      logger.debug('Processing keydown', {
-        rawcode,
+      // Log keycode for debugging (to help build accurate mapping if needed)
+      logger.info('Keydown event', {
+        keycode,
         platform: process.platform,
-        slaveCount: this.slaveWindowPids.size
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey
       });
 
+      // Try sending keycode directly to native addon
+      // If this doesn't work correctly, we'll need to add a mapping
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keydown');
+          this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keydown');
+          logger.debug(`Sent keycode ${keycode} to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
         }
@@ -614,24 +617,25 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Use rawcode from @tkomde/iohook (native OS keycode)
-      const {rawcode} = event;
+      // Get keycode from uiohook-napi
+      const {keycode} = event;
 
-      // Validate rawcode
-      if (rawcode === undefined || rawcode === null) {
-        logger.warn('Invalid rawcode in handleKeyUp:', rawcode);
+      // Validate keycode
+      if (keycode === undefined || keycode === null) {
+        logger.warn('Invalid keycode in handleKeyUp:', keycode);
         return;
       }
 
-      logger.debug('Processing keyup', {
-        rawcode,
-        platform: process.platform,
-        slaveCount: this.slaveWindowPids.size
+      logger.info('Keyup event', {
+        keycode,
+        platform: process.platform
       });
 
+      // Try sending keycode directly to native addon
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keyup');
+          this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keyup');
+          logger.debug(`Sent keycode ${keycode} to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);
         }

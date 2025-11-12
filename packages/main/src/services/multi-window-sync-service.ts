@@ -32,8 +32,12 @@ interface MouseEventData {
 
 interface KeyboardEventData {
   keycode: number;
-  rawcode: number;
   type: string;
+  altKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  shiftKey?: boolean;
+  time?: number;
 }
 
 interface WheelEventData {
@@ -543,24 +547,23 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Use rawcode instead of keycode for system-native key codes
-      // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
-      // keycode is uiohook's cross-platform virtual code which doesn't map correctly
-      const {rawcode, keycode} = event;
+      // Use keycode from uiohook-napi
+      // Note: uiohook-napi provides cross-platform keycodes that should work correctly
+      const {keycode} = event;
 
-      logger.info('Processing keydown', {rawcode, keycode, slavePids: Array.from(this.slaveWindowPids)});
+      logger.info('Processing keydown', {keycode, slavePids: Array.from(this.slaveWindowPids)});
 
-      // Validate rawcode
-      if (rawcode === undefined || rawcode === null) {
-        logger.warn('Invalid rawcode in handleKeyDown:', rawcode);
+      // Validate keycode
+      if (keycode === undefined || keycode === null) {
+        logger.warn('Invalid keycode in handleKeyDown:', keycode);
         return;
       }
 
-      logger.info(`Sending keydown to ${this.slaveWindowPids.size} slaves with rawcode=${rawcode}`);
+      logger.info(`Sending keydown to ${this.slaveWindowPids.size} slaves with keycode=${keycode}`);
 
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keydown');
+          this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keydown');
           logger.debug(`Keydown sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
@@ -599,22 +602,20 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Use rawcode instead of keycode for system-native key codes
-      // rawcode contains the actual OS-specific key code (VK_* on Windows, CGKeyCode on macOS)
-      // keycode is uiohook's cross-platform virtual code which doesn't map correctly
-      const {rawcode, keycode} = event;
+      // Use keycode from uiohook-napi
+      const {keycode} = event;
 
-      logger.info('Processing keyup', {rawcode, keycode});
+      logger.info('Processing keyup', {keycode});
 
-      // Validate rawcode
-      if (rawcode === undefined || rawcode === null) {
-        logger.warn('Invalid rawcode in handleKeyUp:', rawcode);
+      // Validate keycode
+      if (keycode === undefined || keycode === null) {
+        logger.warn('Invalid keycode in handleKeyUp:', keycode);
         return;
       }
 
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, rawcode, 'keyup');
+          this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keyup');
           logger.debug(`Keyup sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);

@@ -853,6 +853,14 @@ class MultiWindowSyncService {
         return;
       }
 
+      // DEBUG: Log complete event object to understand what uiohook-napi provides
+      logger.info('🔍 DEBUG: Complete keyboard event', {
+        keycode,
+        allEventFields: Object.keys(event),
+        fullEvent: event,
+        eventAsAny: (event as any)
+      });
+
       // Increment event counter
       this.keyEventCounter++;
 

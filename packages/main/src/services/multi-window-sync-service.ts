@@ -48,7 +48,197 @@ interface WheelEventData {
   amount: number;
 }
 
-// No keycode mapping needed - @tkomde/iohook provides rawcode directly
+// uiohook-napi keycode to Windows Virtual-Key Code mapping
+// Based on libuiohook keycodes: https://github.com/kwhat/libuiohook/blob/master/include/uiohook.h
+const UIOHOOK_TO_WINDOWS_VK: Record<number, number> = {
+  // Letters (A-Z)
+  30: 0x41, // A
+  48: 0x42, // B
+  46: 0x43, // C
+  32: 0x44, // D
+  18: 0x45, // E
+  33: 0x46, // F
+  34: 0x47, // G
+  35: 0x48, // H
+  23: 0x49, // I
+  36: 0x4A, // J
+  37: 0x4B, // K
+  38: 0x4C, // L
+  50: 0x4D, // M
+  49: 0x4E, // N
+  24: 0x4F, // O
+  25: 0x50, // P
+  16: 0x51, // Q
+  19: 0x52, // R
+  31: 0x53, // S
+  20: 0x54, // T
+  22: 0x55, // U
+  47: 0x56, // V
+  17: 0x57, // W
+  45: 0x58, // X
+  21: 0x59, // Y
+  44: 0x5A, // Z
+
+  // Numbers (0-9)
+  11: 0x30, // 0
+  2: 0x31,  // 1
+  3: 0x32,  // 2
+  4: 0x33,  // 3
+  5: 0x34,  // 4
+  6: 0x35,  // 5
+  7: 0x36,  // 6
+  8: 0x37,  // 7
+  9: 0x38,  // 8
+  10: 0x39, // 9
+
+  // Common keys
+  57: 0x20,   // Space
+  28: 0x0D,   // Enter
+  14: 0x08,   // Backspace
+  15: 0x09,   // Tab
+  1: 0x1B,    // Escape
+  58: 0x14,   // Caps Lock
+  42: 0x10,   // Left Shift
+  54: 0x10,   // Right Shift
+  29: 0x11,   // Left Ctrl
+  97: 0x11,   // Right Ctrl (0x001D with extended bit)
+  56: 0x12,   // Left Alt
+  100: 0x12,  // Right Alt (0x0038 with extended bit)
+
+  // Arrow keys (extended keys - 0xE0xx)
+  57416: 0x26, // Up (0xE048)
+  57424: 0x28, // Down (0xE050)
+  57419: 0x25, // Left (0xE04B)
+  57421: 0x27, // Right (0xE04D)
+
+  // Edit keys
+  57427: 0x2E,   // Delete (0xE053)
+  57426: 0x2D,   // Insert (0xE052)
+  57415: 0x24,   // Home (0xE047)
+  57423: 0x23,   // End (0xE04F)
+  57417: 0x21,   // Page Up (0xE049)
+  57425: 0x22,   // Page Down (0xE051)
+
+  // Function keys
+  59: 0x70,  // F1
+  60: 0x71,  // F2
+  61: 0x72,  // F3
+  62: 0x73,  // F4
+  63: 0x74,  // F5
+  64: 0x75,  // F6
+  65: 0x76,  // F7
+  66: 0x77,  // F8
+  67: 0x78,  // F9
+  68: 0x79,  // F10
+  87: 0x7A,  // F11
+  88: 0x7B,  // F12
+};
+
+// uiohook-napi keycode to macOS CGKeyCode mapping
+const UIOHOOK_TO_MACOS_CGKEY: Record<number, number> = {
+  // Letters (A-Z) - QWERTY layout
+  30: 0,   // A
+  48: 11,  // B
+  46: 8,   // C
+  32: 2,   // D
+  18: 14,  // E
+  33: 3,   // F
+  34: 5,   // G
+  35: 4,   // H
+  23: 34,  // I
+  36: 38,  // J
+  37: 40,  // K
+  38: 37,  // L
+  50: 46,  // M
+  49: 45,  // N
+  24: 31,  // O
+  25: 35,  // P
+  16: 12,  // Q
+  19: 15,  // R
+  31: 1,   // S
+  20: 17,  // T
+  22: 32,  // U
+  47: 9,   // V
+  17: 13,  // W
+  45: 7,   // X
+  21: 16,  // Y
+  44: 6,   // Z
+
+  // Numbers (0-9)
+  11: 29,  // 0
+  2: 18,   // 1
+  3: 19,   // 2
+  4: 20,   // 3
+  5: 21,   // 4
+  6: 23,   // 5
+  7: 22,   // 6
+  8: 26,   // 7
+  9: 28,   // 8
+  10: 25,  // 9
+
+  // Common keys
+  57: 49,   // Space
+  28: 36,   // Enter
+  14: 51,   // Backspace
+  15: 48,   // Tab
+  1: 53,    // Escape
+  58: 57,   // Caps Lock
+  42: 56,   // Left Shift
+  54: 60,   // Right Shift
+  29: 59,   // Left Ctrl
+  56: 58,   // Left Alt/Option
+  100: 61,  // Right Alt/Option
+
+  // Arrow keys
+  57416: 126, // Up
+  57424: 125, // Down
+  57419: 123, // Left
+  57421: 124, // Right
+
+  // Edit keys
+  57427: 117,  // Delete (Forward Delete)
+  57426: 114,  // Insert/Help
+  57415: 115,  // Home
+  57423: 119,  // End
+  57417: 116,  // Page Up
+  57425: 121,  // Page Down
+
+  // Function keys
+  59: 122,  // F1
+  60: 120,  // F2
+  61: 99,   // F3
+  62: 118,  // F4
+  63: 96,   // F5
+  64: 97,   // F6
+  65: 98,   // F7
+  66: 100,  // F8
+  67: 101,  // F9
+  68: 109,  // F10
+  87: 103,  // F11
+  88: 111,  // F12
+};
+
+/**
+ * Convert uiohook keycode to system-native keycode
+ */
+function convertKeyCode(uiohookKeycode: number): number {
+  if (process.platform === 'win32') {
+    const vkCode = UIOHOOK_TO_WINDOWS_VK[uiohookKeycode];
+    if (vkCode !== undefined) {
+      return vkCode;
+    }
+  } else if (process.platform === 'darwin') {
+    const cgKeyCode = UIOHOOK_TO_MACOS_CGKEY[uiohookKeycode];
+    if (cgKeyCode !== undefined) {
+      return cgKeyCode;
+    }
+  }
+
+  // Fallback: return original keycode
+  logger.warn(`No keycode mapping found for uiohook keycode ${uiohookKeycode} on platform ${process.platform}`);
+  return uiohookKeycode;
+}
+
 
 interface SyncOptions {
   enableMouseSync?: boolean;
@@ -130,6 +320,10 @@ class MultiWindowSyncService {
 
   // Throttling for wheel events
   private lastWheelTime: number = 0;
+
+  // Keyboard event deduplication
+  private lastKeyEvent: {keycode: number; type: 'keydown' | 'keyup'; time: number} | null = null;
+  private readonly KEY_DEDUP_THRESHOLD_MS = 20; // Ignore duplicate events within 20ms
 
   constructor() {
     if (windowAddon) {
@@ -527,12 +721,6 @@ class MultiWindowSyncService {
   private handleKeyDown(event: KeyboardEventData): void {
     try {
       // Log complete event object to see all available fields
-      logger.info('=== KEYDOWN EVENT DEBUG ===');
-      logger.info('Full event object:', event);
-      logger.info('Event as any:', (event as any));
-      logger.info('All event keys:', Object.keys(event));
-      logger.info('State:', {isCapturing: this.isCapturing, isMouseInMaster: this.isMouseInMaster});
-
       if (!this.isCapturing) {
         logger.debug('Keydown skipped: not capturing');
         return;
@@ -564,22 +752,32 @@ class MultiWindowSyncService {
         return;
       }
 
-      // Log keycode for debugging (to help build accurate mapping if needed)
-      logger.info('Keydown event', {
-        keycode,
-        platform: process.platform,
-        altKey: event.altKey,
-        ctrlKey: event.ctrlKey,
-        shiftKey: event.shiftKey,
-        metaKey: event.metaKey
+      // Deduplication: Check if this is a duplicate event
+      const now = Date.now();
+      if (this.lastKeyEvent &&
+          this.lastKeyEvent.keycode === keycode &&
+          this.lastKeyEvent.type === 'keydown' &&
+          now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS) {
+        logger.debug('Duplicate keydown event ignored', {keycode, timeSinceLast: now - this.lastKeyEvent.time});
+        return;
+      }
+
+      // Update last key event
+      this.lastKeyEvent = {keycode, type: 'keydown', time: now};
+
+      // Convert to system-native keycode
+      const nativeKeycode = convertKeyCode(keycode);
+
+      logger.debug('Keydown', {
+        uiohookKeycode: keycode,
+        nativeKeycode,
+        platform: process.platform
       });
 
-      // Try sending keycode directly to native addon
-      // If this doesn't work correctly, we'll need to add a mapping
+      // Send to slave windows
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keydown');
-          logger.debug(`Sent keycode ${keycode} to slave ${slavePid}`);
+          this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown');
         } catch (error) {
           logger.error(`Failed to send keydown event to slave ${slavePid}:`, error);
         }
@@ -626,16 +824,31 @@ class MultiWindowSyncService {
         return;
       }
 
-      logger.info('Keyup event', {
-        keycode,
-        platform: process.platform
+      // Deduplication: Check if this is a duplicate event
+      const now = Date.now();
+      if (this.lastKeyEvent &&
+          this.lastKeyEvent.keycode === keycode &&
+          this.lastKeyEvent.type === 'keyup' &&
+          now - this.lastKeyEvent.time < this.KEY_DEDUP_THRESHOLD_MS) {
+        logger.debug('Duplicate keyup event ignored', {keycode, timeSinceLast: now - this.lastKeyEvent.time});
+        return;
+      }
+
+      // Update last key event
+      this.lastKeyEvent = {keycode, type: 'keyup', time: now};
+
+      // Convert to system-native keycode
+      const nativeKeycode = convertKeyCode(keycode);
+
+      logger.debug('Keyup', {
+        uiohookKeycode: keycode,
+        nativeKeycode
       });
 
-      // Try sending keycode directly to native addon
+      // Send to slave windows
       for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendKeyboardEvent(slavePid, keycode, 'keyup');
-          logger.debug(`Sent keycode ${keycode} to slave ${slavePid}`);
+          this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup');
         } catch (error) {
           logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);
         }

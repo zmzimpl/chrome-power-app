@@ -291,15 +291,35 @@ class MultiWindowSyncService {
     // Remove any existing listeners first to prevent duplicates
     this.removeEventListeners();
 
+    logger.info('Setting up event listeners for @tkomde/iohook...');
+
     uIOhook.on('mousemove', this.handleMouseMove.bind(this));
+    logger.debug('✓ mousemove listener registered');
+
     uIOhook.on('mousedown', this.handleMouseDown.bind(this));
+    logger.debug('✓ mousedown listener registered');
+
     uIOhook.on('mouseup', this.handleMouseUp.bind(this));
+    logger.debug('✓ mouseup listener registered');
+
     uIOhook.on('wheel', this.handleWheel.bind(this));
+    logger.debug('✓ wheel listener registered');
+
     // Only listen to keydown and synthesize complete key press (down + up)
     uIOhook.on('keydown', this.handleKeyDown.bind(this));
+    logger.debug('✓ keydown listener registered');
     // Note: keyup listener removed to prevent duplicate input
 
+    // Add a test listener to see if ANY events are firing
+    uIOhook.on('input', (event: SafeAny) => {
+      logger.info('🔍 Generic input event received:', {
+        type: event.type,
+        keys: Object.keys(event),
+      });
+    });
+
     logger.info('Event listeners setup complete (keyup listener disabled to prevent duplicates)');
+    logger.info('Wheel sync enabled:', this.syncOptions.enableWheelSync);
   }
 
   /**
@@ -314,6 +334,7 @@ class MultiWindowSyncService {
     uIOhook.removeAllListeners('wheel');
     uIOhook.removeAllListeners('keydown');
     uIOhook.removeAllListeners('keyup');
+    uIOhook.removeAllListeners('input');
   }
 
   /**
@@ -477,6 +498,12 @@ class MultiWindowSyncService {
    */
   private handleWheel(event: WheelEventData): void {
     try {
+      logger.info('🎡 Wheel event received!', {
+        event,
+        isCapturing: this.isCapturing,
+        hasMasterBounds: !!this.masterWindowBounds,
+      });
+
       if (!this.isCapturing || !this.masterWindowBounds) {
         logger.debug('Wheel event skipped: not capturing or no master bounds');
         return;

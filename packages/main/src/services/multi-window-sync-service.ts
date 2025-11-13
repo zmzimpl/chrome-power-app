@@ -457,12 +457,26 @@ class MultiWindowSyncService {
       const ratio = this.calculateRelativePosition(x, y);
       if (!ratio) return;
 
-      // Send to each slave window with calculated screen coordinates
+      // IMPORTANT: Before sending click event, ensure mouse position is synced
+      // This is critical for UI elements with hover states (e.g., Chrome's "+" tab button)
+      // The slave window needs accurate mouse position to trigger hover effects
       for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
         const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
         try {
-          logger.debug(`→ Sending ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+          // First, sync mouse position to ensure hover states are correct
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+
+          // Small delay to allow hover states to update
+          // This ensures UI elements like buttons are in the correct state before clicking
+          setTimeout(() => {
+            try {
+              // Then send the actual click event
+              this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+              logger.debug(`→ Sent ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
+            } catch (error) {
+              logger.error(`Failed to send ${eventType} to slave ${slavePid}:`, error);
+            }
+          }, 5);
         } catch (error) {
           logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
         }

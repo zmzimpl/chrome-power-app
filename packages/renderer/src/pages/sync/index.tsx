@@ -11,12 +11,12 @@ import {
   Divider,
   Switch,
   Alert,
-  Badge,
   message,
   Tag,
   Tooltip,
   Select,
-  Statistic,
+  Radio,
+  Tabs,
 } from 'antd';
 import {SyncBridge, WindowBridge} from '#preload';
 import {useTranslation} from 'react-i18next';
@@ -29,11 +29,13 @@ import {
   ReloadOutlined,
   SettingOutlined,
   SyncOutlined,
-  CheckCircleOutlined,
   CrownOutlined,
   DesktopOutlined,
   ThunderboltOutlined,
   LayoutOutlined,
+  WindowsOutlined,
+  BorderOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
 import type {SyncOptions, MonitorInfo} from '../../../../preload/src/bridges/sync';
@@ -41,14 +43,14 @@ import type {SyncOptions, MonitorInfo} from '../../../../preload/src/bridges/syn
 const {Text, Title} = Typography;
 
 interface SyncConfig {
-  // Window arrangement (legacy)
+  // Window arrangement
   mainPid: number | null;
   childPids: number[];
   spacing: number;
   columns: number;
   size: {width: number; height: number};
 
-  // Multi-window sync (new)
+  // Multi-window sync
   masterWindowId: number | null;
   syncOptions: SyncOptions;
 }
@@ -100,7 +102,7 @@ const Sync = () => {
     return defaultConfig;
   });
 
-  const OFFSET = 500;
+  const OFFSET = 330;
   const [windows, setWindows] = useState<DB.Window[]>([]);
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET);
   const {t} = useTranslation();
@@ -115,6 +117,7 @@ const Sync = () => {
   const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(null);
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
   const [selectedMonitorIndex, setSelectedMonitorIndex] = useState<number>(0);
+  const [arrangeMode, setArrangeMode] = useState<'grid' | 'cascade'>('grid');
 
   const columns: ColumnsType<DB.Window> = useMemo(() => {
     return [
@@ -140,13 +143,20 @@ const Sync = () => {
         title: t('window_column_group'),
         dataIndex: 'group_name',
         key: 'group_name',
-        width: 100,
+        width: 120,
       },
       {
-        title: 'Role',
-        key: 'syncRole',
+        title: 'Status',
+        key: 'status',
         width: 100,
         render: (_, record) => {
+          if (syncStatus.isActive && syncStatus.slavePids.includes(record.pid!)) {
+            return (
+              <Tag color="processing" icon={<SyncOutlined spin />}>
+                Syncing
+              </Tag>
+            );
+          }
           if (record.id === syncConfig.masterWindowId) {
             return (
               <Tag color="blue" icon={<CrownOutlined />}>
@@ -154,14 +164,11 @@ const Sync = () => {
               </Tag>
             );
           }
-          if (syncStatus.isActive && syncStatus.slavePids.includes(record.pid!)) {
-            return (
-              <Tag color="green" icon={<ThunderboltOutlined />}>
-                Slave
-              </Tag>
-            );
-          }
-          return <Tag color="default">Ready</Tag>;
+          return (
+            <Tag color="default" icon={<DesktopOutlined />}>
+              Ready
+            </Tag>
+          );
         },
       },
       {
@@ -172,17 +179,15 @@ const Sync = () => {
         render: (_, record) => {
           const isMaster = record.id === syncConfig.masterWindowId;
           return (
-            <Tooltip title={isMaster ? 'Already master' : 'Set as master window'}>
-              <Button
-                type={isMaster ? 'primary' : 'default'}
-                size="small"
-                icon={<CrownOutlined />}
-                onClick={() => handleSetMaster(record.id!)}
-                disabled={syncStatus.isActive || isMaster}
-              >
-                {isMaster ? 'Master' : 'Set Master'}
-              </Button>
-            </Tooltip>
+            <Button
+              type={isMaster ? 'primary' : 'default'}
+              size="small"
+              icon={<CrownOutlined />}
+              onClick={() => handleSetMaster(record.id!)}
+              disabled={syncStatus.isActive || isMaster}
+            >
+              {isMaster ? 'Master' : 'Set Master'}
+            </Button>
           );
         },
       },
@@ -374,16 +379,26 @@ const Sync = () => {
       {/* Toolbar */}
       <div className="content-toolbar">
         <Space size={16}>
-          <Badge
-            status={syncStatus.isActive ? 'processing' : 'default'}
-            text={
-              <Text strong>
-                {syncStatus.isActive
-                  ? `Syncing (${syncStatus.slavePids.length} slaves)`
-                  : 'Not Syncing'}
-              </Text>
-            }
-          />
+          {!syncStatus.isActive ? (
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlayCircleOutlined />}
+              onClick={handleStartSync}
+              disabled={
+                !syncConfig.masterWindowId ||
+                selectedRowKeys.length < 2 ||
+                !selectedRowKeys.includes(syncConfig.masterWindowId)
+              }
+            >
+              Start Sync (Ctrl+Alt+S)
+            </Button>
+          ) : (
+            <Button danger size="large" icon={<StopOutlined />} onClick={handleStopSync}>
+              Stop Sync (Ctrl+Alt+R)
+            </Button>
+          )}
+          <Text type="secondary">Selected: {selectedRowKeys.length}</Text>
         </Space>
         <Space size={8} className="content-toolbar-btns">
           <Button icon={<ReloadOutlined />} onClick={fetchOpenedWindows}>
@@ -397,307 +412,265 @@ const Sync = () => {
         <div className="px-6 pt-6">
           <Alert
             message="Synchronization Active"
-            description={`All events from master window are being synchronized to ${syncStatus.slavePids.length} slave window(s). Click "Stop Synchronization" to stop.`}
+            description={`Events from master window are being synchronized to ${syncStatus.slavePids.length} slave window(s).`}
             type="success"
-            icon={<CheckCircleOutlined />}
             showIcon
             closable
           />
         </div>
       )}
 
-      {/* Main Content - Control Cards */}
+      {/* Main Content */}
       <div className="px-6 pt-6">
-        <Row gutter={[16, 16]}>
-          {/* Master Window Selection Card */}
-          <Col xs={24} lg={8}>
-            <Card
-              bordered={false}
-              className="h-full"
-              title={
+        <Row gutter={16}>
+          {/* Left: Window List */}
+          <Col span={16}>
+            <Card bordered={false} className="h-full">
+              <div className="mb-4">
                 <Space>
-                  <CrownOutlined />
-                  <span>Master Window</span>
+                  <Title level={5} style={{margin: 0}}>
+                    <DesktopOutlined /> Opened Windows
+                  </Title>
+                  {masterWindow && (
+                    <Text type="secondary">
+                      Master: {masterWindow.name} • Slaves: {slaveCount}
+                    </Text>
+                  )}
                 </Space>
-              }
-            >
-              {masterWindow ? (
-                <Space direction="vertical" className="w-full" size="large">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <Space direction="vertical" size="small" className="w-full">
-                      <Text type="secondary" style={{fontSize: 12}}>
-                        Selected Master
-                      </Text>
-                      <Text strong style={{fontSize: 16}}>
-                        {masterWindow.name}
-                      </Text>
-                      <Space size={16}>
-                        <Text type="secondary">ID: {masterWindow.id}</Text>
-                        <Text type="secondary">Profile: {masterWindow.profile_id}</Text>
-                      </Space>
-                    </Space>
-                  </div>
-                  <Statistic
-                    title="Selected Windows"
-                    value={selectedRowKeys.length}
-                    suffix={`/ ${windows.length}`}
-                  />
-                  <Statistic
-                    title="Slave Windows"
-                    value={slaveCount}
-                    valueStyle={{color: slaveCount > 0 ? '#3f8600' : undefined}}
-                  />
-                </Space>
-              ) : (
-                <Space direction="vertical" className="w-full text-center" size="large">
-                  <div className="py-8">
-                    <CrownOutlined style={{fontSize: 48, color: '#d9d9d9'}} />
-                    <div className="mt-4">
-                      <Text type="secondary">No master window selected</Text>
-                    </div>
-                    <div className="mt-2">
-                      <Text type="secondary" style={{fontSize: 12}}>
-                        Click "Set Master" button in the table below
-                      </Text>
-                    </div>
-                  </div>
-                </Space>
-              )}
-            </Card>
-          </Col>
-
-          {/* Sync Control Card */}
-          <Col xs={24} lg={8}>
-            <Card
-              bordered={false}
-              className="h-full"
-              title={
-                <Space>
-                  <SyncOutlined />
-                  <span>Sync Control</span>
-                </Space>
-              }
-            >
-              <Space direction="vertical" className="w-full" size="large">
-                {/* Main Control Button */}
-                {!syncStatus.isActive ? (
-                  <Button
-                    block
-                    type="primary"
-                    size="large"
-                    icon={<PlayCircleOutlined />}
-                    onClick={handleStartSync}
-                    disabled={
-                      !syncConfig.masterWindowId ||
-                      selectedRowKeys.length < 2 ||
-                      !selectedRowKeys.includes(syncConfig.masterWindowId)
-                    }
-                  >
-                    Start Synchronization
-                  </Button>
-                ) : (
-                  <Button
-                    block
-                    danger
-                    size="large"
-                    icon={<StopOutlined />}
-                    onClick={handleStopSync}
-                  >
-                    Stop Synchronization
-                  </Button>
-                )}
-
-                <Divider style={{margin: 0}} />
-
-                {/* Sync Options */}
-                <div>
-                  <Text strong className="mb-2 block">
-                    Sync Features
-                  </Text>
-                  <Form
-                    form={syncForm}
-                    layout="vertical"
-                    size="small"
-                    initialValues={syncConfig.syncOptions}
-                    onValuesChange={onSyncOptionsChange}
-                  >
-                    <Space direction="vertical" className="w-full">
-                      <Form.Item name="enableMouseSync" valuePropName="checked" noStyle>
-                        <div className="flex items-center justify-between py-2">
-                          <Text>Mouse Sync</Text>
-                          <Switch
-                            size="small"
-                            disabled={syncStatus.isActive}
-                            checked={syncConfig.syncOptions.enableMouseSync}
-                          />
-                        </div>
-                      </Form.Item>
-                      <Form.Item name="enableKeyboardSync" valuePropName="checked" noStyle>
-                        <div className="flex items-center justify-between py-2">
-                          <Text>Keyboard Sync</Text>
-                          <Switch
-                            size="small"
-                            disabled={syncStatus.isActive}
-                            checked={syncConfig.syncOptions.enableKeyboardSync}
-                          />
-                        </div>
-                      </Form.Item>
-                      <Form.Item name="enableWheelSync" valuePropName="checked" noStyle>
-                        <div className="flex items-center justify-between py-2">
-                          <Text>Wheel Sync</Text>
-                          <Switch
-                            size="small"
-                            disabled={syncStatus.isActive}
-                            checked={syncConfig.syncOptions.enableWheelSync}
-                          />
-                        </div>
-                      </Form.Item>
-                    </Space>
-                  </Form>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-
-          {/* Window Arrangement Card */}
-          <Col xs={24} lg={8}>
-            <Card
-              bordered={false}
-              className="h-full"
-              title={
-                <Space>
-                  <LayoutOutlined />
-                  <span>Window Arrangement</span>
-                </Space>
-              }
-            >
-              <Form
-                form={arrangeForm}
-                layout="vertical"
+              </div>
+              <Table
+                className="content-table"
+                dataSource={windows}
+                rowKey="id"
+                rowSelection={rowSelection}
+                scroll={{y: tableScrollY}}
+                columns={columns}
+                pagination={false}
                 size="small"
-                initialValues={{
-                  columns: syncConfig.columns,
-                  spacing: syncConfig.spacing,
-                  height: syncConfig.size.height !== 0 ? syncConfig.size.height : undefined,
-                }}
-                onValuesChange={onArrangeValuesChange}
-              >
-                <Form.Item label="Display / Monitor">
-                  <Select
-                    value={selectedMonitorIndex}
-                    onChange={setSelectedMonitorIndex}
-                    options={monitors.map(monitor => ({
-                      label: `${monitor.isPrimary ? '🖥️ Primary' : '🖥️ Secondary'} - ${monitor.width}x${monitor.height}`,
-                      value: monitor.index,
-                    }))}
-                    disabled={monitors.length === 0}
-                  />
-                </Form.Item>
+              />
+            </Card>
+          </Col>
 
-                <Row gutter={8}>
-                  <Col span={12}>
-                    <Form.Item label="Columns" name="columns">
-                      <InputNumber min={1} max={12} className="w-full" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item label="Spacing (px)" name="spacing">
-                      <InputNumber min={0} max={50} className="w-full" />
-                    </Form.Item>
-                  </Col>
-                </Row>
+          {/* Right: Control Panel */}
+          <Col span={8}>
+            <Card
+              bordered={false}
+              className="h-full"
+              title={
+                <Space>
+                  <SettingOutlined />
+                  <span>Control Panel</span>
+                </Space>
+              }
+            >
+              <Tabs
+                defaultActiveKey="sync"
+                items={[
+                  {
+                    key: 'sync',
+                    label: (
+                      <span>
+                        <ThunderboltOutlined />
+                        Sync Control
+                      </span>
+                    ),
+                    children: (
+                      <Space direction="vertical" className="w-full" size="middle">
+                        {/* Sync Features */}
+                        <div>
+                          <Text strong className="mb-2 block">
+                            Sync Features
+                          </Text>
+                          <Form
+                            form={syncForm}
+                            layout="vertical"
+                            size="small"
+                            initialValues={syncConfig.syncOptions}
+                            onValuesChange={onSyncOptionsChange}
+                          >
+                            <Space direction="vertical" className="w-full">
+                              <Form.Item name="enableMouseSync" valuePropName="checked" noStyle>
+                                <div className="flex items-center justify-between py-2">
+                                  <Text>Mouse Sync</Text>
+                                  <Switch
+                                    size="small"
+                                    disabled={syncStatus.isActive}
+                                    checked={syncConfig.syncOptions.enableMouseSync}
+                                  />
+                                </div>
+                              </Form.Item>
+                              <Form.Item
+                                name="enableKeyboardSync"
+                                valuePropName="checked"
+                                noStyle
+                              >
+                                <div className="flex items-center justify-between py-2">
+                                  <Text>Keyboard Sync</Text>
+                                  <Switch
+                                    size="small"
+                                    disabled={syncStatus.isActive}
+                                    checked={syncConfig.syncOptions.enableKeyboardSync}
+                                  />
+                                </div>
+                              </Form.Item>
+                              <Form.Item name="enableWheelSync" valuePropName="checked" noStyle>
+                                <div className="flex items-center justify-between py-2">
+                                  <Text>Wheel Sync</Text>
+                                  <Switch
+                                    size="small"
+                                    disabled={syncStatus.isActive}
+                                    checked={syncConfig.syncOptions.enableWheelSync}
+                                  />
+                                </div>
+                              </Form.Item>
+                            </Space>
+                          </Form>
+                        </div>
 
-                <Form.Item label="Height (0 = auto)" name="height">
-                  <InputNumber min={0} className="w-full" />
-                </Form.Item>
+                        <Divider style={{margin: '8px 0'}} />
 
-                <Button
-                  block
-                  icon={<DesktopOutlined />}
-                  onClick={handleArrangeWindows}
-                  disabled={selectedRowKeys.length === 0}
-                >
-                  Arrange Windows
-                </Button>
-              </Form>
+                        {/* Advanced Settings */}
+                        <div>
+                          <Text type="secondary" className="mb-2 block">
+                            Advanced Settings
+                          </Text>
+                          <Form
+                            form={syncForm}
+                            layout="vertical"
+                            size="small"
+                            initialValues={syncConfig.syncOptions}
+                            onValuesChange={onSyncOptionsChange}
+                          >
+                            <Form.Item label="Wheel Throttle (ms)" name="wheelThrottleMs">
+                              <InputNumber
+                                min={1}
+                                max={200}
+                                className="w-full"
+                                disabled={syncStatus.isActive}
+                              />
+                            </Form.Item>
+                            <Form.Item
+                              label="CDP Scroll Sync"
+                              name="enableCdpSync"
+                              valuePropName="checked"
+                            >
+                              <Switch disabled={syncStatus.isActive} />
+                            </Form.Item>
+                            {syncConfig.syncOptions.enableCdpSync && (
+                              <Form.Item label="CDP Interval (ms)" name="cdpSyncIntervalMs">
+                                <InputNumber
+                                  min={50}
+                                  max={500}
+                                  className="w-full"
+                                  disabled={syncStatus.isActive}
+                                />
+                              </Form.Item>
+                            )}
+                          </Form>
+                        </div>
+                      </Space>
+                    ),
+                  },
+                  {
+                    key: 'arrange',
+                    label: (
+                      <span>
+                        <LayoutOutlined />
+                        Window Arrange
+                      </span>
+                    ),
+                    children: (
+                      <Space direction="vertical" className="w-full" size="middle">
+                        {/* Display Selection */}
+                        <div>
+                          <Text strong className="mb-2 block">
+                            Display / Monitor
+                          </Text>
+                          <Select
+                            className="w-full"
+                            value={selectedMonitorIndex}
+                            onChange={setSelectedMonitorIndex}
+                            options={monitors.map(monitor => ({
+                              label: `${monitor.isPrimary ? '🖥️ Primary' : '🖥️ Extended'} - ${monitor.width}x${monitor.height}`,
+                              value: monitor.index,
+                            }))}
+                            disabled={monitors.length === 0}
+                          />
+                        </div>
+
+                        <Divider style={{margin: '8px 0'}} />
+
+                        {/* Arrange Mode */}
+                        <div>
+                          <Text strong className="mb-2 block">
+                            Arrange Mode
+                          </Text>
+                          <Radio.Group
+                            value={arrangeMode}
+                            onChange={e => setArrangeMode(e.target.value)}
+                            className="w-full"
+                          >
+                            <Radio value="grid">
+                              <AppstoreOutlined /> Grid Tile
+                            </Radio>
+                            <Radio value="cascade">
+                              <BorderOutlined /> Cascade
+                            </Radio>
+                          </Radio.Group>
+                        </div>
+
+                        <Divider style={{margin: '8px 0'}} />
+
+                        {/* Arrange Settings */}
+                        <Form
+                          form={arrangeForm}
+                          layout="vertical"
+                          size="small"
+                          initialValues={{
+                            columns: syncConfig.columns,
+                            spacing: syncConfig.spacing,
+                            height:
+                              syncConfig.size.height !== 0 ? syncConfig.size.height : undefined,
+                          }}
+                          onValuesChange={onArrangeValuesChange}
+                        >
+                          <Row gutter={8}>
+                            <Col span={12}>
+                              <Form.Item label="Columns" name="columns">
+                                <InputNumber min={1} max={12} className="w-full" />
+                              </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                              <Form.Item label="Spacing (px)" name="spacing">
+                                <InputNumber min={0} max={50} className="w-full" />
+                              </Form.Item>
+                            </Col>
+                          </Row>
+
+                          <Form.Item label="Height (0 = auto)" name="height">
+                            <InputNumber min={0} className="w-full" />
+                          </Form.Item>
+                        </Form>
+
+                        {/* Arrange Button */}
+                        <Button
+                          block
+                          type="primary"
+                          icon={<WindowsOutlined />}
+                          onClick={handleArrangeWindows}
+                          disabled={selectedRowKeys.length === 0}
+                        >
+                          Arrange Windows (Ctrl+Alt+Z)
+                        </Button>
+                      </Space>
+                    ),
+                  },
+                ]}
+              />
             </Card>
           </Col>
         </Row>
       </div>
-
-      {/* Window List Table */}
-      <Card className="content-card" bordered={false}>
-        <div className="mb-4">
-          <Space>
-            <Title level={5} style={{margin: 0}}>
-              <DesktopOutlined /> Opened Windows
-            </Title>
-            <Text type="secondary">
-              Select windows to sync, then click "Set Master" to choose the master window
-            </Text>
-          </Space>
-        </div>
-        <Table
-          className="content-table"
-          dataSource={windows}
-          rowKey="id"
-          rowSelection={rowSelection}
-          scroll={{y: tableScrollY}}
-          columns={columns}
-          pagination={false}
-        />
-      </Card>
-
-      {/* Advanced Settings Card */}
-      <Card className="content-card" bordered={false}>
-        <div className="mb-4">
-          <Space>
-            <SettingOutlined />
-            <Title level={5} style={{margin: 0}}>
-              Advanced Settings
-            </Title>
-          </Space>
-        </div>
-        <Form
-          form={syncForm}
-          layout="horizontal"
-          size="small"
-          labelCol={{span: 6}}
-          wrapperCol={{span: 18}}
-          initialValues={syncConfig.syncOptions}
-          onValuesChange={onSyncOptionsChange}
-        >
-          <Row gutter={24}>
-            <Col span={8}>
-              <Form.Item label="Wheel Throttle (ms)" name="wheelThrottleMs">
-                <InputNumber
-                  min={1}
-                  max={200}
-                  className="w-full"
-                  disabled={syncStatus.isActive}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="CDP Sync" name="enableCdpSync" valuePropName="checked">
-                <Switch disabled={syncStatus.isActive} />
-              </Form.Item>
-            </Col>
-            {syncConfig.syncOptions.enableCdpSync && (
-              <Col span={8}>
-                <Form.Item label="CDP Interval (ms)" name="cdpSyncIntervalMs">
-                  <InputNumber
-                    min={50}
-                    max={500}
-                    className="w-full"
-                    disabled={syncStatus.isActive}
-                  />
-                </Form.Item>
-              </Col>
-            )}
-          </Row>
-        </Form>
-      </Card>
     </>
   );
 };

@@ -46,6 +46,31 @@ struct WindowInfo {
 };
 #endif
 
+// Monitor info structure (for multi-monitor support)
+#ifdef _WIN32
+struct MonitorInfo {
+    HMONITOR handle;
+    RECT rect;
+    bool isPrimary;
+};
+#elif __APPLE__
+struct MonitorInfo {
+    CGDirectDisplayID id;
+    CGRect bounds;
+    bool isPrimary;
+};
+#else
+// Dummy struct for Linux (not supported but allows compilation)
+struct MonitorInfo {
+    int id;
+    bool isPrimary;
+    int x, y, width, height;
+};
+#endif
+
+// Forward declaration of GetMonitors function
+std::vector<MonitorInfo> GetMonitors();
+
 class WindowManager : public Napi::ObjectWrap<WindowManager> {
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -443,12 +468,6 @@ private:
     #endif
 
     #ifdef _WIN32
-    struct MonitorInfo {
-        HMONITOR handle;
-        RECT rect;
-        bool isPrimary;
-    };
-
     std::vector<MonitorInfo> GetMonitors() {
         std::vector<MonitorInfo> monitors;
         EnumDisplayMonitors(NULL, NULL, [](HMONITOR hMonitor, HDC, LPRECT, LPARAM lParam) -> BOOL {
@@ -475,12 +494,6 @@ private:
         return monitors;
     }
     #elif __APPLE__
-    struct MonitorInfo {
-        CGDirectDisplayID id;
-        CGRect bounds;
-        bool isPrimary;
-    };
-
     std::vector<MonitorInfo> GetMonitors() {
         std::vector<MonitorInfo> monitors;
         uint32_t displayCount;
@@ -506,6 +519,11 @@ private:
         
         return monitors;
     }
+    #else
+    // Linux implementation (returns empty - not supported)
+    std::vector<MonitorInfo> GetMonitors() {
+        return std::vector<MonitorInfo>();
+    }
     #endif
 
     // Expose GetMonitors to JavaScript
@@ -528,6 +546,11 @@ private:
             monitorObj.Set("y", Napi::Number::New(env, monitors[i].bounds.origin.y));
             monitorObj.Set("width", Napi::Number::New(env, monitors[i].bounds.size.width));
             monitorObj.Set("height", Napi::Number::New(env, monitors[i].bounds.size.height));
+#else
+            monitorObj.Set("x", Napi::Number::New(env, monitors[i].x));
+            monitorObj.Set("y", Napi::Number::New(env, monitors[i].y));
+            monitorObj.Set("width", Napi::Number::New(env, monitors[i].width));
+            monitorObj.Set("height", Napi::Number::New(env, monitors[i].height));
 #endif
             monitorObj.Set("isPrimary", Napi::Boolean::New(env, monitors[i].isPrimary));
             monitorObj.Set("index", Napi::Number::New(env, i));
@@ -542,7 +565,7 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 5) {
-            throw Napi::TypeError::New(env, "Wrong number of arguments");
+            Napi::TypeError::New(env, "Wrong number of arguments");
             return env.Null();
         }
 
@@ -569,13 +592,13 @@ private:
         // Get all available monitors
         auto monitors = GetMonitors();
         if (monitors.empty()) {
-            throw Napi::Error::New(env, "No monitors found");
+            Napi::Error::New(env, "No monitors found");
             return env.Null();
         }
 
         // Validate monitor index
         if (monitorIndex < 0 || monitorIndex >= static_cast<int>(monitors.size())) {
-            throw Napi::Error::New(env, "Invalid monitor index");
+            Napi::Error::New(env, "Invalid monitor index");
             return env.Null();
         }
 
@@ -712,7 +735,7 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 1) {
-            throw Napi::TypeError::New(env, "Wrong number of arguments");
+            Napi::TypeError::New(env, "Wrong number of arguments");
         }
 
         int pid = info[0].As<Napi::Number>().Int32Value();
@@ -788,7 +811,7 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 4) {
-            throw Napi::TypeError::New(env, "Wrong number of arguments: pid, x, y, eventType");
+            Napi::TypeError::New(env, "Wrong number of arguments: pid, x, y, eventType");
         }
 
         int pid = info[0].As<Napi::Number>().Int32Value();
@@ -892,7 +915,7 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 3) {
-            throw Napi::TypeError::New(env, "Wrong number of arguments: pid, keyCode, eventType");
+            Napi::TypeError::New(env, "Wrong number of arguments: pid, keyCode, eventType");
         }
 
         int pid = info[0].As<Napi::Number>().Int32Value();
@@ -959,7 +982,7 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 3) {
-            throw Napi::TypeError::New(env, "Wrong number of arguments: pid, deltaX, deltaY");
+            Napi::TypeError::New(env, "Wrong number of arguments: pid, deltaX, deltaY");
         }
 
         int pid = info[0].As<Napi::Number>().Int32Value();
@@ -1014,7 +1037,7 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 1) {
-            throw Napi::TypeError::New(env, "Wrong number of arguments: pid");
+            Napi::TypeError::New(env, "Wrong number of arguments: pid");
         }
 
         int pid = info[0].As<Napi::Number>().Int32Value();
@@ -1059,7 +1082,7 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 5) {
-            throw Napi::TypeError::New(env, "Wrong number of arguments: masterPid, slavePid, x, y, eventType");
+            Napi::TypeError::New(env, "Wrong number of arguments: masterPid, slavePid, x, y, eventType");
         }
 
         int masterPid = info[0].As<Napi::Number>().Int32Value();
@@ -1171,8 +1194,30 @@ private:
         int clientY = targetY - targetRect.top;
         LPARAM lParam = MAKELPARAM(clientX, clientY);
 
-        // Send event - use simple PostMessage for all events
-        // No cursor movement to avoid disrupting user experience
+        // For right-click events, we need to move the cursor to ensure Chrome's GetCursorPos()
+        // returns the correct position for context menu display
+        // Strategy: Move cursor -> Send message -> Restore immediately
+        // This is done for each slave window separately to ensure each gets correct menu position
+        bool isRightClick = (eventType == "rightdown" || eventType == "rightup");
+
+        POINT originalCursorPos;
+        if (isRightClick) {
+            // Save current cursor position before any movement
+            GetCursorPos(&originalCursorPos);
+
+            // Move cursor to target position (screen coordinates)
+            SetCursorPos(targetX, targetY);
+
+            // Small delay to ensure system recognizes the cursor position
+            // Chrome calls GetCursorPos() when handling right-click events
+            Sleep(3);
+
+            sprintf_s(debugMsg, "[C++] Moved cursor from (%ld, %ld) to (%d, %d) for %s",
+                     originalCursorPos.x, originalCursorPos.y, targetX, targetY, eventType.c_str());
+            OutputDebugStringA(debugMsg);
+        }
+
+        // Send event
         if (eventType == "mousemove") {
             PostMessage(targetWindow, WM_MOUSEMOVE, 0, lParam);
         } else if (eventType == "mousedown") {
@@ -1181,8 +1226,25 @@ private:
             PostMessage(targetWindow, WM_LBUTTONUP, 0, lParam);
         } else if (eventType == "rightdown") {
             PostMessage(targetWindow, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
+
+            // Restore cursor after rightdown
+            Sleep(2);
+            SetCursorPos(originalCursorPos.x, originalCursorPos.y);
+
+            sprintf_s(debugMsg, "[C++] Restored cursor to (%ld, %ld) after rightdown",
+                     originalCursorPos.x, originalCursorPos.y);
+            OutputDebugStringA(debugMsg);
         } else if (eventType == "rightup") {
             PostMessage(targetWindow, WM_RBUTTONUP, 0, lParam);
+
+            // Restore cursor after rightup with slightly longer delay
+            // This allows the context menu to be triggered before cursor returns
+            Sleep(5);
+            SetCursorPos(originalCursorPos.x, originalCursorPos.y);
+
+            sprintf_s(debugMsg, "[C++] Restored cursor to (%ld, %ld) after rightup",
+                     originalCursorPos.x, originalCursorPos.y);
+            OutputDebugStringA(debugMsg);
         } else {
             return Napi::Boolean::New(env, false);
         }

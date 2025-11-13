@@ -439,16 +439,17 @@ class MultiWindowSyncService {
       if (!this.syncOptions.enableMouseSync) return;
 
       const {x, y, button} = event;
-      if (!this.isMouseInMasterWindow(x, y)) return;
 
-      // Skip right-click events (button 2)
-      // Right-click menus are too complex to sync reliably
-      if (button === 2) {
-        logger.debug(`Skipping right-click at (${x}, ${y}) - not syncing context menus`);
+      // Check if master window is active (foreground)
+      if (!this.windowManager.isProcessWindowActive(this.masterWindowPid)) {
+        logger.debug('Master window not active - skipping mouse event');
         return;
       }
 
-      const eventType = 'mousedown';
+      // Also check if mouse is within master window bounds
+      if (!this.isMouseInMasterWindow(x, y)) return;
+
+      const eventType = button === 1 ? 'mousedown' : button === 2 ? 'rightdown' : 'mousedown';
 
       logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 
@@ -481,16 +482,17 @@ class MultiWindowSyncService {
       if (!this.syncOptions.enableMouseSync) return;
 
       const {x, y, button} = event;
-      if (!this.isMouseInMasterWindow(x, y)) return;
 
-      // Skip right-click events (button 2)
-      // Right-click menus are too complex to sync reliably
-      if (button === 2) {
-        logger.debug(`Skipping right-click release at (${x}, ${y}) - not syncing context menus`);
+      // Check if master window is active (foreground)
+      if (!this.windowManager.isProcessWindowActive(this.masterWindowPid)) {
+        logger.debug('Master window not active - skipping mouse event');
         return;
       }
 
-      const eventType = 'mouseup';
+      // Also check if mouse is within master window bounds
+      if (!this.isMouseInMasterWindow(x, y)) return;
+
+      const eventType = button === 1 ? 'mouseup' : button === 2 ? 'rightup' : 'mouseup';
 
       logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 

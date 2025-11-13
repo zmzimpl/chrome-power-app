@@ -56,7 +56,8 @@ public:
             InstanceMethod("sendKeyboardEvent", &WindowManager::SendKeyboardEvent),
             InstanceMethod("sendWheelEvent", &WindowManager::SendWheelEvent),
             InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds),
-            InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS)
+            InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS),
+            InstanceMethod("isProcessWindowActive", &WindowManager::IsProcessWindowActive)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -1006,6 +1007,50 @@ private:
 #endif
 
         return Napi::Boolean::New(env, true);
+    }
+
+    // Check if any window from the given process is currently active (foreground)
+    Napi::Value IsProcessWindowActive(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 1) {
+            throw Napi::TypeError::New(env, "Wrong number of arguments: pid");
+        }
+
+        int pid = info[0].As<Napi::Number>().Int32Value();
+
+#ifdef _WIN32
+        // Get the current foreground window
+        HWND foregroundWindow = GetForegroundWindow();
+        if (!foregroundWindow) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        // Get the process ID of the foreground window
+        DWORD foregroundPid = 0;
+        GetWindowThreadProcessId(foregroundWindow, &foregroundPid);
+
+        // Check if it matches our target PID
+        bool isActive = (foregroundPid == static_cast<DWORD>(pid));
+
+        return Napi::Boolean::New(env, isActive);
+
+#elif __APPLE__
+        // Get the active application
+        @autoreleasepool {
+            NSRunningApplication* frontApp = [[NSWorkspace sharedWorkspace] frontmostApplication];
+            if (!frontApp) {
+                return Napi::Boolean::New(env, false);
+            }
+
+            pid_t frontPid = [frontApp processIdentifier];
+            bool isActive = (frontPid == pid);
+
+            return Napi::Boolean::New(env, isActive);
+        }
+#else
+        return Napi::Boolean::New(env, false);
+#endif
     }
 
     // Send mouse event with popup window matching

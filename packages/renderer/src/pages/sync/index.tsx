@@ -14,7 +14,6 @@ import {
   message,
   Tag,
   Select,
-  Radio,
   Tabs,
 } from 'antd';
 import {SyncBridge, WindowBridge} from '#preload';
@@ -33,8 +32,6 @@ import {
   ThunderboltOutlined,
   LayoutOutlined,
   WindowsOutlined,
-  BorderOutlined,
-  AppstoreOutlined,
 } from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
 import type {SyncOptions, MonitorInfo} from '../../../../preload/src/bridges/sync';
@@ -117,7 +114,6 @@ const Sync = () => {
   const [statusPolling, setStatusPolling] = useState<NodeJS.Timeout | null>(null);
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
   const [selectedMonitorIndex, setSelectedMonitorIndex] = useState<number>(0);
-  const [arrangeMode, setArrangeMode] = useState<'grid' | 'cascade'>('grid');
 
   const columns: ColumnsType<DB.Window> = useMemo(() => {
     return [
@@ -374,8 +370,49 @@ const Sync = () => {
   const masterWindow = windows.find(w => w.id === syncConfig.masterWindowId);
   const slaveCount = selectedRowKeys.filter(id => id !== syncConfig.masterWindowId).length;
 
+  // Format master info text
+  const masterInfoText = masterWindow
+    ? t('sync_master_info', {name: masterWindow.name, count: slaveCount})
+    : '';
+
+  // Format sync status description
+  const syncStatusDesc = t('sync_active_desc', {count: syncStatus.slavePids.length});
+
   return (
     <>
+      <style>
+        {`
+          /* Custom scrollbar styles */
+          ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+
+          ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 4px;
+          }
+
+          ::-webkit-scrollbar-thumb {
+            background: #bfbfbf;
+            border-radius: 4px;
+          }
+
+          ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+          }
+
+          /* Icon spacing */
+          .ant-btn > .anticon + span {
+            margin-left: 8px;
+          }
+
+          .ant-space-item > .anticon {
+            margin-right: 8px;
+          }
+        `}
+      </style>
+
       {/* Toolbar */}
       <div className="content-toolbar">
         <Space size={16}>
@@ -414,7 +451,7 @@ const Sync = () => {
         <div style={{padding: '16px 24px 0'}}>
           <Alert
             message={t('sync_active_title')}
-            description={t('sync_active_desc', {count: syncStatus.slavePids.length})}
+            description={syncStatusDesc}
             type="success"
             showIcon
             closable
@@ -431,13 +468,10 @@ const Sync = () => {
               <div style={{marginBottom: 16}}>
                 <Space>
                   <Title level={5} style={{margin: 0}}>
-                    <DesktopOutlined /> {t('sync_opened_windows')}
+                    <DesktopOutlined style={{marginRight: 8}} />
+                    {t('sync_opened_windows')}
                   </Title>
-                  {masterWindow && (
-                    <Text type="secondary">
-                      {t('sync_master_info', {name: masterWindow.name, count: slaveCount})}
-                    </Text>
-                  )}
+                  {masterWindow && <Text type="secondary">{masterInfoText}</Text>}
                 </Space>
               </div>
               <Table
@@ -472,7 +506,7 @@ const Sync = () => {
                     key: 'sync',
                     label: (
                       <span>
-                        <ThunderboltOutlined />
+                        <ThunderboltOutlined style={{marginRight: 8}} />
                         {t('sync_control')}
                       </span>
                     ),
@@ -549,48 +583,6 @@ const Sync = () => {
                             </Space>
                           </Form>
                         </div>
-
-                        <Divider style={{margin: '8px 0'}} />
-
-                        {/* Advanced Settings */}
-                        <div>
-                          <Text type="secondary" style={{marginBottom: 8, display: 'block'}}>
-                            {t('sync_advanced')}
-                          </Text>
-                          <Form
-                            form={syncForm}
-                            layout="vertical"
-                            size="small"
-                            initialValues={syncConfig.syncOptions}
-                            onValuesChange={onSyncOptionsChange}
-                          >
-                            <Form.Item label={t('sync_wheel_throttle')} name="wheelThrottleMs">
-                              <InputNumber
-                                min={1}
-                                max={200}
-                                style={{width: '100%'}}
-                                disabled={syncStatus.isActive}
-                              />
-                            </Form.Item>
-                            <Form.Item
-                              label={t('sync_cdp_sync')}
-                              name="enableCdpSync"
-                              valuePropName="checked"
-                            >
-                              <Switch disabled={syncStatus.isActive} />
-                            </Form.Item>
-                            {syncConfig.syncOptions.enableCdpSync && (
-                              <Form.Item label={t('sync_cdp_interval')} name="cdpSyncIntervalMs">
-                                <InputNumber
-                                  min={50}
-                                  max={500}
-                                  style={{width: '100%'}}
-                                  disabled={syncStatus.isActive}
-                                />
-                              </Form.Item>
-                            )}
-                          </Form>
-                        </div>
                       </Space>
                     ),
                   },
@@ -598,7 +590,7 @@ const Sync = () => {
                     key: 'arrange',
                     label: (
                       <span>
-                        <LayoutOutlined />
+                        <LayoutOutlined style={{marginRight: 8}} />
                         {t('sync_window_arrange')}
                       </span>
                     ),
@@ -619,27 +611,6 @@ const Sync = () => {
                             }))}
                             disabled={monitors.length === 0}
                           />
-                        </div>
-
-                        <Divider style={{margin: '8px 0'}} />
-
-                        {/* Arrange Mode */}
-                        <div>
-                          <Text strong style={{marginBottom: 8, display: 'block'}}>
-                            {t('sync_arrange_mode')}
-                          </Text>
-                          <Radio.Group
-                            value={arrangeMode}
-                            onChange={e => setArrangeMode(e.target.value)}
-                            style={{width: '100%'}}
-                          >
-                            <Radio value="grid">
-                              <AppstoreOutlined /> {t('sync_grid_tile')}
-                            </Radio>
-                            <Radio value="cascade">
-                              <BorderOutlined /> {t('sync_cascade')}
-                            </Radio>
-                          </Radio.Group>
                         </div>
 
                         <Divider style={{margin: '8px 0'}} />

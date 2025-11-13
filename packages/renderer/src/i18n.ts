@@ -381,7 +381,7 @@ i18n
 
           // Sync page 同步页面
           sync_start: '启动同步',
-          sync_stop: '重启同步',
+          sync_stop: '停止同步',
           sync_selected: '已选择',
           sync_active_title: '同步进行中',
           sync_active_desc: '主窗口的事件正在同步到 {count} 个从窗口。',

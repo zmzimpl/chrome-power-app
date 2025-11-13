@@ -54,8 +54,6 @@ interface SyncOptions {
   enableKeyboardSync?: boolean;
   enableWheelSync?: boolean;
   enableCdpSync?: boolean; // Enable CDP-based synchronization
-  mouseMoveThrottleMs?: number;
-  mouseMoveThresholdPx?: number;
   wheelThrottleMs?: number;
   cdpSyncIntervalMs?: number; // Interval for CDP sync polling
 }
@@ -118,8 +116,6 @@ class MultiWindowSyncService {
     enableKeyboardSync: true,
     enableWheelSync: true,
     enableCdpSync: false, // Disabled by default
-    mouseMoveThrottleMs: 10,
-    mouseMoveThresholdPx: 2,
     wheelThrottleMs: 50,
     cdpSyncIntervalMs: 100,
   };
@@ -128,12 +124,6 @@ class MultiWindowSyncService {
   private cdpBrowsers: Map<number, Browser> = new Map();
   private cdpSyncInterval: NodeJS.Timeout | null = null;
   private lastScrollPosition: {x: number; y: number} = {x: 0, y: 0};
-
-  // Throttling for mouse move events
-  private lastMouseMoveTime: number = 0;
-  private lastMousePosition: {x: number; y: number} = {x: 0, y: 0};
-  private mouseMoveDebounceTimer: NodeJS.Timeout | null = null;
-  private readonly MOUSE_SETTLE_DELAY_MS = 50; // Sync position after mouse stops moving for 50ms
 
   // Throttling for wheel events
   private lastWheelTime: number = 0;
@@ -239,12 +229,6 @@ class MultiWindowSyncService {
       this.slaveWindowBounds.clear();
       this.extensionWindows.clear();
 
-      // Clear mouse move debounce timer
-      if (this.mouseMoveDebounceTimer) {
-        clearTimeout(this.mouseMoveDebounceTimer);
-        this.mouseMoveDebounceTimer = null;
-      }
-
       // Reset focus tracking
       this.isMouseInMaster = false;
       this.lastMouseCheckTime = 0;
@@ -301,8 +285,10 @@ class MultiWindowSyncService {
 
     logger.info('Setting up event listeners for @tkomde/iohook...');
 
+    // mousemove listener is used only for focus tracking (keyboard sync)
+    // Actual mouse position sync is done only before clicks/scrolls for performance
     uIOhook.on('mousemove', this.handleMouseMove.bind(this));
-    logger.debug('✓ mousemove listener registered');
+    logger.debug('✓ mousemove listener registered (focus tracking only, no sync)');
 
     uIOhook.on('mousedown', this.handleMouseDown.bind(this));
     logger.debug('✓ mousedown listener registered');
@@ -381,6 +367,8 @@ class MultiWindowSyncService {
 
   /**
    * Handle mouse move events
+   * Only tracks focus for keyboard sync - no position synchronization
+   * Position is synced before clicks/scrolls for performance
    */
   private handleMouseMove(event: MouseEventData): void {
     try {
@@ -390,6 +378,7 @@ class MultiWindowSyncService {
       const {x, y} = event;
 
       // Check if mouse is in master window and update focus tracking
+      // This is critical for keyboard synchronization
       const inMaster = this.isMouseInMasterWindow(x, y);
       if (inMaster) {
         this.isMouseInMaster = true;
@@ -401,66 +390,8 @@ class MultiWindowSyncService {
         }
       }
 
-      if (!this.syncOptions.enableMouseSync) return;
-      if (!inMaster) return;
-
-      // Clear previous debounce timer
-      if (this.mouseMoveDebounceTimer) {
-        clearTimeout(this.mouseMoveDebounceTimer);
-        this.mouseMoveDebounceTimer = null;
-      }
-
-      // Throttle by time and distance
-      const timeDiff = now - this.lastMouseMoveTime;
-      const distanceX = Math.abs(x - this.lastMousePosition.x);
-      const distanceY = Math.abs(y - this.lastMousePosition.y);
-      const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-
-      const shouldSync =
-        timeDiff >= (this.syncOptions.mouseMoveThrottleMs || 10) ||
-        distance >= (this.syncOptions.mouseMoveThresholdPx || 2);
-
-      if (shouldSync) {
-        this.lastMouseMoveTime = now;
-        this.lastMousePosition = {x, y};
-
-        // Calculate relative position
-        const ratio = this.calculateRelativePosition(x, y);
-        if (!ratio) return;
-
-        // Send to all slave windows
-        for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-          const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-          try {
-            this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
-          } catch (error) {
-            logger.error(`Failed to send mouse move event to slave ${slavePid}:`, error);
-          }
-        }
-      }
-
-      // Set debounce timer to sync position when mouse settles
-      // This ensures hover states are accurate even if throttling skipped some moves
-      this.mouseMoveDebounceTimer = setTimeout(() => {
-        try {
-          // Mouse has stopped moving - sync final position to ensure hover states
-          const ratio = this.calculateRelativePosition(x, y);
-          if (!ratio) return;
-
-          logger.debug(`Mouse settled at (${x}, ${y}) - syncing final position for hover states`);
-
-          for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-            const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-            try {
-              this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
-            } catch (error) {
-              logger.error(`Failed to send settled mouse position to slave ${slavePid}:`, error);
-            }
-          }
-        } catch (error) {
-          logger.error('Error in mouse settle sync:', error);
-        }
-      }, this.MOUSE_SETTLE_DELAY_MS);
+      // Note: Mouse position is NOT continuously synced for performance
+      // Position sync happens only before clicks/scrolls (see handleMouseDown, handleWheel)
     } catch (error) {
       logger.error('Error in handleMouseMove:', error);
     }
@@ -493,14 +424,23 @@ class MultiWindowSyncService {
       const ratio = this.calculateRelativePosition(x, y);
       if (!ratio) return;
 
-      // Send click events to all slave windows
-      // Note: Mouse position should already be accurate due to the settle debounce mechanism
-      // which syncs position when the mouse stops moving (50ms after last movement)
+      // Sync mouse position before click to ensure accurate targeting
+      // This is critical since we don't continuously sync mousemove for performance
       for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
         const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
         try {
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
-          logger.debug(`→ Sent ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
+          // First, sync position to ensure hover states and targeting accuracy
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+
+          // Small delay to allow hover effects to settle before clicking
+          setTimeout(() => {
+            try {
+              this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+              logger.debug(`→ Sent ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
+            } catch (error) {
+              logger.error(`Failed to send ${eventType} to slave ${slavePid}:`, error);
+            }
+          }, 10);
         } catch (error) {
           logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
         }

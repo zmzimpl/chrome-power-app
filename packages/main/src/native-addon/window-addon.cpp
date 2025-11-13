@@ -56,8 +56,7 @@ public:
             InstanceMethod("sendKeyboardEvent", &WindowManager::SendKeyboardEvent),
             InstanceMethod("sendWheelEvent", &WindowManager::SendWheelEvent),
             InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds),
-            InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS),
-            InstanceMethod("isPointInProcessWindow", &WindowManager::IsPointInProcessWindow)
+            InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();

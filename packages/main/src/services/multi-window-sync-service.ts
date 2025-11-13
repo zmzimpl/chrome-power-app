@@ -341,6 +341,33 @@ class MultiWindowSyncService {
   }
 
   /**
+   * Check if mouse is in master window or its extension/popup windows
+   * This is used for keyboard sync to allow typing in popup windows
+   */
+  private isMouseInMasterOrExtensionWindow(x: number, y: number): boolean {
+    // First check if mouse is in master window
+    if (this.isMouseInMasterWindow(x, y)) {
+      return true;
+    }
+
+    // Then check if mouse is in any extension window of the master process
+    if (this.masterWindowPid !== null) {
+      const masterExtensions = this.extensionWindows.get(this.masterWindowPid);
+      if (masterExtensions) {
+        for (const extWin of masterExtensions) {
+          const {x: wx, y: wy, width, height} = extWin.bounds;
+          if (x >= wx && x <= wx + width && y >= wy && y <= wy + height) {
+            logger.debug(`Mouse in master extension window: ${extWin.title || 'unknown'}`);
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Calculate relative position within master window
    */
   private calculateRelativePosition(x: number, y: number): {ratioX: number; ratioY: number} | null {
@@ -377,14 +404,14 @@ class MultiWindowSyncService {
       const now = Date.now();
       const {x, y} = event;
 
-      // Check if mouse is in master window and update focus tracking
-      // This is critical for keyboard synchronization
-      const inMaster = this.isMouseInMasterWindow(x, y);
-      if (inMaster) {
+      // Check if mouse is in master window or its extension/popup windows
+      // This is critical for keyboard synchronization to work in popup windows
+      const inMasterOrExtension = this.isMouseInMasterOrExtensionWindow(x, y);
+      if (inMasterOrExtension) {
         this.isMouseInMaster = true;
         this.lastMouseCheckTime = now;
       } else {
-        // Consider focus lost if mouse hasn't been in master for timeout period
+        // Consider focus lost if mouse hasn't been in master/extension for timeout period
         if (now - this.lastMouseCheckTime > this.MOUSE_FOCUS_TIMEOUT_MS) {
           this.isMouseInMaster = false;
         }

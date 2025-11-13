@@ -441,15 +441,18 @@ class MultiWindowSyncService {
       const {x, y, button} = event;
       if (!this.isMouseInMasterWindow(x, y)) return;
 
-      const ratio = this.calculateRelativePosition(x, y);
-      if (!ratio) return;
-
       const eventType = button === 1 ? 'mousedown' : button === 2 ? 'rightdown' : 'mousedown';
 
-      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+      // Use popup matching API for better menu/popup support
+      for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+          this.windowManager.sendMouseEventWithPopupMatching(
+            this.masterWindowPid,
+            slavePid,
+            x,
+            y,
+            eventType,
+          );
         } catch (error) {
           logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
         }
@@ -470,15 +473,18 @@ class MultiWindowSyncService {
       const {x, y, button} = event;
       if (!this.isMouseInMasterWindow(x, y)) return;
 
-      const ratio = this.calculateRelativePosition(x, y);
-      if (!ratio) return;
-
       const eventType = button === 1 ? 'mouseup' : button === 2 ? 'rightup' : 'mouseup';
 
-      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+      // Use popup matching API for better menu/popup support
+      for (const slavePid of this.slaveWindowPids) {
         try {
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+          this.windowManager.sendMouseEventWithPopupMatching(
+            this.masterWindowPid,
+            slavePid,
+            x,
+            y,
+            eventType,
+          );
         } catch (error) {
           logger.error(`Failed to send mouse up event to slave ${slavePid}:`, error);
         }

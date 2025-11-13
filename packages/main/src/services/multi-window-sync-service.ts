@@ -619,6 +619,45 @@ class MultiWindowSyncService {
   }
 
   /**
+   * Check if keyboard event should be ignored (not synchronized)
+   * Filters out common shortcuts that should only execute on master window
+   */
+  private shouldIgnoreKeyboardEvent(event: KeyboardEventData, nativeKeycode: number): boolean {
+    const {ctrlKey, altKey, shiftKey} = event;
+
+    // Filter Ctrl+C (Copy) - most important
+    if (ctrlKey && nativeKeycode === 67) {
+      logger.info('🚫 Ignoring Ctrl+C (Copy) - not syncing to slaves');
+      return true;
+    }
+
+    // Filter other common shortcuts
+    if (ctrlKey && !altKey && !shiftKey) {
+      const ignoredKeycodes: {[key: number]: string} = {
+        86: 'Ctrl+V (Paste)',
+        88: 'Ctrl+X (Cut)',
+        65: 'Ctrl+A (Select All)',
+        90: 'Ctrl+Z (Undo)',
+        89: 'Ctrl+Y (Redo)',
+        83: 'Ctrl+S (Save)',
+        70: 'Ctrl+F (Find)',
+        72: 'Ctrl+H (History)',
+        78: 'Ctrl+N (New)',
+        84: 'Ctrl+T (New Tab)',
+        87: 'Ctrl+W (Close Tab)',
+        82: 'Ctrl+R (Refresh)',
+      };
+
+      if (nativeKeycode in ignoredKeycodes) {
+        logger.info(`🚫 Ignoring ${ignoredKeycodes[nativeKeycode]} - not syncing to slaves`);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Handle key down events
    * Only synchronizes when mouse is in master window (indicating user focus)
    */
@@ -657,6 +696,11 @@ class MultiWindowSyncService {
       // Validate keycode
       if (nativeKeycode === undefined || nativeKeycode === null) {
         logger.warn('Invalid keycode/rawcode in handleKeyDown:', {keycode, rawcode});
+        return;
+      }
+
+      // Filter out common shortcuts that should not be synchronized
+      if (this.shouldIgnoreKeyboardEvent(event, nativeKeycode)) {
         return;
       }
 

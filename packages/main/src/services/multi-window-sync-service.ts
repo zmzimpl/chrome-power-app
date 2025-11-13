@@ -591,10 +591,19 @@ class MultiWindowSyncService {
 
       logger.info(`Sending wheel event: deltaY=${deltaY} (rotation=${rotation}, amount=${amount})`);
 
-      for (const slavePid of this.slaveWindowPids) {
+      // Calculate relative position in master window
+      const ratio = this.calculateRelativePosition(x, y);
+      if (!ratio) {
+        logger.warn('Failed to calculate relative position for wheel event');
+        return;
+      }
+
+      // Send to each slave window with calculated screen coordinates
+      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
         try {
-          this.windowManager.sendWheelEvent(slavePid, 0, deltaY);
-          logger.info(`✓ Wheel event sent to slave ${slavePid}`);
+          this.windowManager.sendWheelEvent(slavePid, 0, deltaY, slavePos.x, slavePos.y);
+          logger.info(`✓ Wheel event sent to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
         } catch (error) {
           logger.error(`Failed to send wheel event to slave ${slavePid}:`, error);
         }

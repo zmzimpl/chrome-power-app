@@ -982,12 +982,30 @@ private:
         Napi::Env env = info.Env();
 
         if (info.Length() < 3) {
-            Napi::TypeError::New(env, "Wrong number of arguments: pid, deltaX, deltaY");
+            Napi::TypeError::New(env, "Wrong number of arguments: pid, deltaX, deltaY, [x, y]");
         }
 
         int pid = info[0].As<Napi::Number>().Int32Value();
         int deltaX = info[1].As<Napi::Number>().Int32Value();
         int deltaY = info[2].As<Napi::Number>().Int32Value();
+
+        // Optional x, y coordinates (screen coordinates)
+        // If not provided, use current cursor position
+        int cursorX, cursorY;
+        if (info.Length() >= 5) {
+            cursorX = info[3].As<Napi::Number>().Int32Value();
+            cursorY = info[4].As<Napi::Number>().Int32Value();
+        } else {
+#ifdef _WIN32
+            POINT cursorPos;
+            GetCursorPos(&cursorPos);
+            cursorX = cursorPos.x;
+            cursorY = cursorPos.y;
+#else
+            cursorX = 0;
+            cursorY = 0;
+#endif
+        }
 
 #ifdef _WIN32
         auto windows = FindWindowsByPid(pid);
@@ -1010,13 +1028,9 @@ private:
         // Send wheel event
         // Note: deltaY is already multiplied by WHEEL_DELTA (120) in TypeScript
 
-        // Get current cursor position (screen coordinates required for WM_MOUSEWHEEL)
-        POINT cursorPos;
-        GetCursorPos(&cursorPos);
-
         // WM_MOUSEWHEEL: wParam = key state | delta, lParam = screen coords
         WPARAM wParam = MAKEWPARAM(0, deltaY);
-        LPARAM lParam = MAKELPARAM(cursorPos.x, cursorPos.y);
+        LPARAM lParam = MAKELPARAM(cursorX, cursorY);
 
         // Use SendMessage instead of PostMessage for better reliability
         SendMessage(mainWindow->hwnd, WM_MOUSEWHEEL, wParam, lParam);

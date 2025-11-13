@@ -132,6 +132,8 @@ class MultiWindowSyncService {
   // Throttling for mouse move events
   private lastMouseMoveTime: number = 0;
   private lastMousePosition: {x: number; y: number} = {x: 0, y: 0};
+  private mouseMoveDebounceTimer: NodeJS.Timeout | null = null;
+  private readonly MOUSE_SETTLE_DELAY_MS = 50; // Sync position after mouse stops moving for 50ms
 
   // Throttling for wheel events
   private lastWheelTime: number = 0;
@@ -236,6 +238,12 @@ class MultiWindowSyncService {
       this.masterWindowBounds = null;
       this.slaveWindowBounds.clear();
       this.extensionWindows.clear();
+
+      // Clear mouse move debounce timer
+      if (this.mouseMoveDebounceTimer) {
+        clearTimeout(this.mouseMoveDebounceTimer);
+        this.mouseMoveDebounceTimer = null;
+      }
 
       // Reset focus tracking
       this.isMouseInMaster = false;
@@ -396,35 +404,63 @@ class MultiWindowSyncService {
       if (!this.syncOptions.enableMouseSync) return;
       if (!inMaster) return;
 
+      // Clear previous debounce timer
+      if (this.mouseMoveDebounceTimer) {
+        clearTimeout(this.mouseMoveDebounceTimer);
+        this.mouseMoveDebounceTimer = null;
+      }
+
       // Throttle by time and distance
       const timeDiff = now - this.lastMouseMoveTime;
       const distanceX = Math.abs(x - this.lastMousePosition.x);
       const distanceY = Math.abs(y - this.lastMousePosition.y);
       const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
 
-      if (
-        timeDiff < (this.syncOptions.mouseMoveThrottleMs || 10) &&
-        distance < (this.syncOptions.mouseMoveThresholdPx || 2)
-      ) {
-        return;
-      }
+      const shouldSync =
+        timeDiff >= (this.syncOptions.mouseMoveThrottleMs || 10) ||
+        distance >= (this.syncOptions.mouseMoveThresholdPx || 2);
 
-      this.lastMouseMoveTime = now;
-      this.lastMousePosition = {x, y};
+      if (shouldSync) {
+        this.lastMouseMoveTime = now;
+        this.lastMousePosition = {x, y};
 
-      // Calculate relative position
-      const ratio = this.calculateRelativePosition(x, y);
-      if (!ratio) return;
+        // Calculate relative position
+        const ratio = this.calculateRelativePosition(x, y);
+        if (!ratio) return;
 
-      // Send to all slave windows
-      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-        try {
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
-        } catch (error) {
-          logger.error(`Failed to send mouse move event to slave ${slavePid}:`, error);
+        // Send to all slave windows
+        for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+          const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+          try {
+            this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+          } catch (error) {
+            logger.error(`Failed to send mouse move event to slave ${slavePid}:`, error);
+          }
         }
       }
+
+      // Set debounce timer to sync position when mouse settles
+      // This ensures hover states are accurate even if throttling skipped some moves
+      this.mouseMoveDebounceTimer = setTimeout(() => {
+        try {
+          // Mouse has stopped moving - sync final position to ensure hover states
+          const ratio = this.calculateRelativePosition(x, y);
+          if (!ratio) return;
+
+          logger.debug(`Mouse settled at (${x}, ${y}) - syncing final position for hover states`);
+
+          for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+            const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+            try {
+              this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+            } catch (error) {
+              logger.error(`Failed to send settled mouse position to slave ${slavePid}:`, error);
+            }
+          }
+        } catch (error) {
+          logger.error('Error in mouse settle sync:', error);
+        }
+      }, this.MOUSE_SETTLE_DELAY_MS);
     } catch (error) {
       logger.error('Error in handleMouseMove:', error);
     }
@@ -457,26 +493,14 @@ class MultiWindowSyncService {
       const ratio = this.calculateRelativePosition(x, y);
       if (!ratio) return;
 
-      // IMPORTANT: Before sending click event, ensure mouse position is synced
-      // This is critical for UI elements with hover states (e.g., Chrome's "+" tab button)
-      // The slave window needs accurate mouse position to trigger hover effects
+      // Send click events to all slave windows
+      // Note: Mouse position should already be accurate due to the settle debounce mechanism
+      // which syncs position when the mouse stops moving (50ms after last movement)
       for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
         const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
         try {
-          // First, sync mouse position to ensure hover states are correct
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
-
-          // Small delay to allow hover states to update
-          // This ensures UI elements like buttons are in the correct state before clicking
-          setTimeout(() => {
-            try {
-              // Then send the actual click event
-              this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
-              logger.debug(`→ Sent ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
-            } catch (error) {
-              logger.error(`Failed to send ${eventType} to slave ${slavePid}:`, error);
-            }
-          }, 5);
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+          logger.debug(`→ Sent ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
         } catch (error) {
           logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
         }

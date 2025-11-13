@@ -52,6 +52,7 @@ public:
         Napi::Function func = DefineClass(env, "WindowManager", {
             InstanceMethod("arrangeWindows", &WindowManager::ArrangeWindows),
             InstanceMethod("sendMouseEvent", &WindowManager::SendMouseEvent),
+            InstanceMethod("sendMouseEventWithPopupMatching", &WindowManager::SendMouseEventWithPopupMatching),
             InstanceMethod("sendKeyboardEvent", &WindowManager::SendKeyboardEvent),
             InstanceMethod("sendWheelEvent", &WindowManager::SendWheelEvent),
             InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds),
@@ -147,6 +148,76 @@ private:
             }
         }
         return windows;
+    }
+
+    // Find popup windows (like context menus) belonging to a process
+    std::vector<HWND> FindPopupWindows(DWORD processId) {
+        std::vector<HWND> popups;
+        HWND hwnd = nullptr;
+
+        while ((hwnd = FindWindowEx(nullptr, hwnd, nullptr, nullptr)) != nullptr) {
+            DWORD pid = 0;
+            GetWindowThreadProcessId(hwnd, &pid);
+
+            if (pid == processId && IsWindowVisible(hwnd)) {
+                LONG style = GetWindowLong(hwnd, GWL_STYLE);
+
+                // Check if it's a popup window (WS_POPUP)
+                if (style & WS_POPUP) {
+                    char className[256] = {0};
+                    GetClassNameA(hwnd, className, sizeof(className));
+
+                    // Common popup window classes: #32768 (menu), Chrome_WidgetWin_1, etc.
+                    if (strcmp(className, "#32768") == 0 ||
+                        strstr(className, "Chrome_WidgetWin") != nullptr) {
+                        popups.push_back(hwnd);
+                    }
+                }
+            }
+        }
+        return popups;
+    }
+
+    // Find best matching popup window based on relative position
+    HWND FindMatchingPopup(HWND masterMainWindow, HWND masterPopup,
+                          HWND slaveMainWindow, const std::vector<HWND>& slavePopups) {
+        if (slavePopups.empty()) {
+            return nullptr;
+        }
+
+        // Get master popup position relative to master main window
+        RECT masterMainRect, masterPopupRect;
+        GetWindowRect(masterMainWindow, &masterMainRect);
+        GetWindowRect(masterPopup, &masterPopupRect);
+
+        int masterRelX = masterPopupRect.left - masterMainRect.left;
+        int masterRelY = masterPopupRect.top - masterMainRect.top;
+
+        // Get slave main window position
+        RECT slaveMainRect;
+        GetWindowRect(slaveMainWindow, &slaveMainRect);
+
+        // Find slave popup with closest relative position
+        HWND bestMatch = nullptr;
+        int minDistance = INT_MAX;
+
+        for (HWND slavePopup : slavePopups) {
+            RECT slavePopupRect;
+            GetWindowRect(slavePopup, &slavePopupRect);
+
+            int slaveRelX = slavePopupRect.left - slaveMainRect.left;
+            int slaveRelY = slavePopupRect.top - slaveMainRect.top;
+
+            // Calculate Manhattan distance
+            int distance = abs(masterRelX - slaveRelX) + abs(masterRelY - slaveRelY);
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestMatch = slavePopup;
+            }
+        }
+
+        return bestMatch;
     }
     #elif __APPLE__
     bool CheckAccessibilityPermission() {
@@ -742,19 +813,23 @@ private:
             return Napi::Boolean::New(env, false);
         }
 
-        // Try to find popup menu window at the click position
-        // Context menus are typically class "#32768"
+        // Find popup windows for this process
+        std::vector<HWND> popupWindows = FindPopupWindows(pid);
+
+        // Check if click position is on a popup window
         HWND targetWindow = mainWindow->hwnd;
-        HWND menuWindow = WindowFromPoint(POINT{x, y});
+        HWND clickedPopup = nullptr;
 
-        if (menuWindow && menuWindow != mainWindow->hwnd) {
-            // Check if it's a menu window
-            char className[256] = {0};
-            GetClassNameA(menuWindow, className, sizeof(className));
+        // Check each popup window to see if the click is within its bounds
+        for (HWND popup : popupWindows) {
+            RECT popupRect;
+            GetWindowRect(popup, &popupRect);
 
-            // "#32768" is the standard menu class
-            if (strcmp(className, "#32768") == 0) {
-                targetWindow = menuWindow;
+            if (x >= popupRect.left && x <= popupRect.right &&
+                y >= popupRect.top && y <= popupRect.bottom) {
+                clickedPopup = popup;
+                targetWindow = popup;
+                break;
             }
         }
 
@@ -765,7 +840,7 @@ private:
         int clientY = y - rect.top;
         LPARAM lParam = MAKELPARAM(clientX, clientY);
 
-        // Send event to target window (either main window or menu)
+        // Send event to target window (either main window or popup)
         if (eventType == "mousemove") {
             PostMessage(targetWindow, WM_MOUSEMOVE, 0, lParam);
         } else if (eventType == "mousedown") {
@@ -928,6 +1003,139 @@ private:
             CGEventPost(kCGHIDEventTap, event);
             CFRelease(event);
         }
+#endif
+
+        return Napi::Boolean::New(env, true);
+    }
+
+    // Send mouse event with popup window matching
+    // This finds and matches popup windows between master and slave processes
+    Napi::Value SendMouseEventWithPopupMatching(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 5) {
+            throw Napi::TypeError::New(env, "Wrong number of arguments: masterPid, slavePid, x, y, eventType");
+        }
+
+        int masterPid = info[0].As<Napi::Number>().Int32Value();
+        int slavePid = info[1].As<Napi::Number>().Int32Value();
+        int x = info[2].As<Napi::Number>().Int32Value();
+        int y = info[3].As<Napi::Number>().Int32Value();
+        std::string eventType = info[4].As<Napi::String>().Utf8Value();
+
+#ifdef _WIN32
+        // Find main windows
+        auto masterWindows = FindWindowsByPid(masterPid);
+        auto slaveWindows = FindWindowsByPid(slavePid);
+
+        if (masterWindows.empty() || slaveWindows.empty()) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        WindowInfo* masterMainWindow = nullptr;
+        WindowInfo* slaveMainWindow = nullptr;
+
+        for (auto& win : masterWindows) {
+            if (!win.isExtension) {
+                masterMainWindow = &win;
+                break;
+            }
+        }
+
+        for (auto& win : slaveWindows) {
+            if (!win.isExtension) {
+                slaveMainWindow = &win;
+                break;
+            }
+        }
+
+        if (!masterMainWindow || !slaveMainWindow) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        // Find popup windows
+        std::vector<HWND> masterPopups = FindPopupWindows(masterPid);
+        std::vector<HWND> slavePopups = FindPopupWindows(slavePid);
+
+        // Check if click is on a master popup window
+        HWND masterClickedPopup = nullptr;
+        for (HWND popup : masterPopups) {
+            RECT popupRect;
+            GetWindowRect(popup, &popupRect);
+
+            if (x >= popupRect.left && x <= popupRect.right &&
+                y >= popupRect.top && y <= popupRect.bottom) {
+                masterClickedPopup = popup;
+                break;
+            }
+        }
+
+        HWND targetWindow = slaveMainWindow->hwnd;
+        int targetX = x;
+        int targetY = y;
+
+        // If clicked on a popup, find matching slave popup
+        if (masterClickedPopup) {
+            HWND matchingSlavePopup = FindMatchingPopup(
+                masterMainWindow->hwnd, masterClickedPopup,
+                slaveMainWindow->hwnd, slavePopups);
+
+            if (matchingSlavePopup) {
+                targetWindow = matchingSlavePopup;
+
+                // Calculate coordinates relative to the popup window
+                RECT masterPopupRect, slavePopupRect;
+                GetWindowRect(masterClickedPopup, &masterPopupRect);
+                GetWindowRect(matchingSlavePopup, &slavePopupRect);
+
+                // Convert master coordinates to relative position within popup
+                int relX = x - masterPopupRect.left;
+                int relY = y - masterPopupRect.top;
+
+                // Apply to slave popup
+                targetX = slavePopupRect.left + relX;
+                targetY = slavePopupRect.top + relY;
+            }
+        } else {
+            // No popup clicked, calculate position for slave main window
+            RECT masterMainRect, slaveMainRect;
+            GetWindowRect(masterMainWindow->hwnd, &masterMainRect);
+            GetWindowRect(slaveMainWindow->hwnd, &slaveMainRect);
+
+            // Calculate relative position in master window
+            double relX = (double)(x - masterMainRect.left) / (masterMainRect.right - masterMainRect.left);
+            double relY = (double)(y - masterMainRect.top) / (masterMainRect.bottom - masterMainRect.top);
+
+            // Apply to slave window
+            targetX = slaveMainRect.left + (int)(relX * (slaveMainRect.right - slaveMainRect.left));
+            targetY = slaveMainRect.top + (int)(relY * (slaveMainRect.bottom - slaveMainRect.top));
+        }
+
+        // Calculate client coordinates relative to target window
+        RECT targetRect;
+        GetWindowRect(targetWindow, &targetRect);
+        int clientX = targetX - targetRect.left;
+        int clientY = targetY - targetRect.top;
+        LPARAM lParam = MAKELPARAM(clientX, clientY);
+
+        // Send event
+        if (eventType == "mousemove") {
+            PostMessage(targetWindow, WM_MOUSEMOVE, 0, lParam);
+        } else if (eventType == "mousedown") {
+            PostMessage(targetWindow, WM_LBUTTONDOWN, MK_LBUTTON, lParam);
+        } else if (eventType == "mouseup") {
+            PostMessage(targetWindow, WM_LBUTTONUP, 0, lParam);
+        } else if (eventType == "rightdown") {
+            PostMessage(targetWindow, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
+        } else if (eventType == "rightup") {
+            PostMessage(targetWindow, WM_RBUTTONUP, 0, lParam);
+        } else {
+            return Napi::Boolean::New(env, false);
+        }
+
+#elif __APPLE__
+        // TODO: Implement for macOS
+        return Napi::Boolean::New(env, false);
 #endif
 
         return Napi::Boolean::New(env, true);

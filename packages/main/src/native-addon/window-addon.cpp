@@ -56,7 +56,8 @@ public:
             InstanceMethod("sendKeyboardEvent", &WindowManager::SendKeyboardEvent),
             InstanceMethod("sendWheelEvent", &WindowManager::SendWheelEvent),
             InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds),
-            InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS)
+            InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS),
+            InstanceMethod("isPointInProcessWindow", &WindowManager::IsPointInProcessWindow)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -1057,6 +1058,12 @@ private:
         std::vector<HWND> masterPopups = FindPopupWindows(masterPid);
         std::vector<HWND> slavePopups = FindPopupWindows(slavePid);
 
+        // Debug: Log popup window counts
+        char debugMsg[256];
+        sprintf_s(debugMsg, "[C++] Found %zu master popups, %zu slave popups for event '%s'",
+                 masterPopups.size(), slavePopups.size(), eventType.c_str());
+        OutputDebugStringA(debugMsg);
+
         // Check if click is on a master popup window
         HWND masterClickedPopup = nullptr;
         for (HWND popup : masterPopups) {
@@ -1066,6 +1073,8 @@ private:
             if (x >= popupRect.left && x <= popupRect.right &&
                 y >= popupRect.top && y <= popupRect.bottom) {
                 masterClickedPopup = popup;
+                sprintf_s(debugMsg, "[C++] Click on master popup at (%d, %d)", x, y);
+                OutputDebugStringA(debugMsg);
                 break;
             }
         }

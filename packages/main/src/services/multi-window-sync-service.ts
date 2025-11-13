@@ -443,9 +443,12 @@ class MultiWindowSyncService {
 
       const eventType = button === 1 ? 'mousedown' : button === 2 ? 'rightdown' : 'mousedown';
 
+      logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
+
       // Use popup matching API for better menu/popup support
       for (const slavePid of this.slaveWindowPids) {
         try {
+          logger.debug(`→ Sending ${eventType} from master ${this.masterWindowPid} to slave ${slavePid}`);
           this.windowManager.sendMouseEventWithPopupMatching(
             this.masterWindowPid,
             slavePid,
@@ -475,9 +478,12 @@ class MultiWindowSyncService {
 
       const eventType = button === 1 ? 'mouseup' : button === 2 ? 'rightup' : 'mouseup';
 
+      logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
+
       // Use popup matching API for better menu/popup support
       for (const slavePid of this.slaveWindowPids) {
         try {
+          logger.debug(`→ Sending ${eventType} from master ${this.masterWindowPid} to slave ${slavePid}`);
           this.windowManager.sendMouseEventWithPopupMatching(
             this.masterWindowPid,
             slavePid,

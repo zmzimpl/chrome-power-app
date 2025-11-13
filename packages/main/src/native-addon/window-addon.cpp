@@ -1196,8 +1196,13 @@ private:
 
         // For right-click events, we need to move the cursor to ensure Chrome's GetCursorPos()
         // returns the correct position for context menu display
-        // Strategy: Move cursor -> Send message -> Restore immediately
-        // This is done for each slave window separately to ensure each gets correct menu position
+        // Strategy: For each window independently:
+        // - Move cursor to target position
+        // - Wait for system to recognize position
+        // - Send message synchronously (SendMessage)
+        // - Wait for Chrome to process and call GetCursorPos()
+        // - Restore cursor to original position
+        // This is called separately for each slave window
         bool isRightClick = (eventType == "rightdown" || eventType == "rightup");
 
         POINT originalCursorPos;
@@ -1208,16 +1213,16 @@ private:
             // Move cursor to target position (screen coordinates)
             SetCursorPos(targetX, targetY);
 
-            // Small delay to ensure system recognizes the cursor position
+            // Longer delay to ensure system and Chrome recognize the cursor position
             // Chrome calls GetCursorPos() when handling right-click events
-            Sleep(3);
+            Sleep(15);
 
             sprintf_s(debugMsg, "[C++] Moved cursor from (%ld, %ld) to (%d, %d) for %s",
                      originalCursorPos.x, originalCursorPos.y, targetX, targetY, eventType.c_str());
             OutputDebugStringA(debugMsg);
         }
 
-        // Send event
+        // Send event - use SendMessage (synchronous) for right-click to ensure processing
         if (eventType == "mousemove") {
             PostMessage(targetWindow, WM_MOUSEMOVE, 0, lParam);
         } else if (eventType == "mousedown") {
@@ -1225,24 +1230,28 @@ private:
         } else if (eventType == "mouseup") {
             PostMessage(targetWindow, WM_LBUTTONUP, 0, lParam);
         } else if (eventType == "rightdown") {
-            PostMessage(targetWindow, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
+            // Use SendMessage (sync) to ensure message is processed before continuing
+            SendMessage(targetWindow, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
 
-            // Restore cursor after rightdown
-            Sleep(2);
+            // Wait a bit before restoring to ensure Chrome has time to process
+            Sleep(10);
             SetCursorPos(originalCursorPos.x, originalCursorPos.y);
 
-            sprintf_s(debugMsg, "[C++] Restored cursor to (%ld, %ld) after rightdown",
+            sprintf_s(debugMsg, "[C++] Sent WM_RBUTTONDOWN, restored cursor to (%ld, %ld)",
                      originalCursorPos.x, originalCursorPos.y);
             OutputDebugStringA(debugMsg);
         } else if (eventType == "rightup") {
-            PostMessage(targetWindow, WM_RBUTTONUP, 0, lParam);
+            // Use SendMessage (sync) to ensure message is processed
+            SendMessage(targetWindow, WM_RBUTTONUP, 0, lParam);
 
-            // Restore cursor after rightup with slightly longer delay
-            // This allows the context menu to be triggered before cursor returns
-            Sleep(5);
+            // Wait longer for context menu to be triggered before restoring cursor
+            // Chrome needs time to process the right-click and call GetCursorPos()
+            // The menu appears during rightup processing
+            Sleep(50);
+
             SetCursorPos(originalCursorPos.x, originalCursorPos.y);
 
-            sprintf_s(debugMsg, "[C++] Restored cursor to (%ld, %ld) after rightup",
+            sprintf_s(debugMsg, "[C++] Restored cursor to (%ld, %ld) after rightup + 50ms delay",
                      originalCursorPos.x, originalCursorPos.y);
             OutputDebugStringA(debugMsg);
         } else {

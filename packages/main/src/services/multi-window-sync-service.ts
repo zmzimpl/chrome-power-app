@@ -453,17 +453,16 @@ class MultiWindowSyncService {
 
       logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 
-      // Use popup matching API for better extension popup support
-      for (const slavePid of this.slaveWindowPids) {
+      // Calculate relative position in master window
+      const ratio = this.calculateRelativePosition(x, y);
+      if (!ratio) return;
+
+      // Send to each slave window with calculated screen coordinates
+      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
         try {
-          logger.debug(`→ Sending ${eventType} from master ${this.masterWindowPid} to slave ${slavePid}`);
-          this.windowManager.sendMouseEventWithPopupMatching(
-            this.masterWindowPid,
-            slavePid,
-            x,
-            y,
-            eventType,
-          );
+          logger.debug(`→ Sending ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
         } catch (error) {
           logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
         }
@@ -496,17 +495,16 @@ class MultiWindowSyncService {
 
       logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 
-      // Use popup matching API for better extension popup support
-      for (const slavePid of this.slaveWindowPids) {
+      // Calculate relative position in master window
+      const ratio = this.calculateRelativePosition(x, y);
+      if (!ratio) return;
+
+      // Send to each slave window with calculated screen coordinates
+      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
         try {
-          logger.debug(`→ Sending ${eventType} from master ${this.masterWindowPid} to slave ${slavePid}`);
-          this.windowManager.sendMouseEventWithPopupMatching(
-            this.masterWindowPid,
-            slavePid,
-            x,
-            y,
-            eventType,
-          );
+          logger.debug(`→ Sending ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
+          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
         } catch (error) {
           logger.error(`Failed to send mouse up event to slave ${slavePid}:`, error);
         }

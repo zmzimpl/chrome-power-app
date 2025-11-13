@@ -441,11 +441,18 @@ class MultiWindowSyncService {
       const {x, y, button} = event;
       if (!this.isMouseInMasterWindow(x, y)) return;
 
-      const eventType = button === 1 ? 'mousedown' : button === 2 ? 'rightdown' : 'mousedown';
+      // Skip right-click events (button 2)
+      // Right-click menus are too complex to sync reliably
+      if (button === 2) {
+        logger.debug(`Skipping right-click at (${x}, ${y}) - not syncing context menus`);
+        return;
+      }
+
+      const eventType = 'mousedown';
 
       logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 
-      // Use popup matching API for better menu/popup support
+      // Use popup matching API for better extension popup support
       for (const slavePid of this.slaveWindowPids) {
         try {
           logger.debug(`→ Sending ${eventType} from master ${this.masterWindowPid} to slave ${slavePid}`);
@@ -476,11 +483,18 @@ class MultiWindowSyncService {
       const {x, y, button} = event;
       if (!this.isMouseInMasterWindow(x, y)) return;
 
-      const eventType = button === 1 ? 'mouseup' : button === 2 ? 'rightup' : 'mouseup';
+      // Skip right-click events (button 2)
+      // Right-click menus are too complex to sync reliably
+      if (button === 2) {
+        logger.debug(`Skipping right-click release at (${x}, ${y}) - not syncing context menus`);
+        return;
+      }
+
+      const eventType = 'mouseup';
 
       logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 
-      // Use popup matching API for better menu/popup support
+      // Use popup matching API for better extension popup support
       for (const slavePid of this.slaveWindowPids) {
         try {
           logger.debug(`→ Sending ${eventType} from master ${this.masterWindowPid} to slave ${slavePid}`);

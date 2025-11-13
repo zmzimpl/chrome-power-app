@@ -1171,21 +1171,8 @@ private:
         int clientY = targetY - targetRect.top;
         LPARAM lParam = MAKELPARAM(clientX, clientY);
 
-        // For right-click events, we need to move the cursor to the target position
-        // because Chrome uses GetCursorPos() to determine menu position
-        bool needsCursorMove = (eventType == "rightdown" || eventType == "rightup");
-        POINT originalCursorPos;
-
-        if (needsCursorMove) {
-            // Save original cursor position
-            GetCursorPos(&originalCursorPos);
-            // Move cursor to target position
-            SetCursorPos(targetX, targetY);
-            // Small delay to ensure cursor position is updated
-            Sleep(1);
-        }
-
-        // Send event
+        // Send event - use simple PostMessage for all events
+        // No cursor movement to avoid disrupting user experience
         if (eventType == "mousemove") {
             PostMessage(targetWindow, WM_MOUSEMOVE, 0, lParam);
         } else if (eventType == "mousedown") {
@@ -1196,16 +1183,9 @@ private:
             PostMessage(targetWindow, WM_RBUTTONDOWN, MK_RBUTTON, lParam);
         } else if (eventType == "rightup") {
             PostMessage(targetWindow, WM_RBUTTONUP, 0, lParam);
-            // For rightup, restore cursor immediately after
-            Sleep(1);
-            SetCursorPos(originalCursorPos.x, originalCursorPos.y);
         } else {
             return Napi::Boolean::New(env, false);
         }
-
-        // For rightdown, we keep the cursor at the new position
-        // so the menu appears at the correct location
-        // The cursor will be restored after rightup
 
 #elif __APPLE__
         // TODO: Implement for macOS

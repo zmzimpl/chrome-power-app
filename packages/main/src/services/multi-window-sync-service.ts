@@ -18,8 +18,12 @@ interface WindowBounds {
 }
 
 interface ExtensionWindow {
-  pid: number;
-  bounds: WindowBounds;
+  bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   title?: string;
 }
 
@@ -903,11 +907,79 @@ class MultiWindowSyncService {
    * distinguishes between main windows and extension windows
    */
   private detectExtensionWindows(): void {
-    // Note: The native addon's FindWindowsByPid or GetWindowsForPid
-    // already identifies extension windows (isExtension flag)
-    // For now, we rely on the native addon's existing window management
-    // In the future, we could enhance this to track extension windows separately
-    // and sync their positions/actions as well
+    try {
+      if (!this.windowManager) {
+        logger.warn('Window manager not initialized in detectExtensionWindows');
+        return;
+      }
+
+      // Clear existing extension windows
+      this.extensionWindows.clear();
+
+      // Detect extension windows for master
+      if (this.masterWindowPid !== null) {
+        try {
+          const windows = this.windowManager.getAllWindows(this.masterWindowPid);
+          const extensionWins: ExtensionWindow[] = [];
+
+          for (const win of windows) {
+            if (win.isExtension) {
+              extensionWins.push({
+                title: win.title || '',
+                bounds: {
+                  x: win.x,
+                  y: win.y,
+                  width: win.width,
+                  height: win.height,
+                },
+              });
+            }
+          }
+
+          if (extensionWins.length > 0) {
+            this.extensionWindows.set(this.masterWindowPid, extensionWins);
+            logger.debug(`Detected ${extensionWins.length} extension windows for master PID ${this.masterWindowPid}`, {
+              titles: extensionWins.map(w => w.title),
+            });
+          }
+        } catch (error) {
+          logger.error(`Failed to detect extension windows for master PID ${this.masterWindowPid}:`, error);
+        }
+      }
+
+      // Detect extension windows for slaves
+      for (const slavePid of this.slaveWindowPids) {
+        try {
+          const windows = this.windowManager.getAllWindows(slavePid);
+          const extensionWins: ExtensionWindow[] = [];
+
+          for (const win of windows) {
+            if (win.isExtension) {
+              extensionWins.push({
+                title: win.title || '',
+                bounds: {
+                  x: win.x,
+                  y: win.y,
+                  width: win.width,
+                  height: win.height,
+                },
+              });
+            }
+          }
+
+          if (extensionWins.length > 0) {
+            this.extensionWindows.set(slavePid, extensionWins);
+            logger.debug(`Detected ${extensionWins.length} extension windows for slave PID ${slavePid}`, {
+              titles: extensionWins.map(w => w.title),
+            });
+          }
+        } catch (error) {
+          logger.error(`Failed to detect extension windows for slave PID ${slavePid}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('Error in detectExtensionWindows:', error);
+    }
   }
 
   /**

@@ -81,6 +81,7 @@ public:
             InstanceMethod("sendKeyboardEvent", &WindowManager::SendKeyboardEvent),
             InstanceMethod("sendWheelEvent", &WindowManager::SendWheelEvent),
             InstanceMethod("getWindowBounds", &WindowManager::GetWindowBounds),
+            InstanceMethod("getAllWindows", &WindowManager::GetAllWindows),
             InstanceMethod("getMonitors", &WindowManager::GetMonitorsJS),
             InstanceMethod("isProcessWindowActive", &WindowManager::IsProcessWindowActive)
         });
@@ -802,6 +803,85 @@ private:
         if (!result.Has("success")) {
             result.Set("success", Napi::Boolean::New(env, false));
         }
+
+        return result;
+    }
+
+    // Get all windows for a process (including extension/popup windows)
+    Napi::Value GetAllWindows(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 1) {
+            Napi::TypeError::New(env, "Wrong number of arguments: expected pid");
+        }
+
+        int pid = info[0].As<Napi::Number>().Int32Value();
+        Napi::Array result = Napi::Array::New(env);
+
+#ifdef _WIN32
+        auto windows = FindWindowsByPid(pid);
+        uint32_t index = 0;
+
+        for (auto& win : windows) {
+            RECT rect;
+            if (GetWindowRect(win.hwnd, &rect)) {
+                Napi::Object windowObj = Napi::Object::New(env);
+
+                // Get window title
+                char title[256] = {0};
+                GetWindowTextA(win.hwnd, title, sizeof(title));
+
+                windowObj.Set("x", Napi::Number::New(env, rect.left));
+                windowObj.Set("y", Napi::Number::New(env, rect.top));
+                windowObj.Set("width", Napi::Number::New(env, rect.right - rect.left));
+                windowObj.Set("height", Napi::Number::New(env, rect.bottom - rect.top));
+                windowObj.Set("isExtension", Napi::Boolean::New(env, win.isExtension));
+                windowObj.Set("title", Napi::String::New(env, title));
+
+                result[index++] = windowObj;
+            }
+        }
+#elif __APPLE__
+        auto windows = GetWindowsForPid(pid);
+        uint32_t index = 0;
+
+        for (auto& win : windows) {
+            CGPoint position;
+            CGSize size;
+            AXValueRef posRef, sizeRef;
+
+            if (AXUIElementCopyAttributeValue(win.window, kAXPositionAttribute, (CFTypeRef*)&posRef) == kAXErrorSuccess) {
+                AXValueGetValue(posRef, (AXValueType)kAXValueCGPointType, &position);
+                CFRelease(posRef);
+
+                if (AXUIElementCopyAttributeValue(win.window, kAXSizeAttribute, (CFTypeRef*)&sizeRef) == kAXErrorSuccess) {
+                    AXValueGetValue(sizeRef, (AXValueType)kAXValueCGSizeType, &size);
+                    CFRelease(sizeRef);
+
+                    Napi::Object windowObj = Napi::Object::New(env);
+
+                    // Get window title
+                    CFStringRef titleRef;
+                    char title[256] = {0};
+                    if (AXUIElementCopyAttributeValue(win.window, kAXTitleAttribute, (CFTypeRef*)&titleRef) == kAXErrorSuccess) {
+                        CFStringGetCString(titleRef, title, sizeof(title), kCFStringEncodingUTF8);
+                        CFRelease(titleRef);
+                    }
+
+                    windowObj.Set("x", Napi::Number::New(env, position.x));
+                    windowObj.Set("y", Napi::Number::New(env, position.y));
+                    windowObj.Set("width", Napi::Number::New(env, size.width));
+                    windowObj.Set("height", Napi::Number::New(env, size.height));
+                    windowObj.Set("isExtension", Napi::Boolean::New(env, win.isExtension));
+                    windowObj.Set("title", Napi::String::New(env, title));
+
+                    result[index++] = windowObj;
+                }
+            }
+
+            CFRelease(win.window);
+        }
+#endif
 
         return result;
     }

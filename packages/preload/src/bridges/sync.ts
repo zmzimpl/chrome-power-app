@@ -54,4 +54,23 @@ export const SyncBridge = {
   getSyncStatus: () => {
     return ipcRenderer.invoke('multi-window-sync-status');
   },
+
+  // Listen to global shortcuts from main process
+  onShortcutStart: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('sync-shortcut-start', listener);
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener('sync-shortcut-start', listener);
+    };
+  },
+
+  onShortcutStop: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('sync-shortcut-stop', listener);
+    // Return cleanup function
+    return () => {
+      ipcRenderer.removeListener('sync-shortcut-stop', listener);
+    };
+  },
 };

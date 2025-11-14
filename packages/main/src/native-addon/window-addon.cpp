@@ -917,23 +917,36 @@ private:
             return Napi::Boolean::New(env, false);
         }
 
-        // Find popup windows for this process
-        std::vector<HWND> popupWindows = FindPopupWindows(pid);
-
-        // Check if click position is on a popup window
+        // Check if click position is on an extension window first
+        // Extension windows are independent windows (e.g., OKX Wallet popup)
         HWND targetWindow = mainWindow->hwnd;
-        HWND clickedPopup = nullptr;
 
-        // Check each popup window to see if the click is within its bounds
-        for (HWND popup : popupWindows) {
-            RECT popupRect;
-            GetWindowRect(popup, &popupRect);
+        for (auto& win : windows) {
+            if (win.isExtension) {
+                RECT extRect;
+                GetWindowRect(win.hwnd, &extRect);
 
-            if (x >= popupRect.left && x <= popupRect.right &&
-                y >= popupRect.top && y <= popupRect.bottom) {
-                clickedPopup = popup;
-                targetWindow = popup;
-                break;
+                if (x >= extRect.left && x <= extRect.right &&
+                    y >= extRect.top && y <= extRect.bottom) {
+                    targetWindow = win.hwnd;
+                    break;
+                }
+            }
+        }
+
+        // If not in extension window, check popup windows (menus, dropdowns, etc.)
+        if (targetWindow == mainWindow->hwnd) {
+            std::vector<HWND> popupWindows = FindPopupWindows(pid);
+
+            for (HWND popup : popupWindows) {
+                RECT popupRect;
+                GetWindowRect(popup, &popupRect);
+
+                if (x >= popupRect.left && x <= popupRect.right &&
+                    y >= popupRect.top && y <= popupRect.bottom) {
+                    targetWindow = popup;
+                    break;
+                }
             }
         }
 
@@ -991,16 +1004,25 @@ private:
     }
 
     // Send keyboard event to window
+    // Now supports automatic popup window detection based on mouse position
     Napi::Value SendKeyboardEvent(const Napi::CallbackInfo& info) {
         Napi::Env env = info.Env();
 
         if (info.Length() < 3) {
-            Napi::TypeError::New(env, "Wrong number of arguments: pid, keyCode, eventType");
+            Napi::TypeError::New(env, "Wrong number of arguments: pid, keyCode, eventType, [mouseX, mouseY]");
         }
 
         int pid = info[0].As<Napi::Number>().Int32Value();
         int keyCode = info[1].As<Napi::Number>().Int32Value();
         std::string eventType = info[2].As<Napi::String>().Utf8Value();
+
+        // Optional mouse position for popup detection
+        int mouseX = -1;
+        int mouseY = -1;
+        if (info.Length() >= 5) {
+            mouseX = info[3].As<Napi::Number>().Int32Value();
+            mouseY = info[4].As<Napi::Number>().Int32Value();
+        }
 
 #ifdef _WIN32
         auto windows = FindWindowsByPid(pid);
@@ -1020,6 +1042,68 @@ private:
             return Napi::Boolean::New(env, false);
         }
 
+        // Detect extension/popup windows if mouse position provided
+        HWND targetWindow = mainWindow->hwnd;
+
+        if (mouseX >= 0 && mouseY >= 0) {
+            char debugMsg[512];
+            sprintf_s(debugMsg, "[Keyboard] PID %d: Mouse at (%d, %d), checking windows",
+                     pid, mouseX, mouseY);
+            OutputDebugStringA(debugMsg);
+
+            // First check extension windows (independent windows like OKX Wallet)
+            bool foundWindow = false;
+            for (auto& win : windows) {
+                if (win.isExtension) {
+                    RECT extRect;
+                    GetWindowRect(win.hwnd, &extRect);
+
+                    sprintf_s(debugMsg, "[Keyboard]   Checking extension window bounds [%d, %d, %d, %d]",
+                             extRect.left, extRect.top, extRect.right, extRect.bottom);
+                    OutputDebugStringA(debugMsg);
+
+                    if (mouseX >= extRect.left && mouseX <= extRect.right &&
+                        mouseY >= extRect.top && mouseY <= extRect.bottom) {
+                        targetWindow = win.hwnd;
+                        foundWindow = true;
+                        sprintf_s(debugMsg, "[Keyboard]   [OK] Mouse in extension window! Routing to extension");
+                        OutputDebugStringA(debugMsg);
+                        break;
+                    }
+                }
+            }
+
+            // If not in extension window, check popup windows (menus, dropdowns, etc.)
+            if (!foundWindow) {
+                std::vector<HWND> popupWindows = FindPopupWindows(pid);
+                sprintf_s(debugMsg, "[Keyboard]   Found %zu popup windows", popupWindows.size());
+                OutputDebugStringA(debugMsg);
+
+                for (HWND popup : popupWindows) {
+                    RECT popupRect;
+                    GetWindowRect(popup, &popupRect);
+
+                    sprintf_s(debugMsg, "[Keyboard]   Checking popup bounds [%d, %d, %d, %d]",
+                             popupRect.left, popupRect.top, popupRect.right, popupRect.bottom);
+                    OutputDebugStringA(debugMsg);
+
+                    if (mouseX >= popupRect.left && mouseX <= popupRect.right &&
+                        mouseY >= popupRect.top && mouseY <= popupRect.bottom) {
+                        targetWindow = popup;
+                        foundWindow = true;
+                        sprintf_s(debugMsg, "[Keyboard]   [OK] Mouse in popup! Routing to popup window");
+                        OutputDebugStringA(debugMsg);
+                        break;
+                    }
+                }
+            }
+
+            if (!foundWindow) {
+                sprintf_s(debugMsg, "[Keyboard]   [X] Mouse not in any extension/popup, using main window");
+                OutputDebugStringA(debugMsg);
+            }
+        }
+
         // Build lParam for extended keys
         // Bit 24: Extended-key flag (1 for extended keys like arrows, Insert, Delete, etc.)
         // Check if this is an extended key based on the VK code
@@ -1036,14 +1120,88 @@ private:
         }
 
         if (eventType == "keydown") {
-            PostMessage(mainWindow->hwnd, WM_KEYDOWN, keyCode, lParam);
+            PostMessage(targetWindow, WM_KEYDOWN, keyCode, lParam);
         } else if (eventType == "keyup") {
             lParam |= (1 << 30); // Previous key state (1 = key was down)
             lParam |= (1 << 31); // Transition state (1 = key is being released)
-            PostMessage(mainWindow->hwnd, WM_KEYUP, keyCode, lParam);
+            PostMessage(targetWindow, WM_KEYUP, keyCode, lParam);
         }
 
 #elif __APPLE__
+        CGEventRef event;
+        bool isKeyDown = (eventType == "keydown");
+
+        event = CGEventCreateKeyboardEvent(NULL, (CGKeyCode)keyCode, isKeyDown);
+        if (event) {
+            CGEventPost(kCGHIDEventTap, event);
+            CFRelease(event);
+        }
+#endif
+
+        return Napi::Boolean::New(env, true);
+    }
+
+    // Send keyboard event to extension window by title
+    Napi::Value SendKeyboardEventToExtension(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 4) {
+            Napi::TypeError::New(env, "Wrong number of arguments: pid, windowTitle, keyCode, eventType");
+        }
+
+        int pid = info[0].As<Napi::Number>().Int32Value();
+        std::string windowTitle = info[1].As<Napi::String>().Utf8Value();
+        int keyCode = info[2].As<Napi::Number>().Int32Value();
+        std::string eventType = info[3].As<Napi::String>().Utf8Value();
+
+#ifdef _WIN32
+        auto windows = FindWindowsByPid(pid);
+        if (windows.empty()) {
+            return Napi::Boolean::New(env, false);
+        }
+
+        // Find extension window with matching title
+        WindowInfo* targetWindow = nullptr;
+        for (auto& win : windows) {
+            if (win.isExtension) {
+                char title[256] = {0};
+                GetWindowTextA(win.hwnd, title, sizeof(title));
+                if (std::string(title) == windowTitle) {
+                    targetWindow = &win;
+                    break;
+                }
+            }
+        }
+
+        if (!targetWindow) {
+            // Window not found, return false but don't error
+            return Napi::Boolean::New(env, false);
+        }
+
+        // Build lParam for extended keys
+        bool isExtendedKey = (
+            keyCode == VK_INSERT || keyCode == VK_DELETE || keyCode == VK_HOME ||
+            keyCode == VK_END || keyCode == VK_PRIOR || keyCode == VK_NEXT ||
+            keyCode == VK_LEFT || keyCode == VK_UP || keyCode == VK_RIGHT || keyCode == VK_DOWN ||
+            keyCode == VK_NUMLOCK || keyCode == VK_DIVIDE
+        );
+
+        LPARAM lParam = 1; // Repeat count = 1
+        if (isExtendedKey) {
+            lParam |= (1 << 24); // Set extended-key flag
+        }
+
+        if (eventType == "keydown") {
+            PostMessage(targetWindow->hwnd, WM_KEYDOWN, keyCode, lParam);
+        } else if (eventType == "keyup") {
+            lParam |= (1 << 30); // Previous key state (1 = key was down)
+            lParam |= (1 << 31); // Transition state (1 = key is being released)
+            PostMessage(targetWindow->hwnd, WM_KEYUP, keyCode, lParam);
+        }
+
+#elif __APPLE__
+        // For macOS, we can't easily send keyboard events to specific windows
+        // Fall back to global keyboard events
         CGEventRef event;
         bool isKeyDown = (eventType == "keydown");
 

@@ -45,12 +45,31 @@ app.on('activate', restoreOrCreateWindow);
 app
   .whenReady()
   .then(async () => {
+    // Register global shortcuts
     globalShortcut.register('CommandOrControl+Shift+I', () => {
       const win = BrowserWindow.getFocusedWindow();
       if (win) {
         win.webContents.toggleDevTools();
       }
     });
+
+    // Register sync control shortcuts
+    globalShortcut.register('CommandOrControl+Alt+S', () => {
+      logger.info('Global shortcut: Start sync (Ctrl+Alt+S)');
+      const allWindows = BrowserWindow.getAllWindows();
+      allWindows.forEach(win => {
+        win.webContents.send('sync-shortcut-start');
+      });
+    });
+
+    globalShortcut.register('CommandOrControl+Alt+D', () => {
+      logger.info('Global shortcut: Stop sync (Ctrl+Alt+D)');
+      const allWindows = BrowserWindow.getAllWindows();
+      allWindows.forEach(win => {
+        win.webContents.send('sync-shortcut-stop');
+      });
+    });
+
     try {
       await initializeDatabase();
     } catch (error) {
@@ -117,6 +136,11 @@ if (import.meta.env.PROD) {
     )
     .catch(e => console.error('Failed check and install updates:', e));
 }
+
+app.on('will-quit', () => {
+  // Unregister all global shortcuts
+  globalShortcut.unregisterAll();
+});
 
 app.on('before-quit', async () => {
   await db.destroy();

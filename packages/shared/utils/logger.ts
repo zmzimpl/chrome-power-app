@@ -6,13 +6,17 @@ import {app} from 'electron';
 // const colorizer = winston.format.colorize();
 
 export function createLogger(label: string) {
-  // const isDevelopment = import.meta.env.MODE === 'development';
+  const isDevelopment = process.env.NODE_ENV !== 'production';
 
   if (!winston.loggers.has(label)) {
-    // if (isDevelopment) {
-    //   // 开发环境: 所有日志都输出到控制台
-    //   transport = new winston.transports.Console({level: 'info'});
-    // } else {
+    const transports: winston.transport[] = [];
+
+    if (isDevelopment) {
+      // 开发环境: 同时输出到控制台和文件
+      transports.push(new winston.transports.Console({level: 'debug'}));
+    }
+
+    // 文件输出（开发和生产环境都有）
     const logsPath = join(app.getPath('userData'), 'logs');
     if (!existsSync(logsPath)) {
       mkdirSync(logsPath, {recursive: true});
@@ -32,11 +36,10 @@ export function createLogger(label: string) {
     // 定义日志文件的位置，每天记录一个日志文件
     const logFile = join(logsPath, label, `${formattedDate}.log`);
     // 生产环境: 所有日志都输出到文件
-    const transport = new winston.transports.File({level: 'info', filename: logFile});
-    // }
+    transports.push(new winston.transports.File({level: 'info', filename: logFile}));
 
     winston.loggers.add(label, {
-      transports: [transport],
+      transports: transports,
       format: winston.format.combine(
         winston.format.label({label}),
         winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),

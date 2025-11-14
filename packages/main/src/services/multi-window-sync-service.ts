@@ -8,6 +8,31 @@ import puppeteer, {type Browser} from 'puppeteer';
 
 const logger = createLogger(SERVICE_LOGGER_LABEL);
 
+// Environment check
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Conditional logging helper - only log sync operations in development
+const devLogger = {
+  debug: (message: string, ...meta: SafeAny[]) => {
+    if (isDevelopment) {
+      logger.debug(message, ...meta);
+    }
+  },
+  info: (message: string, ...meta: SafeAny[]) => {
+    if (isDevelopment) {
+      logger.info(message, ...meta);
+    }
+  },
+  warn: (message: string, ...meta: SafeAny[]) => {
+    // Always log warnings
+    logger.warn(message, ...meta);
+  },
+  error: (message: string, ...meta: SafeAny[]) => {
+    // Always log errors
+    logger.error(message, ...meta);
+  },
+};
+
 // Types for events
 interface WindowBounds {
   x: number;
@@ -15,16 +40,6 @@ interface WindowBounds {
   width: number;
   height: number;
   pid: number;
-}
-
-interface ExtensionWindow {
-  bounds: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  title?: string;
 }
 
 interface MouseEventData {
@@ -103,16 +118,9 @@ class MultiWindowSyncService {
   private isCapturing: boolean = false;
   private windowManager: SafeAny = null;
 
-  // Focus tracking - tracks if mouse is currently in master window
-  // Used to determine if keyboard events should be synchronized
-  private isMouseInMaster: boolean = false;
-  private lastMouseCheckTime: number = 0;
-  private readonly MOUSE_FOCUS_TIMEOUT_MS = 500; // Consider focus lost after 500ms without mouse movement in master
-
-  // Extension window tracking
-  private extensionWindows: Map<number, ExtensionWindow[]> = new Map();
-  private extensionMonitorInterval: NodeJS.Timeout | null = null;
-  private readonly EXTENSION_MONITOR_INTERVAL_MS = 1000;
+  // Mouse position tracking - used for popup window detection in keyboard/mouse events
+  private lastMouseX: number = 0;
+  private lastMouseY: number = 0;
 
   // Sync options
   private syncOptions: SyncOptions = {
@@ -129,12 +137,15 @@ class MultiWindowSyncService {
   private cdpSyncInterval: NodeJS.Timeout | null = null;
   private lastScrollPosition: {x: number; y: number} = {x: 0, y: 0};
 
-  // Throttling for wheel events
+  // Wheel event throttling and accumulation
   private lastWheelTime: number = 0;
+  private accumulatedWheelRotation: number = 0;
+  private wheelAccumulationTimer: NodeJS.Timeout | null = null;
 
   // Keyboard event deduplication
   private lastKeyEvent: {keycode: number; type: 'keydown' | 'keyup'; time: number} | null = null;
-  private readonly KEY_DEDUP_THRESHOLD_MS = 50; // Ignore duplicate events within 50ms
+  private readonly KEY_DEDUP_THRESHOLD_MS = 20; // Ignore duplicate events within 20ms (for accidental duplicates)
+  // Key repeat (holding key down) typically happens every 30-33ms, so we use 20ms threshold
   private keyEventCounter: number = 0; // Counter to track event frequency
 
   constructor() {
@@ -176,20 +187,12 @@ class MultiWindowSyncService {
       // Get window bounds
       await this.updateWindowBounds();
 
-      // Initialize focus tracking - assume user is focused on master window when starting sync
-      // This allows keyboard input to work immediately without requiring mouse movement first
-      this.isMouseInMaster = true;
-      this.lastMouseCheckTime = Date.now();
-
       // Set up event listeners
       this.setupEventListeners();
 
       // Start capturing events
       uIOhook.start();
       this.isCapturing = true;
-
-      // Start extension window monitoring
-      this.startExtensionMonitoring();
 
       // Start CDP sync if enabled
       if (this.syncOptions.enableCdpSync) {
@@ -224,18 +227,20 @@ class MultiWindowSyncService {
       }
 
       this.removeEventListeners();
-      this.stopExtensionMonitoring();
       await this.stopCdpSync();
+
+      // Clear wheel accumulation timer
+      if (this.wheelAccumulationTimer) {
+        clearTimeout(this.wheelAccumulationTimer);
+        this.wheelAccumulationTimer = null;
+      }
+      this.accumulatedWheelRotation = 0;
+
       this.isCapturing = false;
       this.masterWindowPid = null;
       this.slaveWindowPids.clear();
       this.masterWindowBounds = null;
       this.slaveWindowBounds.clear();
-      this.extensionWindows.clear();
-
-      // Reset focus tracking
-      this.isMouseInMaster = false;
-      this.lastMouseCheckTime = 0;
 
       logger.info('Multi-window sync stopped');
       return {success: true};
@@ -310,7 +315,7 @@ class MultiWindowSyncService {
 
     // Add a test listener to see if ANY events are firing
     uIOhook.on('input', (event: SafeAny) => {
-      logger.info('🔍 Generic input event received:', {
+      devLogger.info('🔍 Generic input event received:', {
         type: event.type,
         keys: Object.keys(event),
       });
@@ -345,27 +350,28 @@ class MultiWindowSyncService {
   }
 
   /**
-   * Check if mouse is in master window or its extension/popup windows
-   * This is used for keyboard sync to allow typing in popup windows
+   * Check if mouse is within master window OR its extension windows
+   * Returns true if mouse should trigger synchronization
    */
-  private isMouseInMasterOrExtensionWindow(x: number, y: number): boolean {
-    // First check if mouse is in master window
+  private isMouseInMasterOrExtension(x: number, y: number): boolean {
+    // First check main window
     if (this.isMouseInMasterWindow(x, y)) {
       return true;
     }
 
-    // Then check if mouse is in any extension window of the master process
-    if (this.masterWindowPid !== null) {
-      const masterExtensions = this.extensionWindows.get(this.masterWindowPid);
-      if (masterExtensions) {
-        for (const extWin of masterExtensions) {
-          const {x: wx, y: wy, width, height} = extWin.bounds;
-          if (x >= wx && x <= wx + width && y >= wy && y <= wy + height) {
-            logger.debug(`Mouse in master extension window: ${extWin.title || 'unknown'}`);
+    // Then check extension windows
+    try {
+      const masterWindows = this.windowManager.getAllWindows(this.masterWindowPid);
+      for (const win of masterWindows) {
+        if (win.isExtension) {
+          if (x >= win.x && x <= win.x + win.width &&
+              y >= win.y && y <= win.y + win.height) {
             return true;
           }
         }
       }
+    } catch (error) {
+      // Silently fail if getAllWindows not available
     }
 
     return false;
@@ -398,28 +404,18 @@ class MultiWindowSyncService {
 
   /**
    * Handle mouse move events
-   * Only tracks focus for keyboard sync - no position synchronization
-   * Position is synced before clicks/scrolls for performance
+   * Tracks mouse position for popup detection - no position synchronization
+   * Position sync happens only before clicks/scrolls for performance
    */
   private handleMouseMove(event: MouseEventData): void {
     try {
       if (!this.isCapturing || !this.masterWindowBounds) return;
 
-      const now = Date.now();
       const {x, y} = event;
 
-      // Check if mouse is in master window or its extension/popup windows
-      // This is critical for keyboard synchronization to work in popup windows
-      const inMasterOrExtension = this.isMouseInMasterOrExtensionWindow(x, y);
-      if (inMasterOrExtension) {
-        this.isMouseInMaster = true;
-        this.lastMouseCheckTime = now;
-      } else {
-        // Consider focus lost if mouse hasn't been in master/extension for timeout period
-        if (now - this.lastMouseCheckTime > this.MOUSE_FOCUS_TIMEOUT_MS) {
-          this.isMouseInMaster = false;
-        }
-      }
+      // Track mouse position for popup detection in keyboard/mouse events
+      this.lastMouseX = x;
+      this.lastMouseY = y;
 
       // Note: Mouse position is NOT continuously synced for performance
       // Position sync happens only before clicks/scrolls (see handleMouseDown, handleWheel)
@@ -440,40 +436,91 @@ class MultiWindowSyncService {
 
       // Check if master window is active (foreground)
       if (!this.windowManager.isProcessWindowActive(this.masterWindowPid)) {
-        logger.debug('Master window not active - skipping mouse event');
+        devLogger.debug('Master window not active - skipping mouse event');
         return;
       }
 
-      // Also check if mouse is within master window bounds
-      if (!this.isMouseInMasterWindow(x, y)) return;
+      // Check if mouse is within master window OR its extension windows
+      if (!this.isMouseInMasterOrExtension(x, y)) {
+        devLogger.debug('Mouse not in master window or extension - skipping');
+        return;
+      }
 
       const eventType = button === 1 ? 'mousedown' : button === 2 ? 'rightdown' : 'mousedown';
 
-      logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
+      devLogger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 
-      // Calculate relative position in master window
-      const ratio = this.calculateRelativePosition(x, y);
-      if (!ratio) return;
+      // Check if mouse is in master extension window
+      let inMasterExtension = false;
+      let masterExtensionBounds: {x: number; y: number; width: number; height: number} | null = null;
 
-      // Sync mouse position before click to ensure accurate targeting
-      // This is critical since we don't continuously sync mousemove for performance
-      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-        try {
-          // First, sync position to ensure hover states and targeting accuracy
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+      try {
+        const masterWindows = this.windowManager.getAllWindows(this.masterWindowPid);
+        for (const win of masterWindows) {
+          if (win.isExtension && x >= win.x && x <= win.x + win.width &&
+              y >= win.y && y <= win.y + win.height) {
+            inMasterExtension = true;
+            masterExtensionBounds = {x: win.x, y: win.y, width: win.width, height: win.height};
+            devLogger.debug(`🖱️ Mouse in master extension window: "${win.title}"`);
+            break;
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to check master extension windows:', error);
+      }
 
-          // Small delay to allow hover effects to settle before clicking
-          setTimeout(() => {
-            try {
-              this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
-              logger.debug(`→ Sent ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
-            } catch (error) {
-              logger.error(`Failed to send ${eventType} to slave ${slavePid}:`, error);
+      if (inMasterExtension && masterExtensionBounds) {
+        // Mouse is in extension window - route to slave extension windows
+        const relX = (x - masterExtensionBounds.x) / masterExtensionBounds.width;
+        const relY = (y - masterExtensionBounds.y) / masterExtensionBounds.height;
+
+        for (const slavePid of this.slaveWindowPids) {
+          try {
+            const slaveWindows = this.windowManager.getAllWindows(slavePid);
+            for (const win of slaveWindows) {
+              if (win.isExtension) {
+                // Apply relative position to slave extension window
+                const slaveX = Math.floor(win.x + relX * win.width);
+                const slaveY = Math.floor(win.y + relY * win.height);
+
+                devLogger.debug(`→ Sending ${eventType} to slave ${slavePid} extension at (${slaveX}, ${slaveY})`);
+
+                this.windowManager.sendMouseEvent(slavePid, slaveX, slaveY, 'mousemove');
+                setTimeout(() => {
+                  try {
+                    this.windowManager.sendMouseEvent(slavePid, slaveX, slaveY, eventType);
+                  } catch (error) {
+                    logger.error(`Failed to send ${eventType} to slave ${slavePid}:`, error);
+                  }
+                }, 10);
+                break;
+              }
             }
-          }, 10);
-        } catch (error) {
-          logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
+          } catch (error) {
+            logger.error(`Failed to send mouse event to slave ${slavePid} extension:`, error);
+          }
+        }
+      } else {
+        // Mouse is in main window - use existing logic
+        const ratio = this.calculateRelativePosition(x, y);
+        if (!ratio) return;
+
+        for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+          const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+          try {
+            this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, 'mousemove');
+
+            setTimeout(() => {
+              try {
+                this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+                devLogger.debug(`→ Sent ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
+              } catch (error) {
+                logger.error(`Failed to send ${eventType} to slave ${slavePid}:`, error);
+              }
+            }, 10);
+          } catch (error) {
+            logger.error(`Failed to send mouse down event to slave ${slavePid}:`, error);
+          }
         }
       }
     } catch (error) {
@@ -493,29 +540,73 @@ class MultiWindowSyncService {
 
       // Check if master window is active (foreground)
       if (!this.windowManager.isProcessWindowActive(this.masterWindowPid)) {
-        logger.debug('Master window not active - skipping mouse event');
+        devLogger.debug('Master window not active - skipping mouse event');
         return;
       }
 
-      // Also check if mouse is within master window bounds
-      if (!this.isMouseInMasterWindow(x, y)) return;
+      // Check if mouse is within master window OR its extension windows
+      if (!this.isMouseInMasterOrExtension(x, y)) {
+        devLogger.debug('Mouse not in master window or extension - skipping');
+        return;
+      }
 
       const eventType = button === 1 ? 'mouseup' : button === 2 ? 'rightup' : 'mouseup';
 
-      logger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
+      devLogger.info(`🖱️ Mouse ${eventType} at (${x}, ${y}), button=${button}, slaves=${this.slaveWindowPids.size}`);
 
-      // Calculate relative position in master window
-      const ratio = this.calculateRelativePosition(x, y);
-      if (!ratio) return;
+      // Check if mouse is in master extension window
+      let inMasterExtension = false;
+      let masterExtensionBounds: {x: number; y: number; width: number; height: number} | null = null;
 
-      // Send to each slave window with calculated screen coordinates
-      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-        try {
-          logger.debug(`→ Sending ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
-          this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
-        } catch (error) {
-          logger.error(`Failed to send mouse up event to slave ${slavePid}:`, error);
+      try {
+        const masterWindows = this.windowManager.getAllWindows(this.masterWindowPid);
+        for (const win of masterWindows) {
+          if (win.isExtension && x >= win.x && x <= win.x + win.width &&
+              y >= win.y && y <= win.y + win.height) {
+            inMasterExtension = true;
+            masterExtensionBounds = {x: win.x, y: win.y, width: win.width, height: win.height};
+            break;
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to check master extension windows:', error);
+      }
+
+      if (inMasterExtension && masterExtensionBounds) {
+        // Mouse is in extension window - route to slave extension windows
+        const relX = (x - masterExtensionBounds.x) / masterExtensionBounds.width;
+        const relY = (y - masterExtensionBounds.y) / masterExtensionBounds.height;
+
+        for (const slavePid of this.slaveWindowPids) {
+          try {
+            const slaveWindows = this.windowManager.getAllWindows(slavePid);
+            for (const win of slaveWindows) {
+              if (win.isExtension) {
+                const slaveX = Math.floor(win.x + relX * win.width);
+                const slaveY = Math.floor(win.y + relY * win.height);
+
+                devLogger.debug(`→ Sending ${eventType} to slave ${slavePid} extension at (${slaveX}, ${slaveY})`);
+                this.windowManager.sendMouseEvent(slavePid, slaveX, slaveY, eventType);
+                break;
+              }
+            }
+          } catch (error) {
+            logger.error(`Failed to send mouse event to slave ${slavePid} extension:`, error);
+          }
+        }
+      } else {
+        // Mouse is in main window - use existing logic
+        const ratio = this.calculateRelativePosition(x, y);
+        if (!ratio) return;
+
+        for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+          const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+          try {
+            devLogger.debug(`→ Sending ${eventType} to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
+            this.windowManager.sendMouseEvent(slavePid, slavePos.x, slavePos.y, eventType);
+          } catch (error) {
+            logger.error(`Failed to send mouse up event to slave ${slavePid}:`, error);
+          }
         }
       }
     } catch (error) {
@@ -524,7 +615,7 @@ class MultiWindowSyncService {
   }
 
   /**
-   * Handle wheel events (with optimized scrolling strategy)
+   * Handle wheel events (with accumulation to prevent loss during fast scrolling)
    * @tkomde/iohook wheel event structure:
    * - rotation: scroll amount with direction (positive = scroll down, negative = scroll up)
    * - amount: absolute scroll amount (always positive)
@@ -533,92 +624,127 @@ class MultiWindowSyncService {
    */
   private handleWheel(event: WheelEventData): void {
     try {
-      logger.info('🎡 Wheel event received!', {
-        event,
-        isCapturing: this.isCapturing,
-        hasMasterBounds: !!this.masterWindowBounds,
-      });
-
       if (!this.isCapturing || !this.masterWindowBounds) {
-        logger.debug('Wheel event skipped: not capturing or no master bounds');
         return;
       }
       if (!this.syncOptions.enableWheelSync) {
-        logger.debug('Wheel event skipped: wheel sync disabled');
         return;
       }
 
-      const now = Date.now();
-      if (now - this.lastWheelTime < (this.syncOptions.wheelThrottleMs || 50)) {
-        logger.debug('Wheel event throttled');
+      const {x, y, rotation, direction} = event;
+
+      // Check if mouse is within master window OR its extension windows
+      if (!this.isMouseInMasterOrExtension(x, y)) {
         return;
       }
-      this.lastWheelTime = now;
-
-      const {x, y, rotation, amount, direction} = event;
-      const inMaster = this.isMouseInMasterWindow(x, y);
-      if (!inMaster) {
-        logger.debug(`Wheel event skipped: mouse not in master (${x}, ${y})`);
-        return;
-      }
-
-      logger.info('Processing wheel event', {
-        x,
-        y,
-        rotation,
-        amount,
-        direction,
-        slavePids: Array.from(this.slaveWindowPids),
-      });
 
       // Skip horizontal scrolling for now (can be added later if needed)
       if (direction === 4) {
-        logger.debug('Horizontal scroll event skipped');
         return;
       }
 
-      // Calculate deltaY from rotation
+      // Accumulate rotation to prevent loss during fast scrolling
+      this.accumulatedWheelRotation += rotation;
+
+      // Clear existing timer and schedule new one
+      if (this.wheelAccumulationTimer) {
+        clearTimeout(this.wheelAccumulationTimer);
+      }
+
+      // Store current mouse position for sending
+      const currentX = x;
+      const currentY = y;
+
+      // Schedule sending accumulated scroll after 16ms (~60fps)
+      // This ensures we don't lose scroll events during fast scrolling
+      this.wheelAccumulationTimer = setTimeout(() => {
+        this.sendAccumulatedWheelEvent(currentX, currentY);
+      }, 16);
+    } catch (error) {
+      logger.error('Error in handleWheel:', error);
+    }
+  }
+
+  /**
+   * Send accumulated wheel events to slave windows
+   */
+  private sendAccumulatedWheelEvent(x: number, y: number): void {
+    try {
+      const rotation = this.accumulatedWheelRotation;
+
+      // Reset accumulation
+      this.accumulatedWheelRotation = 0;
+      this.wheelAccumulationTimer = null;
+
+      if (rotation === 0) {
+        return;
+      }
+
+      // Calculate deltaY from accumulated rotation
       // rotation is positive for scroll down, negative for scroll up
       // Windows expects negative values for scroll down
-      let deltaY = -rotation;
+      const deltaY = Math.round(-rotation * 120); // Standard wheel delta is 120 units per notch
 
-      // Apply scroll amplification based on amount
-      const absAmount = Math.abs(amount);
-      if (absAmount <= 1) {
-        // Small scroll: use 1:1 mapping
-        deltaY = deltaY * 120; // Standard wheel delta is 120 units per notch
-      } else if (absAmount <= 3) {
-        // Medium scroll: slight amplification for better feel
-        deltaY = deltaY * 150;
+      devLogger.info(`Sending wheel event: deltaY=${deltaY} (rotation=${rotation})`);
+
+      // Check if mouse is in master extension window
+      let inMasterExtension = false;
+      let masterExtensionBounds: {x: number; y: number; width: number; height: number} | null = null;
+
+      try {
+        const masterWindows = this.windowManager.getAllWindows(this.masterWindowPid);
+        for (const win of masterWindows) {
+          if (win.isExtension && x >= win.x && x <= win.x + win.width &&
+              y >= win.y && y <= win.y + win.height) {
+            inMasterExtension = true;
+            masterExtensionBounds = {x: win.x, y: win.y, width: win.width, height: win.height};
+            break;
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to check master extension windows:', error);
+      }
+
+      if (inMasterExtension && masterExtensionBounds) {
+        // Mouse is in extension window - route to slave extension windows
+        const relX = (x - masterExtensionBounds.x) / masterExtensionBounds.width;
+        const relY = (y - masterExtensionBounds.y) / masterExtensionBounds.height;
+
+        for (const slavePid of this.slaveWindowPids) {
+          try {
+            const slaveWindows = this.windowManager.getAllWindows(slavePid);
+            for (const win of slaveWindows) {
+              if (win.isExtension) {
+                const slaveX = Math.floor(win.x + relX * win.width);
+                const slaveY = Math.floor(win.y + relY * win.height);
+
+                this.windowManager.sendWheelEvent(slavePid, 0, deltaY, slaveX, slaveY);
+                break;
+              }
+            }
+          } catch (error) {
+            logger.error(`Failed to send wheel event to slave ${slavePid} extension:`, error);
+          }
+        }
       } else {
-        // Large scroll: amplify for fast scrolling
-        deltaY = deltaY * 200;
-      }
+        // Mouse is in main window - use existing logic
+        const ratio = this.calculateRelativePosition(x, y);
+        if (!ratio) {
+          logger.warn('Failed to calculate relative position for wheel event');
+          return;
+        }
 
-      // Round to integer
-      deltaY = Math.round(deltaY);
-
-      logger.info(`Sending wheel event: deltaY=${deltaY} (rotation=${rotation}, amount=${amount})`);
-
-      // Calculate relative position in master window
-      const ratio = this.calculateRelativePosition(x, y);
-      if (!ratio) {
-        logger.warn('Failed to calculate relative position for wheel event');
-        return;
-      }
-
-      // Send to each slave window with calculated screen coordinates
-      for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
-        const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
-        try {
-          this.windowManager.sendWheelEvent(slavePid, 0, deltaY, slavePos.x, slavePos.y);
-          logger.info(`✓ Wheel event sent to slave ${slavePid} at (${slavePos.x}, ${slavePos.y})`);
-        } catch (error) {
-          logger.error(`Failed to send wheel event to slave ${slavePid}:`, error);
+        for (const [slavePid, slaveBounds] of this.slaveWindowBounds) {
+          const slavePos = this.applyToSlaveWindow(ratio, slaveBounds);
+          try {
+            this.windowManager.sendWheelEvent(slavePid, 0, deltaY, slavePos.x, slavePos.y);
+          } catch (error) {
+            logger.error(`Failed to send wheel event to slave ${slavePid}:`, error);
+          }
         }
       }
     } catch (error) {
-      logger.error('Error in handleWheel:', error);
+      logger.error('Error in sendAccumulatedWheelEvent:', error);
     }
   }
 
@@ -631,29 +757,18 @@ class MultiWindowSyncService {
 
     // Filter Ctrl+C (Copy) - most important
     if (ctrlKey && nativeKeycode === 67) {
-      logger.info('🚫 Ignoring Ctrl+C (Copy) - not syncing to slaves');
+      devLogger.info('🚫 Ignoring Ctrl+C (Copy) - not syncing to slaves');
       return true;
     }
 
     // Filter other common shortcuts
     if (ctrlKey && !altKey && !shiftKey) {
       const ignoredKeycodes: {[key: number]: string} = {
-        86: 'Ctrl+V (Paste)',
         88: 'Ctrl+X (Cut)',
-        65: 'Ctrl+A (Select All)',
-        90: 'Ctrl+Z (Undo)',
-        89: 'Ctrl+Y (Redo)',
-        83: 'Ctrl+S (Save)',
-        70: 'Ctrl+F (Find)',
-        72: 'Ctrl+H (History)',
-        78: 'Ctrl+N (New)',
-        84: 'Ctrl+T (New Tab)',
-        87: 'Ctrl+W (Close Tab)',
-        82: 'Ctrl+R (Refresh)',
       };
 
       if (nativeKeycode in ignoredKeycodes) {
-        logger.info(`🚫 Ignoring ${ignoredKeycodes[nativeKeycode]} - not syncing to slaves`);
+        devLogger.info(`🚫 Ignoring ${ignoredKeycodes[nativeKeycode]} - not syncing to slaves`);
         return true;
       }
     }
@@ -663,30 +778,28 @@ class MultiWindowSyncService {
 
   /**
    * Handle key down events
-   * Only synchronizes when mouse is in master window (indicating user focus)
+   * Only synchronizes when master window is active (using PID-based detection)
    */
   private handleKeyDown(event: KeyboardEventData): void {
     try {
       // Log complete event object to see all available fields
       if (!this.isCapturing) {
-        logger.debug('Keydown skipped: not capturing');
         return;
       }
       if (!this.syncOptions.enableKeyboardSync) {
-        logger.debug('Keydown skipped: keyboard sync disabled');
-        return;
-      }
-
-      // Only sync keyboard events when mouse is in master window
-      // This prevents keyboard input from other windows being synchronized
-      if (!this.isMouseInMaster) {
-        logger.debug('Keydown skipped: mouse not in master');
         return;
       }
 
       // Validate window manager
       if (!this.windowManager) {
         logger.error('Window manager not initialized in handleKeyDown');
+        return;
+      }
+
+      // Only sync keyboard events when master window is the active foreground window
+      // This is more accurate than mouse position checking
+      if (!this.windowManager.isProcessWindowActive(this.masterWindowPid)) {
+        devLogger.debug('Keydown skipped: master window not active');
         return;
       }
 
@@ -709,7 +822,7 @@ class MultiWindowSyncService {
       }
 
       // DEBUG: Log complete event object
-      logger.info('🔍 DEBUG: Complete keyboard event', {
+      devLogger.info('🔍 DEBUG: Complete keyboard event', {
         keycode,
         rawcode,
         nativeKeycode,
@@ -740,32 +853,163 @@ class MultiWindowSyncService {
       // Update last key event
       this.lastKeyEvent = {keycode: nativeKeycode, type: 'keydown', time: now};
 
-      logger.info('⌨️  Key press', {
+      // First check if mouse is in master window's popup using master PID
+      // This tells us if we should route to slave popups or main windows
+      let inMasterPopup = false;
+      let masterPopupInfo = null;
+
+      try {
+        // Check if getAllWindows method exists
+        if (typeof this.windowManager.getAllWindows !== 'function') {
+          logger.error('❌ getAllWindows method not found! Native addon needs rebuild.');
+          logger.error('Available methods:', Object.keys(this.windowManager));
+        } else {
+          const masterPopups = this.windowManager.getAllWindows(this.masterWindowPid);
+          devLogger.debug(`🔍 Master PID ${this.masterWindowPid} has ${masterPopups.length} windows`);
+
+          for (const win of masterPopups) {
+            devLogger.debug(`  Window: isExtension=${win.isExtension}, bounds=[${win.x}, ${win.y}, ${win.width}, ${win.height}], title="${win.title || 'unknown'}"`);
+
+            if (win.isExtension) {
+              const {x: wx, y: wy, width, height} = win;
+              const inBounds = this.lastMouseX >= wx &&
+                              this.lastMouseX <= wx + width &&
+                              this.lastMouseY >= wy &&
+                              this.lastMouseY <= wy + height;
+
+              devLogger.debug(`    Mouse (${this.lastMouseX}, ${this.lastMouseY}) in popup bounds? ${inBounds}`);
+
+              if (inBounds) {
+                inMasterPopup = true;
+                masterPopupInfo = {
+                  title: win.title,
+                  bounds: {x: wx, y: wy, width, height},
+                };
+                devLogger.info(`✅ Mouse in MASTER popup: "${win.title || 'unknown'}"`);
+                break;
+              }
+            }
+          }
+
+          if (!inMasterPopup) {
+            devLogger.debug('❌ Mouse NOT in any master popup');
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to check master popup:', error);
+      }
+
+      devLogger.info('⌨️  Key press', {
         eventCounter: this.keyEventCounter,
         rawcode,
         keycode,
         nativeKeycode,
         slaveCount: this.slaveWindowPids.size,
+        mousePosition: `(${this.lastMouseX}, ${this.lastMouseY})`,
+        inMasterPopup,
       });
 
       // Send complete key press to slave windows (keydown + keyup)
-      // This prevents duplicate input issues
       for (const slavePid of this.slaveWindowPids) {
         try {
-          // Send keydown
-          this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown');
+          if (inMasterPopup && masterPopupInfo) {
+            // User is in master popup, calculate relative position
+            const masterBounds = masterPopupInfo.bounds;
+            const relX = (this.lastMouseX - masterBounds.x) / masterBounds.width;
+            const relY = (this.lastMouseY - masterBounds.y) / masterBounds.height;
 
-          // Immediately send keyup to complete the key press
-          // Small timeout ensures proper event sequencing
-          setTimeout(() => {
-            try {
-              this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup');
-            } catch (error) {
-              logger.error(`Failed to send keyup to slave ${slavePid}:`, error);
+            const slavePopups = this.windowManager.getAllWindows(slavePid);
+            devLogger.debug(`🔍 Slave PID ${slavePid} has ${slavePopups.length} windows`);
+
+            let sentToPopup = false;
+
+            for (const win of slavePopups) {
+              devLogger.debug(`  Slave window: isExtension=${win.isExtension}, bounds=[${win.x}, ${win.y}, ${win.width}, ${win.height}], title="${win.title || 'unknown'}"`);
+
+              if (win.isExtension) {
+                // Apply relative position to slave extension window
+                const slaveX = Math.floor(win.x + relX * win.width);
+                const slaveY = Math.floor(win.y + relY * win.height);
+
+                devLogger.info(`  ✅ Routing to slave ${slavePid} popup "${win.title}" at (${slaveX}, ${slaveY}) [rel: ${(relX*100).toFixed(1)}%, ${(relY*100).toFixed(1)}%]`);
+
+                this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown', slaveX, slaveY);
+                setTimeout(() => {
+                  try {
+                    this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup', slaveX, slaveY);
+                  } catch (error) {
+                    logger.error(`Failed to send keyup to slave ${slavePid}:`, error);
+                  }
+                }, 10);
+
+                sentToPopup = true;
+                break;
+              }
             }
-          }, 10);
 
-          logger.debug(`  → Sent key press to slave ${slavePid}`);
+            if (!sentToPopup) {
+              logger.warn(`⚠️  Slave ${slavePid} has no extension window, fallback to main window`);
+              // Fallback to main window
+              this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown', -1, -1);
+              setTimeout(() => {
+                try {
+                  this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup', -1, -1);
+                } catch (error) {
+                  logger.error(`Failed to send keyup to slave ${slavePid}:`, error);
+                }
+              }, 10);
+            }
+          } else {
+            // User is in main window (may include browser-internal popups)
+            // Send with mouse coordinates so keyboard events are routed correctly
+            const slaveBounds = this.slaveWindowBounds.get(slavePid);
+
+            if (slaveBounds && this.masterWindowBounds) {
+              // Calculate relative position in master window
+              const relX = (this.lastMouseX - this.masterWindowBounds.x) / this.masterWindowBounds.width;
+              const relY = (this.lastMouseY - this.masterWindowBounds.y) / this.masterWindowBounds.height;
+
+              // Apply to slave window
+              const slaveX = Math.floor(slaveBounds.x + relX * slaveBounds.width);
+              const slaveY = Math.floor(slaveBounds.y + relY * slaveBounds.height);
+
+              devLogger.debug(`  → Sending key press to slave ${slavePid} main window at (${slaveX}, ${slaveY})`);
+
+              // First send a mousemove to ensure focus is correct (for browser-internal popups)
+              try {
+                this.windowManager.sendMouseEvent(slavePid, slaveX, slaveY, 'mousemove');
+              } catch (error) {
+                logger.warn(`Failed to send pre-keyboard mousemove to slave ${slavePid}:`, error);
+              }
+
+              // Small delay before sending keyboard event
+              setTimeout(() => {
+                try {
+                  this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown', slaveX, slaveY);
+                  setTimeout(() => {
+                    try {
+                      this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup', slaveX, slaveY);
+                    } catch (error) {
+                      logger.error(`Failed to send keyup to slave ${slavePid}:`, error);
+                    }
+                  }, 10);
+                } catch (error) {
+                  logger.error(`Failed to send keydown to slave ${slavePid}:`, error);
+                }
+              }, 5);
+            } else {
+              // Fallback: no bounds available, send without coordinates
+              logger.warn(`  ⚠️  No bounds for slave ${slavePid}, sending without coordinates`);
+              this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keydown', -1, -1);
+              setTimeout(() => {
+                try {
+                  this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup', -1, -1);
+                } catch (error) {
+                  logger.error(`Failed to send keyup to slave ${slavePid}:`, error);
+                }
+              }, 10);
+            }
+          }
         } catch (error) {
           logger.error(`Failed to send keydown to slave ${slavePid}:`, error);
         }
@@ -783,18 +1027,18 @@ class MultiWindowSyncService {
   private handleKeyUp(event: KeyboardEventData): void {
     try {
       if (!this.isCapturing) {
-        logger.debug('Keyup skipped: not capturing');
+        devLogger.debug('Keyup skipped: not capturing');
         return;
       }
       if (!this.syncOptions.enableKeyboardSync) {
-        logger.debug('Keyup skipped: keyboard sync disabled');
+        devLogger.debug('Keyup skipped: keyboard sync disabled');
         return;
       }
 
       // Only sync keyboard events when mouse is in master window
       // This prevents keyboard input from other windows being synchronized
-      if (!this.isMouseInMaster) {
-        logger.debug('Keyup skipped: mouse not in master');
+      if (!this.isMouseInMasterOrExtension(this.lastMouseX, this.lastMouseY)) {
+        devLogger.debug('Keyup skipped: mouse not in master');
         return;
       }
 
@@ -840,7 +1084,7 @@ class MultiWindowSyncService {
       // Update last key event
       this.lastKeyEvent = {keycode: nativeKeycode, type: 'keyup', time: now};
 
-      logger.info('⬆️  Keyup', {
+      devLogger.info('⬆️  Keyup', {
         eventCounter: this.keyEventCounter,
         rawcode,
         keycode,
@@ -852,7 +1096,7 @@ class MultiWindowSyncService {
       for (const slavePid of this.slaveWindowPids) {
         try {
           this.windowManager.sendKeyboardEvent(slavePid, nativeKeycode, 'keyup');
-          logger.debug(`  → Sent to slave ${slavePid}`);
+          devLogger.debug(`  → Sent to slave ${slavePid}`);
         } catch (error) {
           logger.error(`Failed to send keyup event to slave ${slavePid}:`, error);
         }
@@ -877,110 +1121,6 @@ class MultiWindowSyncService {
     };
   }
 
-  /**
-   * Start monitoring extension windows (popup windows)
-   */
-  private startExtensionMonitoring(): void {
-    if (this.extensionMonitorInterval) return;
-
-    this.extensionMonitorInterval = setInterval(() => {
-      this.detectExtensionWindows();
-    }, this.EXTENSION_MONITOR_INTERVAL_MS);
-
-    // Initial detection
-    this.detectExtensionWindows();
-  }
-
-  /**
-   * Stop monitoring extension windows
-   */
-  private stopExtensionMonitoring(): void {
-    if (this.extensionMonitorInterval) {
-      clearInterval(this.extensionMonitorInterval);
-      this.extensionMonitorInterval = null;
-    }
-  }
-
-  /**
-   * Detect extension windows for all managed PIDs
-   * This method uses Native Addon's window enumeration which already
-   * distinguishes between main windows and extension windows
-   */
-  private detectExtensionWindows(): void {
-    try {
-      if (!this.windowManager) {
-        logger.warn('Window manager not initialized in detectExtensionWindows');
-        return;
-      }
-
-      // Clear existing extension windows
-      this.extensionWindows.clear();
-
-      // Detect extension windows for master
-      if (this.masterWindowPid !== null) {
-        try {
-          const windows = this.windowManager.getAllWindows(this.masterWindowPid);
-          const extensionWins: ExtensionWindow[] = [];
-
-          for (const win of windows) {
-            if (win.isExtension) {
-              extensionWins.push({
-                title: win.title || '',
-                bounds: {
-                  x: win.x,
-                  y: win.y,
-                  width: win.width,
-                  height: win.height,
-                },
-              });
-            }
-          }
-
-          if (extensionWins.length > 0) {
-            this.extensionWindows.set(this.masterWindowPid, extensionWins);
-            logger.debug(`Detected ${extensionWins.length} extension windows for master PID ${this.masterWindowPid}`, {
-              titles: extensionWins.map(w => w.title),
-            });
-          }
-        } catch (error) {
-          logger.error(`Failed to detect extension windows for master PID ${this.masterWindowPid}:`, error);
-        }
-      }
-
-      // Detect extension windows for slaves
-      for (const slavePid of this.slaveWindowPids) {
-        try {
-          const windows = this.windowManager.getAllWindows(slavePid);
-          const extensionWins: ExtensionWindow[] = [];
-
-          for (const win of windows) {
-            if (win.isExtension) {
-              extensionWins.push({
-                title: win.title || '',
-                bounds: {
-                  x: win.x,
-                  y: win.y,
-                  width: win.width,
-                  height: win.height,
-                },
-              });
-            }
-          }
-
-          if (extensionWins.length > 0) {
-            this.extensionWindows.set(slavePid, extensionWins);
-            logger.debug(`Detected ${extensionWins.length} extension windows for slave PID ${slavePid}`, {
-              titles: extensionWins.map(w => w.title),
-            });
-          }
-        } catch (error) {
-          logger.error(`Failed to detect extension windows for slave PID ${slavePid}:`, error);
-        }
-      }
-    } catch (error) {
-      logger.error('Error in detectExtensionWindows:', error);
-    }
-  }
 
   /**
    * Start CDP-based synchronization

@@ -9,16 +9,13 @@ import {
   Table,
   Typography,
   Divider,
-  Switch,
-  Alert,
   message,
   Tag,
   Select,
-  Tabs,
 } from 'antd';
 import {SyncBridge, WindowBridge} from '#preload';
 import {useTranslation} from 'react-i18next';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState, useCallback} from 'react';
 import type {DB} from '../../../../shared/types/db';
 import _ from 'lodash';
 import {
@@ -29,8 +26,6 @@ import {
   SyncOutlined,
   CrownOutlined,
   DesktopOutlined,
-  ThunderboltOutlined,
-  LayoutOutlined,
   WindowsOutlined,
 } from '@ant-design/icons';
 import type {ColumnsType} from 'antd/es/table';
@@ -105,7 +100,6 @@ const Sync = () => {
   const [tableScrollY, setTableScrollY] = useState(window.innerHeight - OFFSET);
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
   const [arrangeForm] = Form.useForm();
-  const [syncForm] = Form.useForm();
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isActive: false,
     masterPid: null,
@@ -127,19 +121,19 @@ const Sync = () => {
         title: t('window_column_name'),
         dataIndex: 'name',
         key: 'name',
-        width: 200,
+        width: 120,
       },
       {
         title: t('window_column_profile_id'),
         dataIndex: 'profile_id',
         key: 'profile_id',
-        width: 150,
+        width: 100,
       },
       {
         title: t('window_column_group'),
         dataIndex: 'group_name',
         key: 'group_name',
-        width: 120,
+        width: 100,
       },
       {
         title: 'Status',
@@ -170,19 +164,18 @@ const Sync = () => {
       {
         title: t('window_column_action'),
         key: 'action',
-        width: 120,
+        width: 80,
         fixed: 'right',
         render: (_, record) => {
           const isMaster = record.id === syncConfig.masterWindowId;
           return (
             <Button
               type={isMaster ? 'primary' : 'default'}
-              size="small"
               icon={<CrownOutlined />}
               onClick={() => handleSetMaster(record.id!)}
               disabled={syncStatus.isActive || isMaster}
             >
-              {isMaster ? t('sync_status_master') : t('sync_action_set_master')}
+              {/* {isMaster ? t('sync_status_master') : t('sync_action_set_master')} */}
             </Button>
           );
         },
@@ -218,8 +211,9 @@ const Sync = () => {
     }
   };
 
-  const saveSyncConfig = () => {
-    localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
+  const saveSyncConfig = (config?: SyncConfig) => {
+    const configToSave = config || syncConfig;
+    localStorage.setItem('syncConfig', JSON.stringify(configToSave));
   };
 
   useEffect(() => {
@@ -243,6 +237,52 @@ const Sync = () => {
     };
   }, [statusPolling]);
 
+  // Define sync control handlers with useCallback to ensure stable references
+  const handleStartSync = useCallback(async () => {
+    if (!syncConfig.masterWindowId) {
+      message.warning(t('sync_msg_set_master_first'));
+      return;
+    }
+
+    if (selectedRowKeys.length === 0) {
+      message.warning(t('sync_msg_select_one'));
+      return;
+    }
+
+    if (!selectedRowKeys.includes(syncConfig.masterWindowId)) {
+      message.warning(t('sync_msg_master_selected'));
+      return;
+    }
+
+    const slaveWindowIds = selectedRowKeys.filter(id => id !== syncConfig.masterWindowId);
+
+    if (slaveWindowIds.length === 0) {
+      message.warning(t('sync_msg_select_slave'));
+      return;
+    }
+
+    const result = await SyncBridge.startSync({
+      masterWindowId: syncConfig.masterWindowId,
+      slaveWindowIds: slaveWindowIds,
+      options: syncConfig.syncOptions,
+    });
+
+    if (result.success) {
+      message.success(t('sync_msg_started', {count: slaveWindowIds.length}));
+      await fetchSyncStatus();
+    } else {
+      message.error(t('sync_msg_start_failed', {error: result.error}));
+    }
+  }, [syncConfig.masterWindowId, syncConfig.syncOptions, selectedRowKeys, t]);
+
+  const handleStopSync = useCallback(async () => {
+    const result = await SyncBridge.stopSync();
+    if (result.success) {
+      message.success(t('sync_msg_stopped'));
+      await fetchSyncStatus();
+    }
+  }, [t]);
+
   // Start status polling when sync is active
   useEffect(() => {
     if (syncStatus.isActive && !statusPolling) {
@@ -253,6 +293,29 @@ const Sync = () => {
       setStatusPolling(null);
     }
   }, [syncStatus.isActive]);
+
+  // Register global keyboard shortcuts from main process
+  useEffect(() => {
+    // Listen for Ctrl+Alt+S (start sync)
+    const cleanupStart = SyncBridge.onShortcutStart(() => {
+      if (!syncStatus.isActive) {
+        handleStartSync();
+      }
+    });
+
+    // Listen for Ctrl+Alt+D (stop sync)
+    const cleanupStop = SyncBridge.onShortcutStop(() => {
+      if (syncStatus.isActive) {
+        handleStopSync();
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      cleanupStart();
+      cleanupStop();
+    };
+  }, [syncStatus.isActive, handleStartSync, handleStopSync]);
 
   const handleSetMaster = (windowId: number) => {
     const newConfig = {
@@ -289,51 +352,6 @@ const Sync = () => {
     message.success(t('sync_msg_arranged'));
   };
 
-  const handleStartSync = async () => {
-    if (!syncConfig.masterWindowId) {
-      message.warning(t('sync_msg_set_master_first'));
-      return;
-    }
-
-    if (selectedRowKeys.length === 0) {
-      message.warning(t('sync_msg_select_one'));
-      return;
-    }
-
-    if (!selectedRowKeys.includes(syncConfig.masterWindowId)) {
-      message.warning(t('sync_msg_master_selected'));
-      return;
-    }
-
-    const slaveWindowIds = selectedRowKeys.filter(id => id !== syncConfig.masterWindowId);
-
-    if (slaveWindowIds.length === 0) {
-      message.warning(t('sync_msg_select_slave'));
-      return;
-    }
-
-    const result = await SyncBridge.startSync({
-      masterWindowId: syncConfig.masterWindowId,
-      slaveWindowIds: slaveWindowIds,
-      options: syncConfig.syncOptions,
-    });
-
-    if (result.success) {
-      message.success(t('sync_msg_started', {count: slaveWindowIds.length}));
-      await fetchSyncStatus();
-    } else {
-      message.error(t('sync_msg_start_failed', {error: result.error}));
-    }
-  };
-
-  const handleStopSync = async () => {
-    const result = await SyncBridge.stopSync();
-    if (result.success) {
-      message.success(t('sync_msg_stopped'));
-      await fetchSyncStatus();
-    }
-  };
-
   const onArrangeValuesChange = (_: any, allFields: any) => {
     const newConfig = {
       ...syncConfig,
@@ -344,18 +362,6 @@ const Sync = () => {
       },
     };
     setSyncConfig(newConfig);
-  };
-
-  const onSyncOptionsChange = (_: any, allFields: SyncOptions) => {
-    const newConfig = {
-      ...syncConfig,
-      syncOptions: {
-        ...syncConfig.syncOptions,
-        ...allFields,
-      },
-    };
-    setSyncConfig(newConfig);
-    saveSyncConfig();
   };
 
   const onSelectChange = (newSelectedRowKeys: React.Key[]) => {
@@ -386,7 +392,6 @@ const Sync = () => {
           {!syncStatus.isActive ? (
             <Button
               type="primary"
-              size="large"
               icon={<PlayCircleOutlined />}
               onClick={handleStartSync}
               disabled={
@@ -399,7 +404,7 @@ const Sync = () => {
             </Button>
           ) : (
             <Button danger size="large" icon={<StopOutlined />} onClick={handleStopSync}>
-              {t('sync_stop')} (Ctrl+Alt+R)
+              {t('sync_stop')} (Ctrl+Alt+D)
             </Button>
           )}
           <Text type="secondary">
@@ -427,7 +432,7 @@ const Sync = () => {
       )} */}
 
       {/* Main Content */}
-      <div style={{padding: '16px 0px'}}>
+      <div style={{padding: '4px 0px'}}>
         <Row gutter={16}>
           {/* Left: Window List */}
           <Col span={16}>
@@ -449,7 +454,6 @@ const Sync = () => {
                 scroll={{y: tableScrollY}}
                 columns={columns}
                 pagination={false}
-                size="small"
               />
             </Card>
           </Col>
@@ -466,168 +470,67 @@ const Sync = () => {
                 </Space>
               }
             >
-              <Tabs
-                defaultActiveKey="arrange"
-                items={[
-                  {
-                    key: 'sync',
-                    label: (
-                      <span>
-                        <ThunderboltOutlined style={{marginRight: 8}} />
-                        {t('sync_control')}
-                      </span>
-                    ),
-                    children: (
-                      <Space direction="vertical" style={{width: '100%'}} size="middle">
-                        {/* Sync Features */}
-                        <div>
-                          <Text strong style={{marginBottom: 8, display: 'block'}}>
-                            {t('sync_features')}
-                          </Text>
-                          <Form
-                            form={syncForm}
-                            layout="vertical"
-                            size="small"
-                            initialValues={syncConfig.syncOptions}
-                            onValuesChange={onSyncOptionsChange}
-                          >
-                            <Space direction="vertical" style={{width: '100%'}}>
-                              <Form.Item name="enableMouseSync" valuePropName="checked" noStyle>
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '8px 0',
-                                  }}
-                                >
-                                  <Text>{t('sync_mouse')}</Text>
-                                  <Switch
-                                    size="small"
-                                    disabled={syncStatus.isActive}
-                                    checked={syncConfig.syncOptions.enableMouseSync}
-                                  />
-                                </div>
-                              </Form.Item>
-                              <Form.Item
-                                name="enableKeyboardSync"
-                                valuePropName="checked"
-                                noStyle
-                              >
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '8px 0',
-                                  }}
-                                >
-                                  <Text>{t('sync_keyboard')}</Text>
-                                  <Switch
-                                    size="small"
-                                    disabled={syncStatus.isActive}
-                                    checked={syncConfig.syncOptions.enableKeyboardSync}
-                                  />
-                                </div>
-                              </Form.Item>
-                              <Form.Item name="enableWheelSync" valuePropName="checked" noStyle>
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '8px 0',
-                                  }}
-                                >
-                                  <Text>{t('sync_wheel')}</Text>
-                                  <Switch
-                                    size="small"
-                                    disabled={syncStatus.isActive}
-                                    checked={syncConfig.syncOptions.enableWheelSync}
-                                  />
-                                </div>
-                              </Form.Item>
-                            </Space>
-                          </Form>
-                        </div>
-                      </Space>
-                    ),
-                  },
-                  {
-                    key: 'arrange',
-                    label: (
-                      <span>
-                        <LayoutOutlined style={{marginRight: 8}} />
-                        {t('sync_window_arrange')}
-                      </span>
-                    ),
-                    children: (
-                      <Space direction="vertical" style={{width: '100%'}} size="middle">
-                        {/* Display Selection */}
-                        <div>
-                          <Text strong style={{marginBottom: 8, display: 'block'}}>
-                            {t('sync_display')}
-                          </Text>
-                          <Select
-                            style={{width: '100%'}}
-                            value={selectedMonitorIndex}
-                            onChange={setSelectedMonitorIndex}
-                            options={monitors.map(monitor => ({
-                              label: `${monitor.isPrimary ? '🖥️ Primary' : '🖥️ Extended'} - ${monitor.width}x${monitor.height}`,
-                              value: monitor.index,
-                            }))}
-                            disabled={monitors.length === 0}
-                          />
-                        </div>
+              <Space direction="vertical" style={{width: '100%'}} size="middle">
+                {/* Display Selection */}
+                <div>
+                  <Text strong style={{marginBottom: 8, display: 'block'}}>
+                    {t('sync_display')}
+                  </Text>
+                  <Select
+                    style={{width: '100%'}}
+                    value={selectedMonitorIndex}
+                    onChange={setSelectedMonitorIndex}
+                    options={monitors.map(monitor => ({
+                      label: `${monitor.isPrimary ? '🖥️ Primary' : '🖥️ Extended'} - ${monitor.width}x${monitor.height}`,
+                      value: monitor.index,
+                    }))}
+                    disabled={monitors.length === 0}
+                  />
+                </div>
 
-                        <Divider style={{margin: '8px 0'}} />
+                <Divider style={{margin: '8px 0'}} />
 
-                        {/* Arrange Settings */}
-                        <Form
-                          form={arrangeForm}
-                          layout="vertical"
-                          size="small"
-                          initialValues={{
-                            columns: syncConfig.columns,
-                            spacing: syncConfig.spacing,
-                            height:
-                              syncConfig.size.height !== 0 ? syncConfig.size.height : undefined,
-                          }}
-                          onValuesChange={onArrangeValuesChange}
-                        >
-                          <Row gutter={8}>
-                            <Col span={12}>
-                              <Form.Item label={t('arrange_columns')} name="columns">
-                                <InputNumber min={1} max={12} style={{width: '100%'}} />
-                              </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                              <Form.Item label={t('arrange_spacing')} name="spacing">
-                                <InputNumber min={0} max={50} style={{width: '100%'}} />
-                              </Form.Item>
-                            </Col>
-                          </Row>
+                {/* Arrange Settings */}
+                <Form
+                  form={arrangeForm}
+                  layout="vertical"
+                  initialValues={{
+                    columns: syncConfig.columns,
+                    spacing: syncConfig.spacing,
+                    height:
+                      syncConfig.size.height !== 0 ? syncConfig.size.height : undefined,
+                  }}
+                  onValuesChange={onArrangeValuesChange}
+                >
+                  <Row gutter={8}>
+                    <Col span={12}>
+                      <Form.Item label={t('arrange_columns')} name="columns">
+                        <InputNumber min={1} max={12} style={{width: '100%'}} />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item label={t('arrange_spacing')} name="spacing">
+                        <InputNumber min={0} max={50} style={{width: '100%'}} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
 
-                          <Form.Item label={t('arrange_height')} name="height">
-                            <InputNumber min={0} style={{width: '100%'}} />
-                          </Form.Item>
-                        </Form>
+                  <Form.Item label={t('arrange_height')} name="height">
+                    <InputNumber min={0} style={{width: '100%'}} />
+                  </Form.Item>
+                </Form>
 
-                        {/* Arrange Button */}
-                        <Button
-                          block
-                          type="primary"
-                          icon={<WindowsOutlined />}
-                          onClick={handleArrangeWindows}
-                          disabled={selectedRowKeys.length === 0}
-                        >
-                          {t('sync_arrange_button')} (Ctrl+Alt+Z)
-                        </Button>
-                      </Space>
-                    ),
-                  },
-                ]}
-              />
+                {/* Arrange Button */}
+                <Button
+                  block
+                  type="primary"
+                  icon={<WindowsOutlined />}
+                  onClick={handleArrangeWindows}
+                  disabled={selectedRowKeys.length === 0}
+                >
+                  {t('sync_arrange_button')}
+                </Button>
+              </Space>
             </Card>
           </Col>
         </Row>

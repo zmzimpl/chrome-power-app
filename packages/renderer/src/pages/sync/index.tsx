@@ -380,39 +380,6 @@ const Sync = () => {
 
   return (
     <>
-      <style>
-        {`
-          /* Custom scrollbar styles */
-          ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-          }
-
-          ::-webkit-scrollbar-track {
-            background: #f0f0f0;
-            border-radius: 4px;
-          }
-
-          ::-webkit-scrollbar-thumb {
-            background: #bfbfbf;
-            border-radius: 4px;
-          }
-
-          ::-webkit-scrollbar-thumb:hover {
-            background: #999;
-          }
-
-          /* Icon spacing */
-          .ant-btn > .anticon + span {
-            margin-left: 8px;
-          }
-
-          .ant-space-item > .anticon {
-            margin-right: 8px;
-          }
-        `}
-      </style>
-
       {/* Toolbar */}
       <div className="content-toolbar">
         <Space size={16}>
@@ -447,8 +414,8 @@ const Sync = () => {
       </div>
 
       {/* Sync Status Alert */}
-      {syncStatus.isActive && (
-        <div style={{padding: '16px 24px 0'}}>
+      {/* {syncStatus.isActive && (
+        <div style={{padding: '16px 0px 0'}}>
           <Alert
             message={t('sync_active_title')}
             description={syncStatusDesc}
@@ -457,10 +424,10 @@ const Sync = () => {
             closable
           />
         </div>
-      )}
+      )} */}
 
       {/* Main Content */}
-      <div style={{padding: '16px 24px'}}>
+      <div style={{padding: '16px 0px'}}>
         <Row gutter={16}>
           {/* Left: Window List */}
           <Col span={16}>
@@ -500,7 +467,7 @@ const Sync = () => {
               }
             >
               <Tabs
-                defaultActiveKey="sync"
+                defaultActiveKey="arrange"
                 items={[
                   {
                     key: 'sync',

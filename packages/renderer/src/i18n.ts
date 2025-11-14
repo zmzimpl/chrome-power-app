@@ -313,7 +313,7 @@ i18n
           menu_windows: '窗口管理',
           menu_proxy: '代理设置',
           menu_extensions: '扩展管理',
-          menu_sync: '窗口排列',
+          menu_sync: '窗口同步',
           menu_logs: '运行日志',
           menu_settings: '设置',
           menu_api: 'API',

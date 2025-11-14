@@ -20,6 +20,7 @@ export function createLogger(label: string) {
     if (!existsSync(join(logsPath, label))) {
       mkdirSync(join(logsPath, label));
     }
+    console.log('Logger path', logsPath);
     const date = new Date();
 
     const year = date.getFullYear();

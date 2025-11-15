@@ -995,7 +995,14 @@ private:
 
         CGEventRef event = CGEventCreateMouseEvent(NULL, cgEventType, point, button);
         if (event) {
-            CGEventPost(kCGHIDEventTap, event);
+            // For click events (down/up), send directly to target process to avoid moving cursor
+            // For mousemove, we still use global event tap as CGEventPostToPid doesn't support it well
+            if (eventType == "mousemove") {
+                CGEventPost(kCGHIDEventTap, event);
+            } else {
+                // Send to specific process - this won't move the global cursor
+                CGEventPostToPid(pid, event);
+            }
             CFRelease(event);
         }
 #endif
@@ -1133,7 +1140,8 @@ private:
 
         event = CGEventCreateKeyboardEvent(NULL, (CGKeyCode)keyCode, isKeyDown);
         if (event) {
-            CGEventPost(kCGHIDEventTap, event);
+            // Send keyboard event directly to target process to avoid affecting global system
+            CGEventPostToPid(pid, event);
             CFRelease(event);
         }
 #endif
@@ -1276,7 +1284,8 @@ private:
 #elif __APPLE__
         CGEventRef event = CGEventCreateScrollWheelEvent(NULL, kCGScrollEventUnitPixel, 2, deltaY, deltaX);
         if (event) {
-            CGEventPost(kCGHIDEventTap, event);
+            // Send scroll event directly to target process
+            CGEventPostToPid(pid, event);
             CFRelease(event);
         }
 #endif

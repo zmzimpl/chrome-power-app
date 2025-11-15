@@ -33,6 +33,9 @@ import type {SyncOptions, MonitorInfo} from '../../../../preload/src/bridges/syn
 
 const {Text, Title} = Typography;
 
+// Check if running on macOS
+const isMacOS = navigator.platform.toLowerCase().includes('mac');
+
 interface SyncConfig {
   // Window arrangement
   mainPid: number | null;
@@ -110,7 +113,7 @@ const Sync = () => {
   const [selectedMonitorIndex, setSelectedMonitorIndex] = useState<number>(0);
 
   const columns: ColumnsType<DB.Window> = useMemo(() => {
-    return [
+    const baseColumns = [
       {
         title: 'ID',
         dataIndex: 'id',
@@ -135,60 +138,68 @@ const Sync = () => {
         key: 'group_name',
         width: 100,
       },
-      {
-        title: 'Status',
-        key: 'status',
-        width: 100,
-        render: (_, record) => {
-          if (syncStatus.isActive && syncStatus.slavePids.includes(record.pid!)) {
-            return (
-              <Tag color="processing" icon={<SyncOutlined spin />}>
-                {t('sync_status_syncing')}
-              </Tag>
-            );
-          }
-          if (record.id === syncConfig.masterWindowId) {
-            return (
-              <Tag color="blue" icon={<CrownOutlined />}>
-                {t('sync_status_master')}
-              </Tag>
-            );
-          }
-          return (
-            <Tag color="default" icon={<DesktopOutlined />}>
-              {t('sync_status_ready')}
-            </Tag>
-          );
-        },
-      },
-      {
-        title: t('window_column_action'),
-        key: 'action',
-        width: 80,
-        fixed: 'right',
-        render: (_, record) => {
-          const isMaster = record.id === syncConfig.masterWindowId;
-          return (
-            <Button
-              type={isMaster ? 'primary' : 'default'}
-              icon={<CrownOutlined />}
-              onClick={() => handleSetMaster(record.id!)}
-              disabled={syncStatus.isActive || isMaster}
-            >
-              {/* {isMaster ? t('sync_status_master') : t('sync_action_set_master')} */}
-            </Button>
-          );
-        },
-      },
     ];
+
+    // Only show Status and Action columns on non-macOS platforms
+    if (!isMacOS) {
+      baseColumns.push(
+        {
+          title: 'Status',
+          key: 'status',
+          width: 100,
+          render: (_, record) => {
+            if (syncStatus.isActive && syncStatus.slavePids.includes(record.pid!)) {
+              return (
+                <Tag color="processing" icon={<SyncOutlined spin />}>
+                  {t('sync_status_syncing')}
+                </Tag>
+              );
+            }
+            if (record.id === syncConfig.masterWindowId) {
+              return (
+                <Tag color="blue" icon={<CrownOutlined />}>
+                  {t('sync_status_master')}
+                </Tag>
+              );
+            }
+            return (
+              <Tag color="default" icon={<DesktopOutlined />}>
+                {t('sync_status_ready')}
+              </Tag>
+            );
+          },
+        },
+        {
+          title: t('window_column_action'),
+          key: 'action',
+          width: 80,
+          fixed: 'right',
+          render: (_, record) => {
+            const isMaster = record.id === syncConfig.masterWindowId;
+            return (
+              <Button
+                type={isMaster ? 'primary' : 'default'}
+                icon={<CrownOutlined />}
+                onClick={() => handleSetMaster(record.id!)}
+                disabled={syncStatus.isActive || isMaster}
+              >
+                {/* {isMaster ? t('sync_status_master') : t('sync_action_set_master')} */}
+              </Button>
+            );
+          },
+        } as any,
+      );
+    }
+
+    return baseColumns;
   }, [syncStatus, syncConfig.masterWindowId, t]);
 
   const fetchOpenedWindows = async () => {
     const windows = await WindowBridge.getOpenedWindows();
     setWindows(windows);
 
-    // Auto-select first window as master if none set
-    if (windows.length > 0 && !syncConfig.masterWindowId) {
+    // Auto-select first window as master if none set (only on non-macOS platforms)
+    if (!isMacOS && windows.length > 0 && !syncConfig.masterWindowId) {
       handleSetMaster(windows[0].id!);
     }
 
@@ -294,8 +305,13 @@ const Sync = () => {
     }
   }, [syncStatus.isActive]);
 
-  // Register global keyboard shortcuts from main process
+  // Register global keyboard shortcuts from main process (not supported on macOS)
   useEffect(() => {
+    // Skip shortcut registration on macOS
+    if (isMacOS) {
+      return;
+    }
+
     // Listen for Ctrl+Alt+S (start sync)
     const cleanupStart = SyncBridge.onShortcutStart(() => {
       if (!syncStatus.isActive) {
@@ -389,23 +405,28 @@ const Sync = () => {
       {/* Toolbar */}
       <div className="content-toolbar">
         <Space size={16}>
-          {!syncStatus.isActive ? (
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={handleStartSync}
-              disabled={
-                !syncConfig.masterWindowId ||
-                selectedRowKeys.length < 2 ||
-                !selectedRowKeys.includes(syncConfig.masterWindowId)
-              }
-            >
-              {t('sync_start')} (Ctrl+Alt+S)
-            </Button>
-          ) : (
-            <Button danger size="large" icon={<StopOutlined />} onClick={handleStopSync}>
-              {t('sync_stop')} (Ctrl+Alt+D)
-            </Button>
+          {/* Sync buttons only available on non-macOS platforms */}
+          {!isMacOS && (
+            <>
+              {!syncStatus.isActive ? (
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  onClick={handleStartSync}
+                  disabled={
+                    !syncConfig.masterWindowId ||
+                    selectedRowKeys.length < 2 ||
+                    !selectedRowKeys.includes(syncConfig.masterWindowId)
+                  }
+                >
+                  {t('sync_start')} (Ctrl+Alt+S)
+                </Button>
+              ) : (
+                <Button danger size="large" icon={<StopOutlined />} onClick={handleStopSync}>
+                  {t('sync_stop')} (Ctrl+Alt+D)
+                </Button>
+              )}
+            </>
           )}
           <Text type="secondary">
             {t('sync_selected')}: {selectedRowKeys.length}

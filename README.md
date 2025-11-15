@@ -37,8 +37,8 @@ Chromium 源码修改请参考 [chrome-power-chromium](https://github.com/zmzimp
 - [x] Puppeteer/Playwright/Selenium 接入
 - [x] ~~支持 cookie 导入~~
 - [x] Mac 安装支持
-- [x] 扩展程序管理
-- [ ] 同步操作
+- [x] ~~扩展程序管理~~（新版 Chrome 出于安全考虑去除了相关参数）
+- [x] 同步操作
 - [ ] 自动化脚本
 
 ## 本地运行/打包
@@ -75,8 +75,9 @@ Mac 自动排列需要辅助功能权限，可以查看运行日志，如果提�
 
 🙌你可以通过向下面的钱包打赏一杯咖啡来支持我
 
-Bitcoin Address: `bc1p0uex9rn8nd9uyguulp6r3d3t9kylrk42dg6sq22f3h5rktlk22ks6mlv6t`
-
 Ethereum Address: `0x83DF381FF65806B68AA1963636f4ca87990F2860`
 
 Solana Address: `HYKo3uVuCQzWkWUkGcGwiDAAsxPYyJZtjf28Xk143eb1`
+
+Bitcoin Address: `bc1p0uex9rn8nd9uyguulp6r3d3t9kylrk42dg6sq22f3h5rktlk22ks6mlv6t`
+

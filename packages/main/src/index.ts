@@ -53,22 +53,24 @@ app
       }
     });
 
-    // Register sync control shortcuts
-    globalShortcut.register('CommandOrControl+Alt+S', () => {
-      logger.info('Global shortcut: Start sync (Ctrl+Alt+S)');
-      const allWindows = BrowserWindow.getAllWindows();
-      allWindows.forEach(win => {
-        win.webContents.send('sync-shortcut-start');
+    // Register sync control shortcuts (not supported on macOS)
+    if (platform !== 'darwin') {
+      globalShortcut.register('CommandOrControl+Alt+S', () => {
+        logger.info('Global shortcut: Start sync (Ctrl+Alt+S)');
+        const allWindows = BrowserWindow.getAllWindows();
+        allWindows.forEach(win => {
+          win.webContents.send('sync-shortcut-start');
+        });
       });
-    });
 
-    globalShortcut.register('CommandOrControl+Alt+D', () => {
-      logger.info('Global shortcut: Stop sync (Ctrl+Alt+D)');
-      const allWindows = BrowserWindow.getAllWindows();
-      allWindows.forEach(win => {
-        win.webContents.send('sync-shortcut-stop');
+      globalShortcut.register('CommandOrControl+Alt+D', () => {
+        logger.info('Global shortcut: Stop sync (Ctrl+Alt+D)');
+        const allWindows = BrowserWindow.getAllWindows();
+        allWindows.forEach(win => {
+          win.webContents.send('sync-shortcut-stop');
+        });
       });
-    });
+    }
 
     try {
       await initializeDatabase();

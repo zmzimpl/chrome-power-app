@@ -16,7 +16,7 @@ import {
 import {SyncBridge, WindowBridge} from '#preload';
 import {useTranslation} from 'react-i18next';
 import {useEffect, useMemo, useState, useCallback} from 'react';
-import type {DB} from '../../../../shared/types/db';
+import type {DB, SafeAny} from '../../../../shared/types/db';
 import _ from 'lodash';
 import {
   PlayCircleOutlined,
@@ -113,7 +113,7 @@ const Sync = () => {
   const [selectedMonitorIndex, setSelectedMonitorIndex] = useState<number>(0);
 
   const columns: ColumnsType<DB.Window> = useMemo(() => {
-    const baseColumns = [
+    const baseColumns: ColumnsType<DB.Window> = [
       {
         title: 'ID',
         dataIndex: 'id',
@@ -147,7 +147,7 @@ const Sync = () => {
           title: 'Status',
           key: 'status',
           width: 100,
-          render: (_, record) => {
+          render: (_: SafeAny, record: DB.Window): React.ReactNode => {
             if (syncStatus.isActive && syncStatus.slavePids.includes(record.pid!)) {
               return (
                 <Tag color="processing" icon={<SyncOutlined spin />}>
@@ -174,7 +174,7 @@ const Sync = () => {
           key: 'action',
           width: 80,
           fixed: 'right',
-          render: (_, record) => {
+          render: (_: SafeAny, record: DB.Window): React.ReactNode => {
             const isMaster = record.id === syncConfig.masterWindowId;
             return (
               <Button
@@ -406,7 +406,7 @@ const Sync = () => {
       <div className="content-toolbar">
         <Space size={16}>
           {/* Sync buttons only available on non-macOS platforms */}
-          {!isMacOS && (
+          {!isMacOS ? (
             <>
               {!syncStatus.isActive ? (
                 <Button
@@ -427,10 +427,11 @@ const Sync = () => {
                 </Button>
               )}
             </>
+          ) : (
+            <Text type="secondary">
+              {t('sync_macos_note')}
+            </Text>
           )}
-          <Text type="secondary">
-            {t('sync_selected')}: {selectedRowKeys.length}
-          </Text>
         </Space>
         <Space size={8} className="content-toolbar-btns">
           <Button icon={<ReloadOutlined />} onClick={fetchOpenedWindows}>
@@ -464,7 +465,7 @@ const Sync = () => {
                     <DesktopOutlined style={{marginRight: 8}} />
                     {t('sync_opened_windows')}
                   </Title>
-                  {masterWindow && <Text type="secondary">{masterInfoText}</Text>}
+                  {!isMacOS && masterWindow && <Text type="secondary">{masterInfoText}</Text>}
                 </Space>
               </div>
               <Table

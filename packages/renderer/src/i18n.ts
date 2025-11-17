@@ -213,6 +213,7 @@ i18n
           sync_msg_started: 'Synchronization started! Master: 1, Slaves: {{count}}',
           sync_msg_start_failed: 'Failed to start sync: {{error}}',
           sync_msg_stopped: 'Synchronization stopped',
+          sync_macos_note: 'Mac OS does not support multi-window synchronization.',
         },
       },
       zh: {
@@ -418,6 +419,7 @@ i18n
           sync_msg_started: '同步已启动！主窗口: 1，从窗口: {{count}}',
           sync_msg_start_failed: '启动同步失败: {{error}}',
           sync_msg_stopped: '同步已停止',
+          sync_macos_note: 'Mac OS 不支持多窗口同步。',
         },
       },
     },

@@ -58,3 +58,6 @@ thumbs.db
 .idea/httpRequests
 /.idea/csv-plugin.xml
 packages/main/src/native-addon/build
+
+
+nul

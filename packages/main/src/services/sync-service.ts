@@ -62,8 +62,8 @@ export const initSyncService = () => {
   logger.info('WindowManager initialized');
 
   ipcMain.handle('window-arrange', async (_, args) => {
-    const {mainPid, childPids, columns, size, spacing} = args;
-    logger.info('Arranging windows', {mainPid, childPids, columns, size, spacing});
+    const {mainPid, childPids, columns, size, spacing, monitorIndex} = args;
+    logger.info('Arranging windows', {mainPid, childPids, columns, size, spacing, monitorIndex});
     try {
       if (!windowManager) {
         logger.error('WindowManager not initialized');
@@ -71,18 +71,44 @@ export const initSyncService = () => {
       }
       logger.info('arrangeWindows', windowManager.arrangeWindows.toString());
       try {
-        windowManager.arrangeWindows(mainPid, childPids, columns, size, spacing);
+        // Pass monitorIndex if provided, otherwise let native addon use default (0)
+        if (monitorIndex !== undefined) {
+          windowManager.arrangeWindows(mainPid, childPids, columns, size, spacing, monitorIndex);
+        } else {
+          windowManager.arrangeWindows(mainPid, childPids, columns, size, spacing);
+        }
       } catch (e) {
         logger.error('Native function execution error:', e);
         throw e;
       }
-      
+
       return {success: true};
     } catch (error) {
       logger.error('Window arrangement failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  });
+
+  ipcMain.handle('window-get-monitors', async () => {
+    logger.info('Getting available monitors');
+    try {
+      if (!windowManager) {
+        logger.error('WindowManager not initialized');
+        throw new Error('WindowManager not initialized');
+      }
+
+      const monitors = windowManager.getMonitors();
+      logger.info('Available monitors:', monitors);
+      return {success: true, monitors};
+    } catch (error) {
+      logger.error('Failed to get monitors:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        monitors: [],
       };
     }
   });

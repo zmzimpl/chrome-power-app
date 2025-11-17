@@ -55,12 +55,12 @@ export const useRoutes = () => {
         component: ProxyImport,
         invisible: true,
       },
-      {
-        path: '/extensions',
-        name: t('menu_extensions'),
-        icon: <Icon icon="solar:global-outline" />,
-        component: Extensions,
-      },
+      // {
+      //   path: '/extensions',
+      //   name: t('menu_extensions'),
+      //   icon: <Icon icon="solar:global-outline" />,
+      //   component: Extensions,
+      // },
       {
         path: '/sync',
         name: t('menu_sync'),

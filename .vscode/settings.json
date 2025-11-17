@@ -72,5 +72,18 @@
     "span": "cpp",
     "sstream": "cpp",
     "xtree": "cpp"
+  },
+  "terminal.integrated.env.windows": {
+    // --- 代理设置 Start ---
+    // 如果你的 Clash 提供的是 HTTP 代理接口
+    "HTTP_PROXY": "http://127.0.0.1:7897",
+    "HTTPS_PROXY": "http://127.0.0.1:7897",
+
+    // 很重要：设置不需要走代理的地址
+    "NO_PROXY": "localhost,127.0.0.1,::1,*.lan,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
+    // --- 代理设置 End ---
+
+    // 你也可以在这里设置其他项目特定的环境变量
+    // "MY_PROJECT_VAR": "some_value"
   }
 }

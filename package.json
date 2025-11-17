@@ -1,7 +1,7 @@
 {
   "name": "chrome-power",
   "description": "The first open source multi-chrome manager tool.",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "private": true,
   "author": {
     "email": "zmzimpl@gmail.com",
@@ -31,7 +31,7 @@
     "typecheck:preload": "tsc --noEmit -p packages/preload/tsconfig.json",
     "typecheck:renderer": "tsc --noEmit -p packages/renderer/tsconfig.json",
     "typecheck": "npm run typecheck:main && npm run typecheck:preload",
-    "postinstall": "electron-builder install-app-deps && cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs && node scripts/build-native-addon.js",
+    "postinstall": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/update-electron-vendors.mjs && (node scripts/build-native-addon.js || echo 'Warning: Native addon build skipped')",
     "format": "npx prettier --write \"**/*.{js,mjs,cjs,ts,mts,cts,vue,json}\"",
     "rebuild-deps": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64",
     "rebuild-deps:mac": "npm rebuild sqlite3 --build-from-source --arch=x64 && npm rebuild sqlite3 --build-from-source --arch=arm64",
@@ -51,7 +51,7 @@
     "@typescript-eslint/eslint-plugin": "6.7.2",
     "autoprefixer": "^10.4.16",
     "cross-env": "7.0.3",
-    "electron": "^27.0.0",
+    "electron": "^31.0.0",
     "electron-builder": "^25.1.8",
     "electron-devtools-installer": "^3.2.0",
     "eslint": "8.50.0",
@@ -71,6 +71,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.7",
+    "@tkomde/iohook": "^1.1.7",
     "@types/portscanner": "^2.1.2",
     "@vitejs/plugin-react": "^4.0.4",
     "agent-base": "^7.1.0",
@@ -124,5 +125,19 @@
   },
   "optionalDependencies": {
     "dmg-license": "^1.0.11"
+  },
+  "iohook": {
+    "targets": [
+      "electron-125"
+    ],
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "arches": [
+      "x64",
+      "arm64"
+    ]
   }
 }

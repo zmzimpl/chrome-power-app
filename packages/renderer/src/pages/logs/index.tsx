@@ -26,6 +26,10 @@ const Logs = () => {
       key: 'Proxy',
       label: 'Proxy',
     },
+    {
+      key: 'Service',
+      label: 'Service',
+    },
     // {
     //   key: 'Api',
     //   label: 'Api',

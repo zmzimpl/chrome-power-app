@@ -99,6 +99,37 @@ const getById = async (id: number) => {
   return windowData;
 };
 
+const getByPid = async (pid: number) => {
+  // 获取 window 记录及其关联数据 by PID
+  const windowData = await db('window')
+    .select(
+      'window.*',
+      'group.name as group_name',
+      'proxy.ip',
+      'proxy.proxy',
+      'proxy.proxy_type',
+      'proxy.ip_country',
+      'proxy.ip_checker',
+    )
+    .where('window.pid', '=', pid)
+    .leftJoin('group', 'window.group_id', '=', 'group.id')
+    .leftJoin('proxy', 'window.proxy_id', '=', 'proxy.id')
+    .first();
+
+  if (windowData && windowData.tags) {
+    // 分割 tags 字符串
+    const tagIds = windowData.tags.toString().split(',').map(Number);
+
+    // 获取所有相关的标签名称
+    const tags = await db('tag').select('name').whereIn('id', tagIds);
+
+    // 将标签名称添加到返回结果中
+    windowData.tags_name = tags.map(tag => tag.name);
+  }
+
+  return windowData;
+};
+
 const update = async (id: number, updatedData: DB.Window) => {
   delete updatedData.group_name;
   delete updatedData.proxy;
@@ -242,6 +273,7 @@ export const WindowDB = {
   all,
   find,
   getById,
+  getByPid,
   getOpenedWindows,
   update,
   create,

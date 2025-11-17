@@ -27,21 +27,19 @@ module.exports = async function () {
       output: 'dist',
       buildResources: 'buildResources',
     },
+    nodeGypRebuild: false, // Disable node-gyp rebuild, use prebuilt binaries
+    npmRebuild: false, // Disable @electron/rebuild to skip iohook compilation
     files: [
       'packages/**/dist/**',
       'packages/**/assets/**',
       'migrations',
       'package.json',
       'node_modules/sqlite3/lib/binding/**/*.node',
+      'node_modules/@tkomde/iohook/**/*.node',
       'node_modules/iconv-corefoundation/lib/*.node',
       'buildResources/**/*',
     ],
     extraResources: [
-      {
-        from: `packages/main/src/native-addon/build/Release/${process.env.ELECTRON_PLATFORM || process.platform}-${process.env.ELECTRON_ARCH || process.arch}/`,
-        to: 'app.asar.unpacked/node_modules/window-addon/',
-        filter: ['window-addon.node'],
-      },
       {
         from: 'migrations',
         to: 'app/migrations',
@@ -151,6 +149,41 @@ module.exports = async function () {
       provider: 'github',
       private: false,
       releaseType: 'draft',
+    },
+
+    // 在打包后复制 window-addon.node 到最终目录
+    afterPack: async (context) => {
+      const fs = require('fs');
+      const path = require('path');
+      const { electronPlatformName, arch, appOutDir } = context;
+
+      console.log(`Copying window-addon for ${electronPlatformName}-${arch}...`);
+
+      const sourcePath = path.join(__dirname, 'packages/main/src/native-addon/build/Release/window-addon.node');
+      const targetDir = path.join(appOutDir, 'resources/app.asar.unpacked/node_modules/window-addon');
+      const targetPath = path.join(targetDir, 'window-addon.node');
+
+      try {
+        // 检查源文件是否存在
+        if (!fs.existsSync(sourcePath)) {
+          console.error(`Source file not found: ${sourcePath}`);
+          console.error('Please run npm run build:native-addon first');
+          throw new Error('window-addon.node not found');
+        }
+
+        // 创建目标目录
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+          console.log(`Created directory: ${targetDir}`);
+        }
+
+        // 复制文件
+        fs.copyFileSync(sourcePath, targetPath);
+        console.log(`Successfully copied window-addon.node to ${targetPath}`);
+      } catch (error) {
+        console.error('Failed to copy window-addon:', error);
+        throw error;
+      }
     },
   };
 

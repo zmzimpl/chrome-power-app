@@ -157,9 +157,13 @@ module.exports = async function () {
       const path = require('path');
       const { electronPlatformName, arch, appOutDir } = context;
 
-      console.log(`Copying window-addon for ${electronPlatformName}-${arch}...`);
+      // electron-builder 的 arch 是数字枚举，需要转换为字符串
+      const archMap = { 0: 'ia32', 1: 'x64', 2: 'armv7l', 3: 'arm64', 4: 'universal' };
+      const archString = archMap[arch] || String(arch);
 
-      const sourcePath = path.join(__dirname, `packages/main/src/native-addon/build/Release/${electronPlatformName}-${arch}/window-addon.node`);
+      console.log(`Copying window-addon for ${electronPlatformName}-${archString}...`);
+
+      const sourcePath = path.join(__dirname, `packages/main/src/native-addon/build/Release/${electronPlatformName}-${archString}/window-addon.node`);
       const targetDir = path.join(appOutDir, 'resources/app.asar.unpacked/node_modules/window-addon');
       const targetPath = path.join(targetDir, 'window-addon.node');
 

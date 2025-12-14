@@ -159,7 +159,7 @@ module.exports = async function () {
 
       console.log(`Copying window-addon for ${electronPlatformName}-${arch}...`);
 
-      const sourcePath = path.join(__dirname, 'packages/main/src/native-addon/build/Release/window-addon.node');
+      const sourcePath = path.join(__dirname, `packages/main/src/native-addon/build/Release/${electronPlatformName}-${arch}/window-addon.node`);
       const targetDir = path.join(appOutDir, 'resources/app.asar.unpacked/node_modules/window-addon');
       const targetPath = path.join(targetDir, 'window-addon.node');
 

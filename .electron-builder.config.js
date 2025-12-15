@@ -164,7 +164,15 @@ module.exports = async function () {
       console.log(`Copying window-addon for ${electronPlatformName}-${archString}...`);
 
       const sourcePath = path.join(__dirname, `packages/main/src/native-addon/build/Release/${electronPlatformName}-${archString}/window-addon.node`);
-      const targetDir = path.join(appOutDir, 'resources/app.asar.unpacked/node_modules/window-addon');
+
+      // Mac 应用有 .app 包结构，需要特殊处理路径
+      let targetDir;
+      if (electronPlatformName === 'darwin') {
+        const appName = context.packager.appInfo.productFilename;
+        targetDir = path.join(appOutDir, `${appName}.app/Contents/Resources/app.asar.unpacked/node_modules/window-addon`);
+      } else {
+        targetDir = path.join(appOutDir, 'resources/app.asar.unpacked/node_modules/window-addon');
+      }
       const targetPath = path.join(targetDir, 'window-addon.node');
 
       try {

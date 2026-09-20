@@ -18,7 +18,20 @@ if (!isSingleInstance) {
   app.quit();
   process.exit(0);
 }
-app.on('second-instance', restoreOrCreateWindow);
+
+// Handle --open-url passed from the Windows registry open command
+// When user clicks a link, the OS calls: "Chrome Power.exe" --open-url "https://..."
+app.on('second-instance', (_event, argv) => {
+  const urlArg = argv.find(a => a.startsWith('--open-url='));
+  const url = urlArg ? urlArg.slice(11) : (argv[argv.length - 1]?.startsWith('http') ? argv[argv.length - 1] : null);
+  if (url) {
+    restoreOrCreateWindow().then(() => {
+      const win = BrowserWindow.getAllWindows()[0];
+      win?.webContents.send('open-url-request', url);
+    });
+  }
+});
+
 
 /**
  * Disable Hardware Acceleration to save more system resources.
@@ -80,6 +93,13 @@ app
     }
     await initServices();
     await restoreOrCreateWindow();
+    // Handle URL passed at startup (app was not running when link was clicked)
+    const startUrl = process.argv.find(a => a.startsWith('--open-url='))?.slice(11)
+      ?? (process.argv[process.argv.length - 1]?.startsWith('http') ? process.argv[process.argv.length - 1] : null);
+    if (startUrl) {
+      const win = BrowserWindow.getAllWindows()[0];
+      win?.webContents.send('open-url-request', startUrl);
+    }
     // if (!import.meta.env.DEV) {
     //   const {result, error, exist} = await extractChromeBin();
     //   if (result) {
@@ -123,7 +143,7 @@ app
  *
  * Note: It may throw "ENOENT: no such file app-update.yml"
  * if you compile production app without publishing it to distribution server.
- * Like `npm run compile` does. It's ok 😅
+ * Like `npm run compile` does. It's ok 馃槄
  */
 if (import.meta.env.PROD) {
   app

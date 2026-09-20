@@ -45,4 +45,22 @@ export const CommonBridge = {
 
   offMessaged: (callback: (event: IpcRendererEvent, msg: BridgeMessage) => void) =>
     ipcRenderer.off('bridge-msg', callback),
+
+  registerDefaultBrowser: () =>
+    ipcRenderer.invoke('common-register-default-browser'),
+
+  unregisterDefaultBrowser: () =>
+    ipcRenderer.invoke('common-unregister-default-browser'),
+
+  isDefaultBrowser: (): Promise<boolean> =>
+    ipcRenderer.invoke('common-is-default-browser'),
+
+  openUrlInWindow: (port: number, url: string) =>
+    ipcRenderer.invoke('common-open-url-in-window', port, url),
+
+  onOpenUrlRequest: (callback: (url: string) => void) =>
+    ipcRenderer.on('open-url-request', (_event, url) => callback(url)),
+
+  offOpenUrlRequest: (callback: (url: string) => void) =>
+    ipcRenderer.removeAllListeners('open-url-request'),
 };

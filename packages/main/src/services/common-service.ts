@@ -6,6 +6,11 @@ import {copyFileSync, writeFileSync, readFileSync, readdir, existsSync, mkdirSyn
 import type {SettingOptions} from '../../../shared/types/common';
 import {getSettings} from '../utils/get-settings';
 import {getOrigin} from '../server';
+import {
+  registerAsDefaultBrowser,
+  unregisterAsDefaultBrowser,
+  isRegisteredAsDefaultBrowser,
+} from './default-browser-service';
 import axios from 'axios';
 import {writeFile} from 'fs/promises';
 
@@ -26,8 +31,7 @@ export const initCommonService = () => {
     if (savePath) {
       copyFileSync(join(__dirname, '../..', filePath), savePath);
 
-      // 打开文件管理器并选择该文件
-      shell.showItemInFolder(savePath);
+      // 鎵撳紑鏂囦欢绠＄悊鍣ㄥ苟閫夋嫨璇ユ枃浠?      shell.showItemInFolder(savePath);
 
       return savePath;
     } else {
@@ -35,7 +39,7 @@ export const initCommonService = () => {
     }
   });
 
-  // 添加 IPC 处理程序
+  // 娣诲姞 IPC 澶勭悊绋嬪簭
   ipcMain.handle('common-save-dialog', async (_, options) => {
     const win = BrowserWindow.getFocusedWindow();
     if (!win) return {canceled: true};
@@ -132,5 +136,28 @@ export const initCommonService = () => {
       url: apiUrl,
       ...(res?.data || {}),
     };
+  });
+
+  ipcMain.handle('common-register-default-browser', async () => {
+    return await registerAsDefaultBrowser();
+  });
+
+  ipcMain.handle('common-unregister-default-browser', async () => {
+    return await unregisterAsDefaultBrowser();
+  });
+
+  ipcMain.handle('common-is-default-browser', async () => {
+    return await isRegisteredAsDefaultBrowser();
+  });
+
+  ipcMain.handle('common-open-url-in-window', async (_, windowId: number, url: string) => {
+    try {
+      // encodeURIComponent ensures OAuth ?& params are not truncated by /json/new
+      const encodedUrl = encodeURIComponent(url);
+      const resp = await fetch(`http://localhost:${windowId}/json/new?${encodedUrl}`, { method: 'PUT' });
+      return { success: resp.ok };
+    } catch (e) {
+      return { success: false, message: String(e) };
+    }
   });
 };
